@@ -85,7 +85,11 @@ class PersonnelController extends Controller
      */
     public function edit(string $id)
     {
-        //
+         $personnel = Personnel::findOrFail($id);
+
+    $roles = \App\Models\Role::where('status', 'Active')->get();
+
+    return view('personnel.edit', compact('personnel', 'roles'));
     }
 
     /**
@@ -93,14 +97,82 @@ class PersonnelController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $personnel = Personnel::findOrFail($id);
+
+
+    $request->validate([
+        'first_name' => ['required'],
+        'last_name' => ['required'],
+        'department' => ['required'],
+        'position' => ['required'],
+        'role_id' => ['required'],
+    ]);
+
+
+
+    $personnel->update([
+
+        'first_name' => $request->first_name,
+
+        'last_name' => $request->last_name,
+
+        'department' => $request->department,
+
+        'position' => $request->position,
+
+    ]);
+
+
+
+
+    $personnel->user->update([
+
+        'name' => $request->first_name . ' ' . $request->last_name,
+
+        'role_id' => $request->role_id,
+
+    ]);
+
+
+
+
+    return redirect()
+
+        ->route('personnel.index')
+
+        ->with('success', 'Personnel updated successfully.');
     }
+
+    public function activate(string $id)
+{
+    $personnel = Personnel::findOrFail($id);
+
+
+    $personnel->user->update([
+        'status' => 'Active',
+    ]);
+
+
+    return redirect()
+        ->route('personnel.index')
+        ->with('success', 'Personnel account activated successfully.');
+}
 
     /**
      * Remove the specified resource from storage.
      */
     public function destroy(string $id)
     {
-        //
+        $personnel = Personnel::findOrFail($id);
+
+
+    $personnel->user->update([
+        'status' => 'Inactive',
+    ]);
+
+
+    return redirect()
+        ->route('personnel.index')
+        ->with('success', 'Personnel account deactivated successfully.');   
     }
 }

@@ -18,6 +18,9 @@ Route::middleware(['auth', 'permission:manage_personnel_accounts'])
 
         Route::resource('personnel', PersonnelController::class);
 
+        Route::patch('/personnel/{id}/activate', [PersonnelController::class, 'activate'])
+    ->name('personnel.activate');
+
     });
 
 
