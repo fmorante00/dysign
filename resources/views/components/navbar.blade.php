@@ -28,377 +28,397 @@
 >
 
 
+<div class="
+    h-24
+    px-8
+    flex
+    items-center
+    justify-between
+">
 
-    <div class="
-        h-24
-        px-8
-        flex
-        items-center
-        justify-between
-    ">
 
+<!-- LEFT SIDE -->
 
+<div>
 
-        <!-- LEFT SIDE -->
+<h1 class="
+    text-xl
+    font-bold
+    text-[#101064]
+">
 
-        <div>
+DySign Administration Portal
 
+</h1>
 
-            <h1 class="
-                text-xl
-                font-bold
-                text-[#101064]
-            ">
 
-                DySign Administration Portal
+<p class="
+    text-sm
+    text-gray-500
+">
 
-            </h1>
+Digital Identity Management System
 
+</p>
 
 
-            <p class="
-                text-sm
-                text-gray-500
-            ">
+</div>
 
-                Digital Identity Management System
 
-            </p>
 
 
-        </div>
 
+<!-- RIGHT SIDE -->
 
 
+<div class="
+    flex
+    items-center
+    gap-6
+">
 
 
 
 
 
+<!-- NOTIFICATION -->
 
-        <!-- RIGHT SIDE -->
+<button
+class="
+relative
+text-[#101064]
+hover:text-[#D4A017]
+transition
+"
+>
 
 
-        <div class="
-            flex
-            items-center
-            gap-6
-        ">
+<svg
+xmlns="http://www.w3.org/2000/svg"
+width="22"
+height="22"
+fill="none"
+stroke="currentColor"
+stroke-width="2"
+stroke-linecap="round"
+stroke-linejoin="round"
+>
 
+<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9">
+</path>
 
+<path d="M13.73 21a2 2 0 0 1-3.46 0">
+</path>
 
-            <!-- NOTIFICATION -->
 
+</svg>
 
-            <button
-                class="
-                relative
-                text-[#101064]
-                hover:text-[#D4A017]
-                transition
-                "
-            >
 
+</button>
 
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="22"
-                    height="22"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                >
 
-                    <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9">
-                    </path>
 
-                    <path d="M13.73 21a2 2 0 0 1-3.46 0">
-                    </path>
 
 
-                </svg>
 
+<!-- USER DROPDOWN -->
 
-            </button>
 
+<div
+class="relative"
+@click.outside="open=false"
+>
 
 
 
 
+<button
+@click="open=!open"
 
+class="
+flex
+items-center
+gap-3
+"
+>
 
 
 
-            <!-- ADMIN DROPDOWN -->
 
+<!-- AVATAR -->
 
-            <div
-                class="relative"
-                @click.outside="open=false"
-            >
+<div
 
+class="
+w-10
+h-10
+rounded-full
+bg-[#101064]
+text-white
+flex
+items-center
+justify-center
+font-semibold
+"
 
-                <!-- BUTTON -->
+>
 
+{{ strtoupper(substr(auth()->user()->name,0,1)) }}
 
-                <button
-                    @click="open=!open"
+</div>
 
-                    class="
-                    flex
-                    items-center
-                    gap-3
-                    "
-                >
 
 
-                    <!-- AVATAR -->
 
-                    <div class="
-                        w-10
-                        h-10
-                        rounded-full
-                        bg-[#101064]
-                        text-white
-                        flex
-                        items-center
-                        justify-center
-                        font-semibold
-                    ">
 
-                        S
 
-                    </div>
+<div class="text-left">
 
 
+<p
 
+class="
+text-sm
+font-semibold
+text-[#101064]
+"
 
+>
 
-                    <div class="text-left">
+{{ auth()->user()->name }}
 
+</p>
 
-                        <p class="
-                            text-sm
-                            font-semibold
-                            text-[#101064]
-                        ">
 
-                            System Administrator
 
-                        </p>
+<p
 
+class="
+text-xs
+text-gray-500
+"
 
-                        <p class="
-                            text-xs
-                            text-gray-500
-                        ">
+>
 
-                            System Administrator
+{{ auth()->user()->role->role_name }}
 
-                        </p>
+</p>
 
 
-                    </div>
+</div>
 
 
 
 
 
+<svg
+xmlns="http://www.w3.org/2000/svg"
+width="16"
+height="16"
+fill="none"
+stroke="currentColor"
+stroke-width="2"
+>
 
+<path d="m6 9 4 4 4-4"/>
 
-                    <!-- DROPDOWN ARROW -->
+</svg>
 
 
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                    >
 
-                        <path d="m6 9 4 4 4-4"/>
+</button>
 
-                    </svg>
+<!-- DROPDOWN MENU -->
 
 
+<div
 
-                </button>
+x-cloak
 
+x-show="open"
 
+x-transition:enter="
+transition
+ease-out
+duration-200
+"
 
+x-transition:enter-start="
+opacity-0
+scale-95
+-translate-y-2
+"
 
+x-transition:enter-end="
+opacity-100
+scale-100
+translate-y-0
+"
 
 
+x-transition:leave="
+transition
+ease-in
+duration-150
+"
 
+x-transition:leave-start="
+opacity-100
+scale-100
+translate-y-0
+"
 
+x-transition:leave-end="
+opacity-0
+scale-95
+-translate-y-2
+"
 
-                <!-- DROPDOWN MENU -->
 
+class="
+absolute
+right-0
+mt-4
+w-56
+bg-white
+rounded-xl
+shadow-lg
+border
+border-gray-100
+py-2
+"
 
-                <div
+>
 
-                    x-cloak
 
-                    x-show="open"
 
-                    x-transition:enter="
-                    transition
-                    ease-out
-                    duration-200
-                    "
 
-                    x-transition:enter-start="
-                    opacity-0
-                    scale-95
-                    -translate-y-2
-                    "
 
-                    x-transition:enter-end="
-                    opacity-100
-                    scale-100
-                    translate-y-0
-                    "
+<a
 
+href="#"
 
-                    x-transition:leave="
-                    transition
-                    ease-in
-                    duration-150
-                    "
+class="
+block
+px-5
+py-3
+text-sm
+text-gray-700
+hover:bg-gray-50
+hover:text-[#D4A017]
+transition
+"
 
-                    x-transition:leave-start="
-                    opacity-100
-                    scale-100
-                    translate-y-0
-                    "
+>
 
-                    x-transition:leave-end="
-                    opacity-0
-                    scale-95
-                    -translate-y-2
-                    "
+View Profile
 
+</a>
 
-                    class="
-                    absolute
-                    right-0
-                    mt-4
-                    w-56
-                    bg-white
-                    rounded-xl
-                    shadow-lg
-                    border
-                    border-gray-100
-                    py-2
-                    "
-                >
 
 
 
 
 
-                    <a href="#"
-                       class="
-                       block
-                       px-5
-                       py-3
-                       text-sm
-                       text-gray-700
-                       hover:bg-gray-50
-                       hover:text-[#D4A017]
-                       transition
-                       ">
 
-                        View Profile
+<a
 
-                    </a>
+href="#"
 
+class="
+block
+px-5
+py-3
+text-sm
+text-gray-700
+hover:bg-gray-50
+hover:text-[#D4A017]
+transition
+"
 
+>
 
+Settings
 
+</a>
 
 
-                    <a href="#"
-                       class="
-                       block
-                       px-5
-                       py-3
-                       text-sm
-                       text-gray-700
-                       hover:bg-gray-50
-                       hover:text-[#D4A017]
-                       transition
-                       ">
 
-                        Settings
 
-                    </a>
 
 
 
+<div class="
+border-t
+my-2
+">
 
+</div>
 
 
-                    <div class="
-                        border-t
-                        my-2
-                    ">
-                    </div>
 
 
 
 
 
+<form
 
+method="POST"
 
-                    <form method="POST"
-                          action="{{ route('logout') }}">
+action="{{ route('logout') }}"
 
-                        @csrf
+>
 
 
-                        <button
-                            class="
-                            w-full
-                            text-left
-                            px-5
-                            py-3
-                            text-sm
-                            text-gray-700
-                            hover:bg-gray-50
-                            hover:text-red-600
-                            transition
-                            "
-                        >
+@csrf
 
-                            Logout
 
-                        </button>
 
+<button
 
-                    </form>
+class="
+w-full
+text-left
+px-5
+py-3
+text-sm
+text-gray-700
+hover:bg-gray-50
+hover:text-red-600
+transition
+"
 
+>
 
+Logout
 
+</button>
 
-                </div>
 
+</form>
 
 
-            </div>
 
 
 
+</div>
 
-        </div>
 
 
 
-    </div>
+
+
+</div>
+
+
+
+
+
+
+</div>
+
+
+
 
 
 
