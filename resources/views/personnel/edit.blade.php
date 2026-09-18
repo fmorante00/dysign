@@ -1,105 +1,147 @@
-<x-app-layout>
+<x-admin-layout>
 
-    <x-slot name="header">
+<div class="space-y-8">
 
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            Edit Personnel
-        </h2>
 
-    </x-slot>
+    <!-- HEADER -->
 
+    <div>
 
+        <h1 class="
+            text-3xl
+            font-bold
+            text-[#101064]
+        ">
+            Edit Personnel Account
+        </h1>
 
-    <div class="py-12">
 
+        <p class="
+            mt-2
+            text-gray-500
+        ">
+            Update personnel information and access permissions.
+        </p>
 
-        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
 
+    </div>
 
-            <div class="bg-white shadow-sm sm:rounded-lg">
 
 
-                <div class="p-6 text-gray-900">
 
 
 
-                    <h3 class="text-lg font-semibold mb-6">
 
-                        Update Personnel Account
 
-                    </h3>
+    <!-- MAIN CARD -->
 
+    <div class="
+        bg-white
+        rounded-3xl
+        border
+        border-gray-100
+        shadow-sm
+        p-8
+    ">
 
 
+        <form method="POST"
+        action="{{ route('personnel.update', $personnel->personnel_id) }}">
 
-                    <form method="POST" 
-                          action="{{ route('personnel.update', $personnel->personnel_id) }}">
 
+            @csrf
 
-                        @csrf
+            @method('PUT')
 
-                        @method('PUT')
 
 
 
 
-                        <!-- Personnel Information -->
 
 
-                        <h4 class="font-semibold mb-4">
 
-                            Personnel Information
 
-                        </h4>
+            <!-- PERSONNEL INFORMATION -->
 
 
+            <div>
 
 
+                <h2 class="
+                    text-xl
+                    font-semibold
+                    text-[#101064]
+                ">
+                    Personnel Information
+                </h2>
 
-                        <div class="mb-4">
 
+                <p class="
+                    mt-1
+                    mb-6
+                    text-sm
+                    text-gray-500
+                ">
+                    Update the personnel profile details.
+                </p>
 
-                            <label class="block mb-1">
 
-                                First Name
 
-                            </label>
 
 
-                            <input 
-                                type="text"
-                                name="first_name"
-                                value="{{ $personnel->first_name }}"
-                                class="border rounded w-full p-2"
-                                required>
 
 
-                        </div>
+                <div class="
+                    grid
+                    grid-cols-1
+                    md:grid-cols-2
+                    gap-6
+                ">
 
 
 
 
 
+                    <!-- FIRST NAME -->
 
-                        <div class="mb-4">
+                    <div>
 
 
-                            <label class="block mb-1">
+                        <label class="
+                            block
+                            mb-2
+                            text-sm
+                            font-semibold
+                            text-gray-700
+                        ">
+                            First Name
+                        </label>
 
-                                Last Name
 
-                            </label>
+                        <input
+                            type="text"
+                            name="first_name"
+                            value="{{ $personnel->first_name }}"
+                            required
+                            class="
+                            w-full
+                            rounded-xl
+                            border
+                            border-gray-300
+                            px-4
+                            py-3
+                            outline-none
+                            transition
+                            focus:border-[#101064]
+                            focus:ring-4
+                            focus:ring-[#101064]/10
+                            "
+                        >
 
 
-                            <input 
-                                type="text"
-                                name="last_name"
-                                value="{{ $personnel->last_name }}"
-                                class="border rounded w-full p-2"
-                                required>
+                    </div>
 
 
-                        </div>
 
 
 
@@ -107,25 +149,45 @@
 
 
 
-                        <div class="mb-4">
+                    <!-- LAST NAME -->
 
+                    <div>
 
-                            <label class="block mb-1">
 
-                                Department
+                        <label class="
+                            block
+                            mb-2
+                            text-sm
+                            font-semibold
+                            text-gray-700
+                        ">
+                            Last Name
+                        </label>
 
-                            </label>
 
+                        <input
+                            type="text"
+                            name="last_name"
+                            value="{{ $personnel->last_name }}"
+                            required
+                            class="
+                            w-full
+                            rounded-xl
+                            border
+                            border-gray-300
+                            px-4
+                            py-3
+                            outline-none
+                            transition
+                            focus:border-[#101064]
+                            focus:ring-4
+                            focus:ring-[#101064]/10
+                            "
+                        >
 
-                            <input 
-                                type="text"
-                                name="department"
-                                value="{{ $personnel->department }}"
-                                class="border rounded w-full p-2"
-                                required>
 
+                    </div>
 
-                        </div>
 
 
 
@@ -133,81 +195,119 @@
 
 
 
-                        <div class="mb-4">
 
+                    <!-- DEPARTMENT -->
 
-                            <label class="block mb-1">
 
-                                Position
+                    <div>
 
-                            </label>
 
+                        <label class="
+                            block
+                            mb-2
+                            text-sm
+                            font-semibold
+                            text-gray-700
+                        ">
+                            Department
+                        </label>
 
-                            <input 
-                                type="text"
-                                name="position"
-                                value="{{ $personnel->position }}"
-                                class="border rounded w-full p-2"
-                                required>
 
+                        <input
+                            type="text"
+                            name="department"
+                            value="{{ $personnel->department }}"
+                            required
+                            class="
+                            w-full
+                            rounded-xl
+                            border
+                            border-gray-300
+                            px-4
+                            py-3
+                            outline-none
+                            transition
+                            focus:border-[#101064]
+                            focus:ring-4
+                            focus:ring-[#101064]/10
+                            "
+                        >
 
-                        </div>
 
+                    </div>
 
 
 
 
 
 
-                        <!-- Role -->
 
 
-                        <h4 class="font-semibold mt-8 mb-4">
 
-                            Account Role
+                    <!-- POSITION -->
 
-                        </h4>
 
+                    <div>
 
 
+                        <label class="
+                            block
+                            mb-2
+                            text-sm
+                            font-semibold
+                            text-gray-700
+                        ">
+                            Position
+                        </label>
 
 
-                        <div class="mb-6">
+                        <input
+                            type="text"
+                            name="position"
+                            value="{{ $personnel->position }}"
+                            required
+                            class="
+                            w-full
+                            rounded-xl
+                            border
+                            border-gray-300
+                            px-4
+                            py-3
+                            outline-none
+                            transition
+                            focus:border-[#101064]
+                            focus:ring-4
+                            focus:ring-[#101064]/10
+                            "
+                        >
 
 
-                            <label class="block mb-1">
+                    </div>
 
-                                Role
 
-                            </label>
 
 
 
-                            <select name="role_id"
-                                    class="border rounded w-full p-2"
-                                    required>
 
+                </div>
 
-                                @foreach($roles as $role)
 
 
-                                    <option value="{{ $role->role_id }}"
-                                    
-                                    {{ $personnel->user->role_id == $role->role_id ? 'selected' : '' }}>
+            </div>
 
-                                        {{ $role->role_name }}
 
-                                    </option>
 
 
-                                @endforeach
 
 
-                            </select>
 
 
 
-                        </div>
+            <div class="
+                my-8
+                border-t
+                border-gray-200
+            "></div>
 
 
 
@@ -216,48 +316,128 @@
 
 
 
-                        <!-- Buttons -->
 
+            <!-- ACCOUNT INFORMATION -->
 
-                        <div class="flex gap-3">
 
+            <div>
 
 
-                            <button type="submit"
+                <h2 class="
+                    text-xl
+                    font-semibold
+                    text-[#101064]
+                ">
+                    Account Information
+                </h2>
 
-                                style="
-                                background-color: green;
-                                color:white;
-                                padding:10px 20px;
-                                border-radius:8px;
-                                ">
 
-                                Update Personnel
+                <p class="
+                    mt-1
+                    mb-6
+                    text-sm
+                    text-gray-500
+                ">
+                    Account credentials are displayed for reference.
+                </p>
 
-                            </button>
 
 
 
 
 
-                            <a href="{{ route('personnel.index') }}"
-                               class="bg-gray-500 text-white px-6 py-2 rounded">
 
-                                Cancel
+                <div class="
+                    grid
+                    grid-cols-1
+                    md:grid-cols-2
+                    gap-6
+                ">
 
-                            </a>
 
 
 
 
-                        </div>
+                    <!-- USERNAME -->
 
 
+                    <div>
 
 
+                        <label class="
+                            block
+                            mb-2
+                            text-sm
+                            font-semibold
+                            text-gray-700
+                        ">
+                            Username
+                        </label>
 
-                    </form>
 
+
+                        <input
+                            type="text"
+                            value="{{ $personnel->user->username }}"
+                            disabled
+                            class="
+                            w-full
+                            rounded-xl
+                            border
+                            border-gray-200
+                            bg-gray-100
+                            px-4
+                            py-3
+                            text-gray-500
+                            "
+                        >
+
+
+                    </div>
+
+
+
+
+
+
+
+
+                    <!-- EMAIL -->
+
+
+                    <div>
+
+
+                        <label class="
+                            block
+                            mb-2
+                            text-sm
+                            font-semibold
+                            text-gray-700
+                        ">
+                            Email Address
+                        </label>
+
+
+
+                        <input
+                            type="email"
+                            value="{{ $personnel->user->email }}"
+                            disabled
+                            class="
+                            w-full
+                            rounded-xl
+                            border
+                            border-gray-200
+                            bg-gray-100
+                            px-4
+                            py-3
+                            text-gray-500
+                            "
+                        >
+
+
+                    </div>
 
 
 
@@ -268,10 +448,293 @@
             </div>
 
 
-        </div>
+
+
+
+
+
+
+
+            <div class="
+                my-8
+                border-t
+                border-gray-200
+            "></div>
+
+
+
+
+
+
+
+
+
+            <!-- ACCESS CONTROL -->
+
+
+            <div>
+
+
+                <h2 class="
+                    text-xl
+                    font-semibold
+                    text-[#101064]
+                ">
+                    Access Control
+                </h2>
+
+
+                <p class="
+                    mt-1
+                    mb-6
+                    text-sm
+                    text-gray-500
+                ">
+                    Manage system permissions for this account.
+                </p>
+
+
+
+
+
+
+
+                <div class="
+                    grid
+                    grid-cols-1
+                    md:grid-cols-2
+                    gap-6
+                ">
+
+
+
+
+
+                    <!-- ROLE -->
+
+
+                    <div>
+
+
+                        <label class="
+                            block
+                            mb-2
+                            text-sm
+                            font-semibold
+                            text-gray-700
+                        ">
+                            Assigned Role
+                        </label>
+
+
+
+
+                        <select
+                            name="role_id"
+                            required
+                            class="
+                            w-full
+                            rounded-xl
+                            border
+                            border-gray-300
+                            px-4
+                            py-3
+                            outline-none
+                            transition
+                            focus:border-[#101064]
+                            focus:ring-4
+                            focus:ring-[#101064]/10
+                            "
+                        >
+
+
+
+                            @foreach($roles as $role)
+
+
+                            <option
+                            value="{{ $role->role_id }}"
+                            {{ $personnel->user->role_id == $role->role_id ? 'selected':'' }}
+                            >
+
+                                {{ $role->role_name }}
+
+                            </option>
+
+
+                            @endforeach
+
+
+
+
+                        </select>
+
+
+
+                    </div>
+
+
+
+
+
+
+
+
+                    <!-- STATUS -->
+
+
+                    <div>
+
+
+                        <label class="
+                            block
+                            mb-2
+                            text-sm
+                            font-semibold
+                            text-gray-700
+                        ">
+                            Account Status
+                        </label>
+
+
+
+
+                        <div class="
+                            rounded-xl
+                            border
+                            border-gray-200
+                            bg-gray-50
+                            px-4
+                            py-3
+                        ">
+
+
+                            @if($personnel->user->status == 'Active')
+
+
+                            <span class="
+                            text-green-700
+                            font-semibold
+                            ">
+
+                                Active Account
+
+                            </span>
+
+
+                            @else
+
+
+                            <span class="
+                            text-gray-600
+                            font-semibold
+                            ">
+
+                                Inactive Account
+
+                            </span>
+
+
+                            @endif
+
+
+
+                        </div>
+
+
+
+                    </div>
+
+
+
+                </div>
+
+
+
+            </div>
+
+
+
+
+
+
+
+
+
+            <!-- BUTTONS -->
+
+
+            <div class="
+                mt-10
+                pt-6
+                border-t
+                border-gray-200
+                flex
+                justify-end
+                gap-3
+            ">
+
+
+
+
+                <a href="{{ route('personnel.index') }}"
+                class="
+                px-6
+                py-3
+                rounded-xl
+                border
+                border-gray-300
+                text-gray-600
+                hover:bg-gray-50
+                transition
+                ">
+
+                    Cancel
+
+                </a>
+
+
+
+
+
+
+                <button
+                type="submit"
+                class="
+                px-6
+                py-3
+                rounded-xl
+                bg-[#101064]
+                text-white
+                font-semibold
+                hover:bg-[#D4A017]
+                transition
+                duration-300
+                ">
+
+                    Save Changes
+
+                </button>
+
+
+
+            </div>
+
+
+
+
+
+
+
+        </form>
+
 
 
     </div>
 
 
-</x-app-layout>
+
+</div>
+
+
+</x-admin-layout>

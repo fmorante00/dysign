@@ -77,7 +77,9 @@ class PersonnelController extends Controller
      */
     public function show(string $id)
     {
-        //
+         $personnel = Personnel::findOrFail($id);
+
+        return view('personnel.show', compact('personnel'));
     }
 
     /**
