@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class AccountInvitation extends Model
 {
+    protected $primaryKey = 'invitation_id';
+
     protected $fillable = [
         'user_id',
         'token',
@@ -13,12 +15,10 @@ class AccountInvitation extends Model
         'used_at',
     ];
 
-
     protected $casts = [
         'expires_at' => 'datetime',
         'used_at' => 'datetime',
     ];
-
 
     public function user()
     {
