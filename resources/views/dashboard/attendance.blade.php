@@ -1,6 +1,12 @@
 <x-admin-layout>
 
-<div class="space-y-8">
+<div class="
+h-[calc(100vh-80px)]
+overflow-y-auto
+pr-3
+pb-10
+space-y-8
+">
 
 
 <!-- HEADER -->

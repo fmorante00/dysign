@@ -1,6 +1,6 @@
 <x-admin-layout>
 
-<div class="space-y-8">
+<div class="space-y-8 pb-10 overflow-y-auto max-h-[calc(100vh-100px)]">
 
 
 <!-- HEADER -->
@@ -21,7 +21,7 @@ Create Event
 mt-2
 text-gray-500
 ">
-Register an approved event and assign personnel for attendance operations.
+Register an approved event and configure attendance rules, eligibility, and personnel assignment.
 </p>
 
 </div>
@@ -43,7 +43,9 @@ transition
 "
 
 >
+
 Back
+
 </a>
 
 
@@ -83,8 +85,8 @@ Event Creation Process
 <div class="
 grid
 grid-cols-1
-md:grid-cols-4
-gap-4
+md:grid-cols-7
+gap-3
 ">
 
 
@@ -100,7 +102,7 @@ STEP 1
 </p>
 
 <p class="font-semibold">
-Event Information
+Event Info
 </p>
 
 </div>
@@ -113,10 +115,7 @@ rounded-xl
 p-4
 ">
 
-<p class="
-text-xs
-text-gray-400
-">
+<p class="text-xs text-gray-400">
 STEP 2
 </p>
 
@@ -128,17 +127,75 @@ Schedule
 
 
 
+
 <div class="
 bg-gray-50
 rounded-xl
 p-4
 ">
 
-<p class="
-text-xs
-text-gray-400
-">
+<p class="text-xs text-gray-400">
 STEP 3
+</p>
+
+<p class="font-semibold text-gray-600">
+Attendance Rules
+</p>
+
+</div>
+
+
+
+
+
+<div class="
+bg-gray-50
+rounded-xl
+p-4
+">
+
+<p class="text-xs text-gray-400">
+STEP 4
+</p>
+
+<p class="font-semibold text-gray-600">
+Eligibility
+</p>
+
+</div>
+
+
+
+
+
+<div class="
+bg-gray-50
+rounded-xl
+p-4
+">
+
+<p class="text-xs text-gray-400">
+STEP 5
+</p>
+
+<p class="font-semibold text-gray-600">
+Roster
+</p>
+
+</div>
+
+
+
+
+
+<div class="
+bg-gray-50
+rounded-xl
+p-4
+">
+
+<p class="text-xs text-gray-400">
+STEP 6
 </p>
 
 <p class="font-semibold text-gray-600">
@@ -149,17 +206,16 @@ Personnel
 
 
 
+
+
 <div class="
 bg-gray-50
 rounded-xl
 p-4
 ">
 
-<p class="
-text-xs
-text-gray-400
-">
-STEP 4
+<p class="text-xs text-gray-400">
+STEP 7
 </p>
 
 <p class="font-semibold text-gray-600">
@@ -167,6 +223,7 @@ Review
 </p>
 
 </div>
+
 
 
 </div>
@@ -270,10 +327,8 @@ w-full
 rounded-xl
 border
 border-gray-300
-bg-white
 px-4
 py-3
-shadow-sm
 focus:outline-none
 focus:ring-2
 focus:ring-[#D4A017]
@@ -313,13 +368,8 @@ w-full
 rounded-xl
 border
 border-gray-300
-bg-white
 px-4
 py-3
-shadow-sm
-focus:outline-none
-focus:ring-2
-focus:ring-[#D4A017]
 "
 
 >
@@ -379,13 +429,8 @@ w-full
 rounded-xl
 border
 border-gray-300
-bg-white
 px-4
 py-3
-shadow-sm
-focus:outline-none
-focus:ring-2
-focus:ring-[#D4A017]
 "
 
 >
@@ -422,13 +467,8 @@ w-full
 rounded-xl
 border
 border-gray-300
-bg-white
 px-4
 py-3
-shadow-sm
-focus:outline-none
-focus:ring-2
-focus:ring-[#D4A017]
 "
 
 >
@@ -440,10 +480,6 @@ Upcoming
 <option>
 Active
 </option>
-
-
-
-
 
 
 </select>
@@ -475,7 +511,7 @@ Active
 
 
 
-<!-- SCHEDULE -->
+<!-- SCHEDULE DETAILS -->
 
 
 <div>
@@ -503,12 +539,15 @@ Set the date and duration of the event.
 
 </p>
 
+
+
 <div class="
 grid
 grid-cols-1
 md:grid-cols-3
 gap-6
 ">
+
 
 
 <div>
@@ -525,7 +564,6 @@ Event Date
 
 </label>
 
-
 <input
 
 type="date"
@@ -535,20 +573,13 @@ w-full
 rounded-xl
 border
 border-gray-300
-bg-white
 px-4
 py-3
-shadow-sm
-focus:outline-none
-focus:ring-2
-focus:ring-[#D4A017]
 "
 
 >
 
 </div>
-
-
 
 
 
@@ -568,7 +599,6 @@ Start Time
 
 </label>
 
-
 <input
 
 type="time"
@@ -578,20 +608,13 @@ w-full
 rounded-xl
 border
 border-gray-300
-bg-white
 px-4
 py-3
-shadow-sm
-focus:outline-none
-focus:ring-2
-focus:ring-[#D4A017]
 "
 
 >
 
 </div>
-
-
 
 
 
@@ -611,7 +634,6 @@ End Time
 
 </label>
 
-
 <input
 
 type="time"
@@ -621,13 +643,8 @@ w-full
 rounded-xl
 border
 border-gray-300
-bg-white
 px-4
 py-3
-shadow-sm
-focus:outline-none
-focus:ring-2
-focus:ring-[#D4A017]
 "
 
 >
@@ -637,8 +654,10 @@ focus:ring-[#D4A017]
 
 </div>
 
-<div class="mt-6">
 
+
+
+<div class="mt-6">
 
 <label class="
 block
@@ -664,13 +683,8 @@ w-full
 rounded-xl
 border
 border-gray-300
-bg-white
 px-4
 py-3
-shadow-sm
-focus:outline-none
-focus:ring-2
-focus:ring-[#D4A017]
 "
 
 ></textarea>
@@ -682,15 +696,1394 @@ focus:ring-[#D4A017]
 
 </div>
 
-
-
-
-
-
-
-
+<!-- ATTENDANCE POLICY & EXIT RULES -->
 
 <hr class="my-10">
+
+
+
+
+
+<div>
+
+
+<h2 class="
+text-xl
+font-semibold
+text-[#101064]
+">
+
+③ Attendance Policy & Exit Rules
+
+</h2>
+
+
+<p class="
+text-sm
+text-gray-500
+mt-1
+mb-6
+">
+
+Configure the attendance rules that DySign will apply during the event.
+
+</p>
+
+
+
+
+
+
+
+<!-- TIME SETTINGS -->
+
+
+<div class="
+grid
+grid-cols-1
+md:grid-cols-2
+gap-6
+">
+
+
+
+
+
+
+<div>
+
+
+<label class="
+block
+text-sm
+font-medium
+text-gray-700
+mb-2
+">
+
+Time-In Start
+
+</label>
+
+
+<input
+
+type="time"
+
+class="
+w-full
+rounded-xl
+border
+border-gray-300
+px-4
+py-3
+"
+
+>
+
+
+<p class="
+text-xs
+text-gray-400
+mt-2
+">
+
+When students are allowed to start checking in.
+
+</p>
+
+
+</div>
+
+
+
+
+
+
+
+<div>
+
+
+<label class="
+block
+text-sm
+font-medium
+text-gray-700
+mb-2
+">
+
+On-Time Attendance Deadline
+
+</label>
+
+
+<input
+
+type="time"
+
+class="
+w-full
+rounded-xl
+border
+border-gray-300
+px-4
+py-3
+"
+
+>
+
+
+<p class="
+text-xs
+text-gray-400
+mt-2
+">
+
+Students checking in after this time will be marked late.
+
+</p>
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<div>
+
+
+<label class="
+block
+text-sm
+font-medium
+text-gray-700
+mb-2
+">
+
+Late Attendance Starts
+
+</label>
+
+
+<input
+
+type="time"
+
+class="
+w-full
+rounded-xl
+border
+border-gray-300
+px-4
+py-3
+"
+
+>
+
+
+<p class="
+text-xs
+text-gray-400
+mt-2
+">
+
+Defines when attendance status changes to Late.
+
+</p>
+
+
+</div>
+
+
+
+
+
+
+
+<div>
+
+
+<label class="
+block
+text-sm
+font-medium
+text-gray-700
+mb-2
+">
+
+Official Time-Out
+
+</label>
+
+
+<input
+
+type="time"
+
+class="
+w-full
+rounded-xl
+border
+border-gray-300
+px-4
+py-3
+"
+
+>
+
+
+<p class="
+text-xs
+text-gray-400
+mt-2
+">
+
+Required time for completing attendance.
+
+</p>
+
+
+</div>
+
+
+
+
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<!-- EXIT RULES -->
+
+
+<div class="
+mt-8
+bg-gray-50
+rounded-2xl
+p-6
+border
+border-gray-100
+">
+
+
+<h3 class="
+font-semibold
+text-[#101064]
+mb-5
+">
+
+Temporary Exit Rules
+
+</h3>
+
+
+
+
+
+
+<div class="
+grid
+grid-cols-1
+md:grid-cols-2
+gap-6
+">
+
+
+
+
+
+
+<div>
+
+
+<label class="
+block
+text-sm
+font-medium
+text-gray-700
+mb-2
+">
+
+Allow Temporary Exit?
+
+</label>
+
+
+<select
+
+class="
+w-full
+rounded-xl
+border
+border-gray-300
+px-4
+py-3
+"
+
+>
+
+
+<option>
+Allowed
+</option>
+
+
+<option>
+Not Allowed
+</option>
+
+
+</select>
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<div>
+
+
+<label class="
+block
+text-sm
+font-medium
+text-gray-700
+mb-2
+">
+
+Maximum Exit Duration
+
+</label>
+
+
+<div class="
+flex
+gap-3
+">
+
+
+<input
+
+type="number"
+
+placeholder="30"
+
+class="
+w-full
+rounded-xl
+border
+border-gray-300
+px-4
+py-3
+"
+
+>
+
+
+<span
+
+class="
+flex
+items-center
+text-gray-500
+"
+
+>
+
+minutes
+
+</span>
+
+
+</div>
+
+
+</div>
+
+
+
+
+
+
+
+</div>
+
+
+
+
+
+
+
+<div class="mt-6">
+
+
+<label class="
+block
+text-sm
+font-medium
+text-gray-700
+mb-2
+">
+
+Prolonged Exit Action
+
+</label>
+
+
+<select
+
+class="
+w-full
+rounded-xl
+border
+border-gray-300
+px-4
+py-3
+"
+
+>
+
+
+<option>
+Mark for Review
+
+</option>
+
+
+<option>
+Mark Attendance Incomplete
+
+</option>
+
+
+<option>
+Notify Assigned Personnel
+
+</option>
+
+
+</select>
+
+
+</div>
+
+
+
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<!-- COMPLETION REQUIREMENTS -->
+
+
+<div class="
+mt-8
+border
+border-gray-100
+rounded-2xl
+p-6
+">
+
+
+<h3 class="
+font-semibold
+text-[#101064]
+mb-5
+">
+
+Attendance Completion Requirements
+
+</h3>
+
+
+
+
+
+
+<div class="
+space-y-4
+">
+
+
+
+
+
+<label class="
+flex
+items-center
+gap-3
+"
+
+>
+
+<input
+
+type="checkbox"
+
+checked
+
+class="
+w-5
+h-5
+"
+
+>
+
+
+<span class="
+text-gray-700
+">
+
+Time-In must be recorded
+
+</span>
+
+
+</label>
+
+
+
+
+
+
+
+<label class="
+flex
+items-center
+gap-3
+"
+
+>
+
+<input
+
+type="checkbox"
+
+checked
+
+class="
+w-5
+h-5
+"
+
+>
+
+
+<span class="
+text-gray-700
+">
+
+Time-Out must be recorded
+
+</span>
+
+
+</label>
+
+
+
+
+
+
+
+<label class="
+flex
+items-center
+gap-3
+"
+
+>
+
+<input
+
+type="checkbox"
+
+checked
+
+class="
+w-5
+h-5
+"
+
+>
+
+
+<span class="
+text-gray-700
+">
+
+No excessive exit duration
+
+</span>
+
+
+</label>
+
+
+
+
+
+
+</div>
+
+
+
+</div>
+
+
+
+
+
+
+</div>
+
+
+<!-- STUDENT ELIGIBILITY RULES -->
+
+<hr class="my-10">
+
+
+
+
+
+<div>
+
+
+<h2 class="
+text-xl
+font-semibold
+text-[#101064]
+">
+
+④ Student Eligibility Rules
+
+</h2>
+
+
+<p class="
+text-sm
+text-gray-500
+mt-1
+mb-6
+">
+
+Define the conditions for determining which students are eligible to participate.
+
+</p>
+
+
+
+
+
+
+
+
+<div class="
+border
+border-gray-100
+rounded-2xl
+p-6
+">
+
+
+
+
+
+
+<label class="
+flex
+items-center
+gap-3
+mb-6
+">
+
+<input
+
+type="radio"
+
+name="eligibility"
+
+checked
+
+class="
+w-5
+h-5
+"
+
+>
+
+
+<span class="
+font-medium
+text-gray-700
+">
+
+Open for All Students
+
+</span>
+
+
+</label>
+
+
+
+
+
+
+
+<label class="
+flex
+items-center
+gap-3
+mb-6
+">
+
+<input
+
+type="radio"
+
+name="eligibility"
+
+class="
+w-5
+h-5
+"
+
+>
+
+
+<span class="
+font-medium
+text-gray-700
+">
+
+Apply Specific Eligibility Conditions
+
+</span>
+
+
+</label>
+
+
+
+
+
+
+
+
+<div class="
+grid
+grid-cols-1
+md:grid-cols-3
+gap-6
+mt-6
+">
+
+
+
+
+
+<div>
+
+
+<label class="
+block
+text-sm
+font-medium
+text-gray-700
+mb-2
+">
+
+Program / Course
+
+</label>
+
+
+<select
+
+class="
+w-full
+rounded-xl
+border
+border-gray-300
+px-4
+py-3
+"
+
+>
+
+
+<option>
+All Programs
+</option>
+
+
+<option>
+BSIT
+</option>
+
+
+<option>
+BSACC
+</option>
+
+
+<option>
+BSBA
+</option>
+
+
+</select>
+
+
+</div>
+
+
+
+
+
+
+
+<div>
+
+
+<label class="
+block
+text-sm
+font-medium
+text-gray-700
+mb-2
+">
+
+Year Level
+
+</label>
+
+
+<select
+
+class="
+w-full
+rounded-xl
+border
+border-gray-300
+px-4
+py-3
+"
+
+>
+
+
+<option>
+All Year Levels
+</option>
+
+
+<option>
+First Year
+</option>
+
+
+<option>
+Second Year
+</option>
+
+
+<option>
+Third Year
+</option>
+
+
+<option>
+Fourth Year
+</option>
+
+
+</select>
+
+
+</div>
+
+
+
+
+
+
+
+<div>
+
+
+<label class="
+block
+text-sm
+font-medium
+text-gray-700
+mb-2
+">
+
+Section
+
+</label>
+
+
+<select
+
+class="
+w-full
+rounded-xl
+border
+border-gray-300
+px-4
+py-3
+"
+
+>
+
+
+<option>
+All Sections
+</option>
+
+
+<option>
+1-1
+</option>
+
+
+<option>
+1-2
+</option>
+
+
+<option>
+2-1
+</option>
+
+
+</select>
+
+
+</div>
+
+
+
+
+
+
+</div>
+
+
+
+
+
+
+
+<div class="mt-6">
+
+
+<label class="
+block
+text-sm
+font-medium
+text-gray-700
+mb-2
+">
+
+Specific Students (Optional)
+
+</label>
+
+
+
+<input
+
+type="text"
+
+placeholder="Search student name or ID"
+
+class="
+w-full
+rounded-xl
+border
+border-gray-300
+px-4
+py-3
+"
+
+>
+
+
+<p class="
+text-xs
+text-gray-400
+mt-2
+">
+
+Use this when selecting individual students.
+
+</p>
+
+
+</div>
+
+
+
+
+
+
+</div>
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<!-- PARTICIPANT ROSTER -->
+
+<hr class="my-10">
+
+
+
+
+
+<div>
+
+
+<h2 class="
+text-xl
+font-semibold
+text-[#101064]
+">
+
+⑤ Participant Roster
+
+</h2>
+
+
+<p class="
+text-sm
+text-gray-500
+mt-1
+mb-6
+">
+
+Maintain the expected participants generated from student eligibility rules.
+
+</p>
+
+
+
+
+
+
+
+<div class="
+bg-gray-50
+rounded-2xl
+border
+border-gray-100
+p-6
+">
+
+
+
+
+
+
+<div class="
+flex
+justify-between
+items-center
+mb-6
+">
+
+
+
+<div>
+
+
+<p class="
+text-sm
+text-gray-500
+">
+
+Expected Participants
+
+</p>
+
+
+<h3 class="
+text-3xl
+font-bold
+text-[#D4A017]
+">
+
+245
+
+</h3>
+
+
+</div>
+
+
+
+
+
+<button
+
+type="button"
+
+class="
+px-5
+py-3
+rounded-xl
+bg-[#101064]
+text-white
+text-sm
+font-semibold
+hover:bg-[#D4A017]
+transition
+"
+
+>
+
+Refresh Roster
+
+</button>
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<div class="
+overflow-x-auto
+">
+
+
+<table class="
+w-full
+text-left
+bg-white
+rounded-xl
+overflow-hidden
+">
+
+
+<thead class="bg-gray-100">
+
+
+<tr>
+
+
+<th class="
+px-5
+py-3
+text-xs
+uppercase
+text-gray-500
+">
+
+Student ID
+
+</th>
+
+
+<th class="
+px-5
+py-3
+text-xs
+uppercase
+text-gray-500
+">
+
+Name
+
+</th>
+
+
+<th class="
+px-5
+py-3
+text-xs
+uppercase
+text-gray-500
+">
+
+Program
+
+</th>
+
+
+<th class="
+px-5
+py-3
+text-xs
+uppercase
+text-gray-500
+">
+
+Status
+
+</th>
+
+
+</tr>
+
+
+</thead>
+
+
+
+
+
+
+
+<tbody>
+
+
+<tr class="border-t">
+
+
+<td class="px-5 py-4">
+2026-001
+</td>
+
+
+<td class="px-5 py-4">
+Juan Dela Cruz
+</td>
+
+
+<td class="px-5 py-4">
+BSIT
+</td>
+
+
+<td class="px-5 py-4">
+
+<span class="
+px-3
+py-1
+rounded-full
+bg-green-100
+text-green-700
+text-xs
+font-semibold
+">
+
+Eligible
+
+</span>
+
+
+</td>
+
+
+</tr>
+
+
+
+
+
+<tr class="border-t">
+
+
+<td class="px-5 py-4">
+2026-002
+</td>
+
+
+<td class="px-5 py-4">
+Maria Santos
+</td>
+
+
+<td class="px-5 py-4">
+BSACC
+</td>
+
+
+<td class="px-5 py-4">
+
+<span class="
+px-3
+py-1
+rounded-full
+bg-green-100
+text-green-700
+text-xs
+font-semibold
+">
+
+Eligible
+
+</span>
+
+
+</td>
+
+
+</tr>
+
+
+
+</tbody>
+
+
+</table>
+
+
+</div>
+
+
+
+
+</div>
+
+
+</div>
 
 
 
@@ -703,6 +2096,12 @@ focus:ring-[#D4A017]
 <!-- ASSIGN PERSONNEL -->
 
 
+<hr class="my-10">
+
+
+
+
+
 <div>
 
 
@@ -712,7 +2111,7 @@ font-semibold
 text-[#101064]
 ">
 
-③ Assign Event Personnel
+⑥ Assign Event Personnel
 
 </h2>
 
@@ -724,7 +2123,7 @@ mt-1
 mb-6
 ">
 
-Choose personnel responsible for handling the event.
+Choose personnel responsible for attendance operations.
 
 </p>
 
@@ -754,7 +2153,6 @@ rounded-2xl
 p-5
 cursor-pointer
 hover:border-[#D4A017]
-hover:bg-gray-50
 transition
 ">
 
@@ -763,13 +2161,9 @@ transition
 
 type="checkbox"
 
-class="
-w-5
-h-5
-"
+class="w-5 h-5"
 
 >
-
 
 
 <div>
@@ -797,9 +2191,7 @@ Attendance Personnel
 </div>
 
 
-
 </label>
-
 
 
 
@@ -817,7 +2209,6 @@ rounded-2xl
 p-5
 cursor-pointer
 hover:border-[#D4A017]
-hover:bg-gray-50
 transition
 ">
 
@@ -826,13 +2217,9 @@ transition
 
 type="checkbox"
 
-class="
-w-5
-h-5
-"
+class="w-5 h-5"
 
 >
-
 
 
 <div>
@@ -860,7 +2247,6 @@ Event Staff
 </div>
 
 
-
 </label>
 
 
@@ -870,7 +2256,6 @@ Event Staff
 </div>
 
 
-
 </div>
 
 
@@ -880,12 +2265,7 @@ Event Staff
 
 
 
-
 <hr class="my-10">
-
-
-
-
 
 
 
@@ -908,7 +2288,7 @@ font-semibold
 text-[#101064]
 ">
 
-④ Review Before Creating
+⑦ Review Before Creating
 
 </h3>
 
@@ -919,7 +2299,7 @@ text-gray-500
 mt-2
 ">
 
-Make sure all event information and assigned personnel are correct before saving.
+Review event information, attendance policies, eligibility rules, participant roster, and assigned personnel.
 
 </p>
 
@@ -957,7 +2337,6 @@ border
 border-gray-300
 text-gray-600
 hover:bg-gray-50
-transition
 "
 
 >
@@ -965,6 +2344,7 @@ transition
 Cancel
 
 </a>
+
 
 
 <button
@@ -981,7 +2361,6 @@ bg-[#101064]
 text-white
 font-semibold
 hover:bg-[#D4A017]
-transition
 "
 
 >
@@ -994,12 +2373,17 @@ Create Event
 </div>
 
 
-</div>
-
 
 </div>
 
-<!-- CREATE EVENT MODAL -->
+
+
+
+
+
+
+<!-- MODAL -->
+
 
 <div
 
@@ -1021,43 +2405,17 @@ z-50
 <div class="
 bg-white
 rounded-3xl
-w-full
 max-w-md
+w-full
 p-8
-shadow-xl
 ">
-
-
-<div class="
-text-center
-">
-
-
-<div class="
-mx-auto
-w-14
-h-14
-rounded-full
-bg-[#F8F5E8]
-flex
-items-center
-justify-center
-text-[#D4A017]
-text-2xl
-mb-4
-">
-
-!
-
-</div>
-
-
 
 
 <h2 class="
 text-xl
 font-bold
 text-[#101064]
+text-center
 ">
 
 Create Event?
@@ -1067,19 +2425,14 @@ Create Event?
 
 
 <p class="
+text-center
 text-gray-500
 mt-3
-text-sm
 ">
 
-You are about to add this event to the DySign system. Please confirm that all information is correct.
+Confirm all event details before saving.
 
 </p>
-
-
-
-</div>
-
 
 
 
@@ -1092,7 +2445,6 @@ mt-8
 ">
 
 
-
 <button
 
 onclick="closeCreateEventModal()"
@@ -1100,11 +2452,8 @@ onclick="closeCreateEventModal()"
 class="
 px-6
 py-3
-rounded-xl
 border
-border-gray-300
-text-gray-600
-hover:bg-gray-50
+rounded-xl
 "
 
 >
@@ -1112,8 +2461,6 @@ hover:bg-gray-50
 Cancel
 
 </button>
-
-
 
 
 
@@ -1125,8 +2472,6 @@ py-3
 rounded-xl
 bg-[#101064]
 text-white
-font-semibold
-hover:bg-[#D4A017]
 "
 
 >
@@ -1136,7 +2481,6 @@ Confirm
 </button>
 
 
-
 </div>
 
 
@@ -1145,8 +2489,15 @@ Confirm
 
 
 </div>
+
+
+
+
+
+
 
 <script>
+
 
 function openCreateEventModal(){
 
@@ -1154,6 +2505,7 @@ document
 .getElementById('createEventModal')
 .classList
 .remove('hidden');
+
 
 document
 .getElementById('createEventModal')
@@ -1171,6 +2523,7 @@ document
 .classList
 .add('hidden');
 
+
 document
 .getElementById('createEventModal')
 .classList
@@ -1180,5 +2533,10 @@ document
 
 
 </script>
+
+
+
+</div>
+
 
 </x-admin-layout>

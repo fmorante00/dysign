@@ -1,7 +1,12 @@
 <?php
 
+
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PersonnelController;
+use App\Http\Controllers\RoleController;
+use App\Http\Controllers\RolePermissionController;
+use App\Http\Controllers\AccountSetupController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\RFIDController;
 use App\Http\Controllers\EventController;
@@ -11,12 +16,9 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 
 
-
 Route::get('/', function () {
     return redirect()->route('login');
 });
-
-
 
 
 
@@ -28,17 +30,15 @@ Route::get('/', function () {
 
 Route::get('/dashboard', function () {
 
-
     $role = Auth::user()->role->role_name;
-
 
 
     if ($role === 'Administrator') {
 
-        return view('dashboard.admin');
+        return app(\App\Http\Controllers\DashboardController::class)
+            ->index();
 
     }
-
 
 
     if ($role === 'Attendance Personnel') {
@@ -48,13 +48,11 @@ Route::get('/dashboard', function () {
     }
 
 
-
     if ($role === 'Registrar Staff') {
 
         return view('dashboard.registrar');
 
     }
-
 
 
     abort(403);
@@ -63,10 +61,6 @@ Route::get('/dashboard', function () {
 })
 ->middleware(['auth'])
 ->name('dashboard');
-
-
-
-
 
 
 
@@ -86,33 +80,38 @@ Route::middleware([
 ->group(function () {
 
 
-
-    // Personnel Management
+    /*
+    |--------------------------------------------------------------------------
+    | Personnel Management
+    |--------------------------------------------------------------------------
+    */
 
     Route::resource(
-        'personnel',
-        PersonnelController::class
-    );
+    'personnel',
+    PersonnelController::class
+);
 
-    Route::get(
-    '/events/{event}/assign',
-    [EventController::class, 'assign']
+
+Route::post(
+    '/personnel/{id}/resend-invitation',
+    [PersonnelController::class, 'resendInvitation']
 )
-->name('events.assign');
+->name('personnel.resendInvitation');
+
+
+Route::patch(
+    '/personnel/{id}/activate',
+    [PersonnelController::class, 'activate']
+)
+->name('personnel.activate');
 
 
 
-    Route::patch(
-        '/personnel/{id}/activate',
-        [PersonnelController::class, 'activate']
-    )
-    ->name('personnel.activate');
-
-
-
-
-
-    // Student Data Management
+    /*
+    |--------------------------------------------------------------------------
+    | Student Management
+    |--------------------------------------------------------------------------
+    */
 
 
     Route::get(
@@ -122,7 +121,6 @@ Route::middleware([
     ->name('students.import');
 
 
-
     Route::resource(
         'students',
         StudentController::class
@@ -130,11 +128,11 @@ Route::middleware([
 
 
 
-
-
-
-
-    // RFID Management
+    /*
+    |--------------------------------------------------------------------------
+    | RFID Management
+    |--------------------------------------------------------------------------
+    */
 
 
     Route::get(
@@ -142,7 +140,6 @@ Route::middleware([
         [RFIDController::class, 'index']
     )
     ->name('rfid.index');
-
 
 
     Route::get(
@@ -153,11 +150,11 @@ Route::middleware([
 
 
 
-
-
-
-
-    // Event Management
+    /*
+    |--------------------------------------------------------------------------
+    | Event Management
+    |--------------------------------------------------------------------------
+    */
 
 
     Route::resource(
@@ -165,23 +162,15 @@ Route::middleware([
         EventController::class
     );
 
-    Route::get(
-    '/events/{event}/assign',
-    [EventController::class, 'assign']
-)
-->name('events.assign');
 
+    Route::get(
+        '/events/{event}/assign',
+        [EventController::class, 'assign']
+    )
+    ->name('events.assign');
 
 
 });
-
-
-
-
-
-
-
-
 
 /*
 |--------------------------------------------------------------------------
@@ -196,13 +185,24 @@ Route::middleware([
 ])
 ->group(function () {
 
-Route::get(
-    '/attendance',
-    function () {
-        return view('attendance.index');
-    }
-)
-->name('attendance.index');
+
+    Route::get(
+        '/attendance',
+        function () {
+            return view('attendance.index');
+        }
+    )
+    ->name('attendance.index');
+
+
+
+    Route::get(
+        '/attendance/monitor',
+        function () {
+            return view('attendance.monitor');
+        }
+    )
+    ->name('attendance.monitor');
 
 
 
@@ -213,12 +213,7 @@ Route::get(
     ->name('my-events.index');
 
 
-
 });
-
-
-
-
 
 
 
@@ -226,13 +221,158 @@ Route::get(
 
 /*
 |--------------------------------------------------------------------------
-| Profile
+| Shared Pages / System Modules
+|--------------------------------------------------------------------------
+*/
+
+
+
+Route::get(
+    '/my-events/{event}',
+    [MyAssignedEventsController::class, 'show']
+)
+->name('my-events.show');
+
+
+
+
+
+/*
+|--------------------------------------------------------------------------
+| Role & System Management
+|--------------------------------------------------------------------------
+*/
+
+
+Route::get('/roles', [RoleController::class, 'index'])
+    ->middleware(['auth'])
+    ->name('roles.index');
+
+    Route::get(
+    '/roles/{id}/permissions',
+    [RolePermissionController::class, 'edit']
+)
+->middleware(['auth'])
+->name('roles.permissions');
+
+
+Route::put(
+    '/roles/{id}/permissions',
+    [RolePermissionController::class, 'update']
+)
+->middleware(['auth'])
+->name('roles.permissions.update');
+
+
+
+
+
+
+Route::get('/backup', function () {
+
+    return view('backup.index');
+
+})
+->name('backup.index');
+
+
+
+Route::get('/logs', function () {
+
+    return view('logs.index');
+
+})
+->name('logs.index');
+
+
+
+
+
+/*
+|--------------------------------------------------------------------------
+| Participation Management
+|--------------------------------------------------------------------------
+*/
+
+
+Route::get('/participation/records', function () {
+
+    return view('participation.records');
+
+})
+->name('participation.records');
+
+
+
+Route::get('/participation/evaluation', function () {
+
+    return view('participation.evaluation');
+
+})
+->name('participation.evaluation');
+
+
+
+
+
+/*
+|--------------------------------------------------------------------------
+| Reports & Monitoring
+|--------------------------------------------------------------------------
+*/
+
+
+Route::get('/reports/attendance', function () {
+
+    return view('reports.attendance');
+
+})
+->name('reports.attendance');
+
+
+
+Route::get('/reports/participation', function () {
+
+    return view('reports.participation');
+
+})
+->name('reports.participation');
+
+
+
+Route::get('/attendance/alerts', function () {
+
+    return view('alerts.index');
+
+})
+->name('attendance.alerts');
+
+
+
+
+
+/*
+|--------------------------------------------------------------------------
+| Event Announcements
+|--------------------------------------------------------------------------
+*/
+
+
+Route::get('/announcements', function () {
+
+    return view('announcements.index');
+
+})
+->name('announcements.index');
+
+/*
+|--------------------------------------------------------------------------
+| Profile Management
 |--------------------------------------------------------------------------
 */
 
 
 Route::middleware('auth')->group(function () {
-
 
 
     Route::get(
@@ -258,31 +398,36 @@ Route::middleware('auth')->group(function () {
     ->name('profile.destroy');
 
 
-
 });
 
 
+
+
+
+/*
+|--------------------------------------------------------------------------
+| Authentication Routes
+|--------------------------------------------------------------------------
+*/
+
+
+/*
+|--------------------------------------------------------------------------
+| Account Invitation Setup
+|--------------------------------------------------------------------------
+*/
+
 Route::get(
-    '/my-events/{event}',
-    [MyAssignedEventsController::class, 'show']
+    '/account/setup/{token}',
+    [AccountSetupController::class, 'show']
 )
-->name('my-events.show');
-
-Route::get('/roles', function () {
-    return view('roles.index');
-})
-->name('roles.index');
-
-Route::get('/backup', function () {
-    return view('backup.index');
-})
-->name('backup.index');
-
-Route::get('/logs', function () {
-    return view('logs.index');
-})
-->name('logs.index');
+->name('account.setup');
 
 
+Route::post(
+    '/account/setup/{token}',
+    [AccountSetupController::class, 'store']
+)
+->name('account.setup.store');
 
 require __DIR__.'/auth.php';

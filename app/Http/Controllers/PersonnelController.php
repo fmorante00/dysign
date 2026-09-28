@@ -4,177 +4,234 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Personnel;
+use App\Models\AccountInvitation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\AccountInvitationMail;
 
 class PersonnelController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
-    {
-        $personnel = Personnel::all();
+{
+    $personnel = Personnel::with([
+        'user.role',
+        'user.invitation'
+    ])
+    ->latest()
+    ->get();
 
     return view('personnel.index', compact('personnel'));
-    }
+}
 
-    /**
-     * Show the form for creating a new resource.
-     */
+
     public function create()
     {
-         $roles = \App\Models\Role::where('status', 'Active')->get();
+        $roles = \App\Models\Role::where('status', 'Active')->get();
 
-    return view('personnel.create', compact('roles'));
+        return view('personnel.create', compact('roles'));
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
+
     public function store(Request $request)
     {
         $request->validate([
-        'first_name' => ['required'],
-        'last_name' => ['required'],
-        'department' => ['required'],
-        'position' => ['required'],
+            'first_name' => ['required'],
+            'last_name' => ['required'],
+            'department' => ['required'],
+            'position' => ['required'],
 
-        'username' => ['required', 'unique:users'],
-        'email' => ['required', 'email', 'unique:users'],
-        'password' => ['required'],
+            'username' => ['required', 'unique:users'],
+            'email' => ['required', 'email', 'unique:users'],
 
-        'role_id' => ['required'],
-    ]);
-
-
-    $user = User::create([
-        'name' => $request->first_name . ' ' . $request->last_name,
-        'username' => $request->username,
-        'email' => $request->email,
-        'password' => Hash::make($request->password),
-        'role_id' => $request->role_id,
-        'status' => 'Active',
-    ]);
+            'role_id' => ['required'],
+        ]);
 
 
-    Personnel::create([
-        'user_id' => $user->user_id,
-        'first_name' => $request->first_name,
-        'last_name' => $request->last_name,
-        'department' => $request->department,
-        'position' => $request->position,
-    ]);
+        $user = User::create([
+            'name' => $request->first_name . ' ' . $request->last_name,
+            'username' => $request->username,
+            'email' => $request->email,
+
+            // temporary internal password
+            'password' => Hash::make(Str::random(32)),
+
+            'role_id' => $request->role_id,
+            'status' => 'Active',
+            'must_change_password' => true,
+        ]);
 
 
-    return redirect()
-        ->route('personnel.index')
-        ->with('success', 'Personnel account created successfully.');
+
+        Personnel::create([
+            'user_id' => $user->user_id,
+            'first_name' => $request->first_name,
+            'last_name' => $request->last_name,
+            'department' => $request->department,
+            'position' => $request->position,
+        ]);
+
+
+
+        $invitation = AccountInvitation::create([
+    'user_id' => $user->user_id,
+    'token' => Str::random(64),
+    'expires_at' => now()->addDay(),
+]);
+
+
+Mail::to($user->email)
+    ->send(new AccountInvitationMail($invitation));
+
+
+
+        return redirect()
+            ->route('personnel.index')
+            ->with('success', 'Personnel account created successfully. Invitation link generated.');
     }
 
-    /**
-     * Display the specified resource.
-     */
+
+
     public function show(string $id)
     {
-         $personnel = Personnel::findOrFail($id);
+        $personnel = Personnel::findOrFail($id);
 
         return view('personnel.show', compact('personnel'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
+
+
     public function edit(string $id)
     {
-         $personnel = Personnel::findOrFail($id);
+        $personnel = Personnel::findOrFail($id);
 
-    $roles = \App\Models\Role::where('status', 'Active')->get();
+        $roles = \App\Models\Role::where('status', 'Active')->get();
 
-    return view('personnel.edit', compact('personnel', 'roles'));
+        return view('personnel.edit', compact('personnel', 'roles'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
+
+
     public function update(Request $request, string $id)
     {
         $personnel = Personnel::findOrFail($id);
 
 
-    $request->validate([
-        'first_name' => ['required'],
-        'last_name' => ['required'],
-        'department' => ['required'],
-        'position' => ['required'],
-        'role_id' => ['required'],
-    ]);
+        $request->validate([
+            'first_name' => ['required'],
+            'last_name' => ['required'],
+            'department' => ['required'],
+            'position' => ['required'],
+            'role_id' => ['required'],
+        ]);
 
 
 
-    $personnel->update([
-
-        'first_name' => $request->first_name,
-
-        'last_name' => $request->last_name,
-
-        'department' => $request->department,
-
-        'position' => $request->position,
-
-    ]);
+        $personnel->update([
+            'first_name' => $request->first_name,
+            'last_name' => $request->last_name,
+            'department' => $request->department,
+            'position' => $request->position,
+        ]);
 
 
 
-
-    $personnel->user->update([
-
-        'name' => $request->first_name . ' ' . $request->last_name,
-
-        'role_id' => $request->role_id,
-
-    ]);
+        $personnel->user->update([
+            'name' => $request->first_name . ' ' . $request->last_name,
+            'role_id' => $request->role_id,
+        ]);
 
 
 
-
-    return redirect()
-
-        ->route('personnel.index')
-
-        ->with('success', 'Personnel updated successfully.');
+        return redirect()
+            ->route('personnel.index')
+            ->with('success', 'Personnel updated successfully.');
     }
 
-    public function activate(string $id)
+
+    public function resendInvitation(string $id)
 {
-    $personnel = Personnel::findOrFail($id);
+    $personnel = Personnel::with('user.invitation')
+        ->findOrFail($id);
 
 
-    $personnel->user->update([
-        'status' => 'Active',
-    ]);
+    $user = $personnel->user;
+
+
+    // Only resend if setup is not completed
+
+    if (!$user->must_change_password) {
+
+        return redirect()
+            ->route('personnel.index')
+            ->with('error', 'This account is already active.');
+
+    }
+
+
+
+    // Create new invitation if none exists
+
+    $invitation = $user->invitation;
+
+
+
+    if ($invitation) {
+
+        $invitation->update([
+            'token' => Str::random(64),
+            'expires_at' => now()->addDay(),
+            'used_at' => null,
+        ]);
+
+    } else {
+
+        $invitation = AccountInvitation::create([
+            'user_id' => $user->user_id,
+            'token' => Str::random(64),
+            'expires_at' => now()->addDay(),
+        ]);
+
+    }
+
+
+
+    Mail::to($user->email)
+        ->send(new AccountInvitationMail($invitation));
+
 
 
     return redirect()
         ->route('personnel.index')
-        ->with('success', 'Personnel account activated successfully.');
+        ->with('success', 'Invitation email resent successfully.');
 }
 
-    /**
-     * Remove the specified resource from storage.
-     */
+    public function activate(string $id)
+    {
+        $personnel = Personnel::findOrFail($id);
+
+        $personnel->user->update([
+            'status' => 'Active',
+        ]);
+
+        return redirect()
+            ->route('personnel.index')
+            ->with('success', 'Personnel account activated successfully.');
+    }
+
+
+
     public function destroy(string $id)
     {
         $personnel = Personnel::findOrFail($id);
 
+        $personnel->user->update([
+            'status' => 'Inactive',
+        ]);
 
-    $personnel->user->update([
-        'status' => 'Inactive',
-    ]);
-
-
-    return redirect()
-        ->route('personnel.index')
-        ->with('success', 'Personnel account deactivated successfully.');   
+        return redirect()
+            ->route('personnel.index')
+            ->with('success', 'Personnel account deactivated successfully.');
     }
 }

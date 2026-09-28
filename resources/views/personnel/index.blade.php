@@ -15,6 +15,8 @@ x-data="{
 
     personnelName:'',
 
+    search:'',
+
 
     openDropdown(id){
 
@@ -168,7 +170,10 @@ font-bold
 text-green-600
 ">
 
-{{ $personnel->where('user.status','Active')->count() }}
+{{ $personnel->filter(function($person){
+    return $person->user->status == 'Active'
+        && $person->user->must_change_password == false;
+})->count() }}
 
 </h2>
 
@@ -201,7 +206,7 @@ shadow-sm
 
 <p class="text-sm text-gray-500">
 
-Access Management
+Pending Setup
 
 </p>
 
@@ -213,14 +218,16 @@ font-bold
 text-[#D4A017]
 ">
 
-Enabled
+{{ $personnel->filter(function($person){
+    return $person->user->must_change_password == true;
+})->count() }}
 
 </h2>
 
 
 <p class="text-xs text-gray-400 mt-1">
 
-Personnel control module
+Awaiting account completion
 
 </p>
 
@@ -305,6 +312,8 @@ View and manage authorized system personnel.
 
 type="text"
 
+x-model="search"
+
 placeholder="Search personnel..."
 
 class="
@@ -318,7 +327,6 @@ outline-none
 focus:ring-2
 focus:ring-[#101064]/20
 "
-
 
 >
 
@@ -411,6 +419,19 @@ Position
 
 </th>
 
+<th class="
+px-6
+py-4
+text-left
+text-sm
+text-gray-500
+">
+
+Role
+
+</th>
+
+
 
 <th class="
 px-6
@@ -454,11 +475,20 @@ Action
 @foreach($personnel as $person)
 
 
-<tr class="
+<tr
+
+x-show="
+'{{ strtolower($person->first_name.' '.$person->last_name.' '.$person->department.' '.$person->position) }}'
+.includes(search.toLowerCase())
+"
+
+class="
 border-t
 hover:bg-gray-50
 transition
-">
+"
+
+>
 
 
 <td class="
@@ -555,7 +585,15 @@ text-gray-600
 
 </td>
 
+<td class="
+px-6
+py-6
+text-gray-600
+">
 
+{{ $person->user->role->role_name }}
+
+</td>
 
 
 
@@ -568,26 +606,7 @@ py-6
 ">
 
 
-@if($person->user->status == 'Active')
-
-
-<span class="
-bg-green-50
-text-green-700
-px-3
-py-1
-rounded-full
-text-xs
-font-semibold
-">
-
-Active
-
-</span>
-
-
-@else
-
+@if($person->user->status == 'Inactive')
 
 <span class="
 bg-gray-100
@@ -598,14 +617,41 @@ rounded-full
 text-xs
 font-semibold
 ">
-
 Inactive
+</span>
 
+
+@elseif($person->user->must_change_password)
+
+<span class="
+bg-yellow-50
+text-yellow-700
+px-3
+py-1
+rounded-full
+text-xs
+font-semibold
+">
+Pending Setup
+</span>
+
+
+@else
+
+<span class="
+bg-green-50
+text-green-700
+px-3
+py-1
+rounded-full
+text-xs
+font-semibold
+">
+Active
 </span>
 
 
 @endif
-
 
 </td>
 
@@ -731,7 +777,33 @@ Edit Personnel
 
 
 
+@if($person->user->must_change_password)
 
+<form method="POST"
+action="{{ route('personnel.resendInvitation',$person->personnel_id) }}">
+
+@csrf
+
+<button
+type="submit"
+class="
+w-full
+text-left
+px-5
+py-3
+text-sm
+text-[#101064]
+hover:bg-gray-50
+transition
+">
+
+Resend Invitation
+
+</button>
+
+</form>
+
+@endif
 
 
 

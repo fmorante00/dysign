@@ -19,14 +19,15 @@ class User extends Authenticatable
      *
      * @var list<string>
      */
-    protected $fillable = [
-        'name',
-        'username',
-        'email',
-        'password',
-        'status',
-        'role_id',
-    ];
+protected $fillable = [
+    'name',
+    'username',
+    'email',
+    'password',
+    'status',
+    'role_id',
+    'must_change_password',
+];
 
     public function role()
     {
@@ -37,6 +38,20 @@ class User extends Authenticatable
     {
         return $this->hasOne(Personnel::class, 'user_id', 'user_id');
     }
+
+    public function invitation()
+{
+    return $this->hasOne(AccountInvitation::class, 'user_id', 'user_id');
+}
+
+    public function hasPermission($permission)
+{
+    return $this->role
+        ->permissions()
+        ->where('permission_name', $permission)
+        ->where('permissions.status', 'Active')
+        ->exists();
+}
 
     /**
      * The attributes that should be hidden for serialization.

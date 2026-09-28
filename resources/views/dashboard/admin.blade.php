@@ -1,99 +1,87 @@
 <x-admin-layout>
 
-
-<div
-
-class="
-space-y-8
-min-h-screen
-pb-10
-"
-
-x-data="{
-
-    selectedEvent:null,
-
-
-    events:[
-
-        {
-            date:18,
-            title:'RFID System Maintenance',
-            time:'1:00 PM - 3:00 PM',
-            venue:'IT Office',
-            status:'System Activity'
-        },
-
-
-        {
-            date:25,
-            title:'Leadership Seminar',
-            time:'8:00 AM - 5:00 PM',
-            venue:'Main Auditorium',
-            status:'Upcoming'
-        },
-
-
-        {
-            date:30,
-            title:'Freshmen Orientation',
-            time:'9:00 AM - 12:00 PM',
-            venue:'University Hall',
-            status:'Upcoming'
-        }
-
-    ],
-
-
-
-    selectEvent(day){
-
-        this.selectedEvent =
-        this.events.find(
-            event => event.date === day
-        );
-
-    }
-
-
-}"
-
->
-
+<div class="p-6 pb-12">
 
 
 <!-- HEADER -->
 
-<div>
+<div class="mb-8">
+
+    <h1 class="
+    text-3xl
+    font-bold
+    text-[#11175A]
+    ">
+
+        Welcome back, Administrator
+
+    </h1>
 
 
-<h1
+    <p class="
+    mt-2
+    text-gray-500
+    ">
 
-class="
-text-3xl
-font-bold
-text-[#101064]
-"
+        Monitor DySign system activities and manage digital identity operations.
 
->
-
-Welcome back, Administrator
-
-</h1>
+    </p>
 
 
-<p
+</div>
 
-class="
-mt-2
+
+
+
+
+
+<!-- SUMMARY CARDS -->
+
+
+<div class="
+grid
+grid-cols-1
+md:grid-cols-2
+xl:grid-cols-4
+gap-5
+mb-8
+">
+
+
+
+<!-- USERS -->
+
+
+<div class="
+bg-white
+rounded-2xl
+shadow-sm
+border
+border-gray-200
+p-6
+">
+
+
+<p class="
+text-sm
 text-gray-500
-"
+">
 
->
-
-Manage DySign digital identity operations and system activities.
+System Users
 
 </p>
+
+
+<h2 class="
+text-3xl
+font-bold
+text-[#11175A]
+mt-3
+">
+
+{{ $totalUsers }}
+
+</h2>
 
 
 </div>
@@ -104,84 +92,203 @@ Manage DySign digital identity operations and system activities.
 
 
 
-<!-- MAIN DASHBOARD GRID -->
+<!-- ACTIVE -->
 
-<div
 
-class="
+<div class="
+bg-white
+rounded-2xl
+shadow-sm
+border
+border-gray-200
+p-6
+">
+
+
+<p class="
+text-sm
+text-gray-500
+">
+
+Active Accounts
+
+</p>
+
+
+<h2 class="
+text-3xl
+font-bold
+text-green-600
+mt-3
+">
+
+{{ $activeUsers }}
+
+</h2>
+
+
+</div>
+
+
+
+
+
+
+
+
+<!-- PERSONNEL -->
+
+
+<div class="
+bg-white
+rounded-2xl
+shadow-sm
+border
+border-gray-200
+p-6
+">
+
+
+<p class="
+text-sm
+text-gray-500
+">
+
+Personnel
+
+</p>
+
+
+<h2 class="
+text-3xl
+font-bold
+text-[#11175A]
+mt-3
+">
+
+{{ $totalPersonnel }}
+
+</h2>
+
+
+</div>
+
+
+
+
+
+
+
+
+<!-- ROLES -->
+
+
+<div class="
+bg-white
+rounded-2xl
+shadow-sm
+border
+border-gray-200
+p-6
+">
+
+
+<p class="
+text-sm
+text-gray-500
+">
+
+System Roles
+
+</p>
+
+
+<h2 class="
+text-3xl
+font-bold
+text-[#11175A]
+mt-3
+">
+
+{{ $totalRoles }}
+
+</h2>
+
+
+</div>
+
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<!-- CALENDAR + ACCOUNT DISTRIBUTION -->
+
+
+<div class="
 grid
 grid-cols-1
-xl:grid-cols-3
 gap-6
-items-start
-"
+mb-8
+">
 
->
+
 
 
 
 <!-- CALENDAR -->
 
-<div
 
-class="
-xl:col-span-2
+<div class="
 bg-white
 rounded-2xl
-border
-border-gray-100
 shadow-sm
+border
+border-gray-200
 p-6
-"
-
->
+">
 
 
-
-<div
-
-class="
+<div class="
 flex
 justify-between
 items-center
 mb-6
-"
-
->
+">
 
 
 <div>
 
 
-<h2
-
+<h2 id="calendarTitle"
 class="
 text-xl
 font-semibold
-text-[#101064]
-"
-
->
+text-[#11175A]
+">
 
 September 2026
 
 </h2>
 
 
-
-<p
-
-class="
+<p class="
 text-sm
 text-gray-500
-"
-
->
+mt-1
+">
 
 System Events Calendar
 
 </p>
-
 
 
 </div>
@@ -190,44 +297,39 @@ System Events Calendar
 
 
 
-<div
-
-class="
+<div class="
 flex
 gap-2
-"
-
->
+">
 
 
 <button
-
+onclick="changeMonth(-1)"
 class="
 border
+border-gray-300
 rounded-lg
 px-3
 py-2
-hover:bg-gray-50
-"
-
->
+text-gray-600
+">
 
 ←
 
 </button>
 
 
-<button
 
+<button
+onclick="changeMonth(1)"
 class="
 border
+border-gray-300
 rounded-lg
 px-3
 py-2
-hover:bg-gray-50
-"
-
->
+text-gray-600
+">
 
 →
 
@@ -246,91 +348,70 @@ hover:bg-gray-50
 
 
 
-<div
 
-class="
+
+<!-- DAYS -->
+
+
+<div class="
 grid
 grid-cols-7
-gap-3
 text-center
-mb-3
-"
-
->
-
-
-@foreach(['Sun','Mon','Tue','Wed','Thu','Fri','Sat'] as $day)
-
-
-<div
-
-class="
 text-xs
 font-semibold
 text-gray-400
-uppercase
-"
+mb-3
+">
 
->
 
-{{ $day }}
+<div>Sun</div>
+<div>Mon</div>
+<div>Tue</div>
+<div>Wed</div>
+<div>Thu</div>
+<div>Fri</div>
+<div>Sat</div>
+
 
 </div>
 
 
-@endforeach
-
-
-</div>
 
 
 
 
 
 
-<div
+<!-- DATE GRID -->
 
-class="
+
+<div class="
 grid
 grid-cols-7
 gap-3
-"
-
->
+">
 
 
-@for($i = 1; $i <= 30; $i++)
+@for($day = 1; $day <= 30; $day++)
 
 
-<button
-
-@click="selectEvent({{$i}})"
-
-class="
-relative
+<div class="
 h-16
-rounded-xl
 border
-border-gray-100
+border-gray-200
+rounded-xl
+p-2
+text-sm
+text-gray-600
+relative
 hover:bg-gray-50
 transition
-text-left
-p-3
-"
-
->
+">
 
 
-<span
+<span>
 
-class="
-text-sm
-text-gray-700
-"
-
->
-
-{{$i}}
+{{ $day }}
 
 </span>
 
@@ -338,45 +419,50 @@ text-gray-700
 
 
 
-<template x-for="event in events">
+@if($day == 18)
 
 
-<span
-
-x-show="event.date === {{$i}}"
-
-class="
+<div class="
 absolute
 bottom-2
-left-3
+left-2
 w-2
 h-2
 rounded-full
-"
+bg-[#D4A017]
+">
 
-:class="
-
-event.status === 'Upcoming'
-
-?
-
-'bg-[#101064]'
-
-:
-
-'bg-[#D4A017]'
-
-"
-
-></span>
+</div>
 
 
-</template>
+@endif
 
 
 
-</button>
 
+
+
+@if($day == 25)
+
+
+<div class="
+absolute
+bottom-2
+left-2
+w-2
+h-2
+rounded-full
+bg-[#11175A]
+">
+
+</div>
+
+
+@endif
+
+
+
+</div>
 
 
 @endfor
@@ -390,125 +476,64 @@ event.status === 'Upcoming'
 
 
 
-<div
 
-class="
-mt-6
-border-t
-pt-4
+
+<div class="
 flex
-gap-6
-text-sm
+gap-5
+mt-5
+text-xs
 text-gray-500
-"
-
->
+">
 
 
-<div class="flex items-center gap-2">
+<div class="
+flex
+items-center
+gap-2
+">
 
-<span class="w-2 h-2 rounded-full bg-[#101064]"></span>
+
+<span class="
+w-2
+h-2
+rounded-full
+bg-[#11175A]
+">
+
+</span>
+
 
 Upcoming Event
 
+
 </div>
 
 
 
-<div class="flex items-center gap-2">
 
-<span class="w-2 h-2 rounded-full bg-[#D4A017]"></span>
+
+<div class="
+flex
+items-center
+gap-2
+">
+
+
+<span class="
+w-2
+h-2
+rounded-full
+bg-[#D4A017]
+">
+
+</span>
+
 
 System Activity
 
-</div>
-
-
 
 </div>
-
-
-
-
-
-
-</div>
-
-<!-- RIGHT SIDE PANEL -->
-
-<div
-
-class="
-space-y-6
-"
-
->
-
-
-
-
-
-
-<!-- SELECTED EVENT -->
-
-<div
-
-class="
-bg-white
-rounded-2xl
-border
-border-gray-100
-shadow-sm
-p-6
-"
-
->
-
-
-
-<div
-
-class="
-flex
-justify-between
-items-center
-"
-
->
-
-
-<h2
-
-class="
-text-lg
-font-semibold
-text-[#101064]
-"
-
->
-
-Selected Event
-
-</h2>
-
-
-
-<button
-
-@click="selectedEvent=null"
-
-x-show="selectedEvent"
-
-class="
-text-gray-400
-hover:text-gray-700
-"
-
->
-
-✕
-
-</button>
 
 
 
@@ -517,491 +542,42 @@ hover:text-gray-700
 
 
 
-
-
-
-<template x-if="selectedEvent">
-
-
-
-<div
-
-class="
-mt-5
-space-y-4
-"
-
->
-
-
-<div>
-
-
-<p
-
-class="
-text-sm
-text-gray-500
-"
-
->
-
-Event Name
-
-</p>
-
-
-<p
-
-class="
-font-semibold
-text-[#101064]
-"
-
-x-text="selectedEvent.title"
-
-></p>
-
-
 </div>
 
 
-
-
-
-
-<div>
-
-
-<p
-
-class="
-text-sm
-text-gray-500
-"
-
->
-
-Schedule
-
-</p>
-
-
-<p
-
-class="
-font-medium
-text-gray-700
-"
-
-x-text="selectedEvent.time"
-
-></p>
-
-
-</div>
-
-
-
-
-
-
-
-<div>
-
-
-<p
-
-class="
-text-sm
-text-gray-500
-"
-
->
-
-Venue
-
-</p>
-
-
-<p
-
-class="
-font-medium
-text-gray-700
-"
-
-x-text="selectedEvent.venue"
-
-></p>
-
-
-</div>
-
-
-
-
-
-
-
-<div>
-
-
-<p
-
-class="
-text-sm
-text-gray-500
-"
-
->
-
-Status
-
-</p>
-
-
-
-<span
-
-class="
-inline-flex
-mt-1
-px-3
-py-1
-rounded-full
-text-xs
-font-semibold
-bg-yellow-100
-text-yellow-700
-"
-
-x-text="selectedEvent.status"
-
-></span>
-
-
-
-</div>
-
-
-
-
-
-</div>
-
-
-</template>
-
-
-
-
-
-
-<template x-if="!selectedEvent">
-
-
-<p
-
-class="
-mt-5
-text-sm
-text-gray-500
-"
-
->
-
-Select an event date from the calendar to view details.
-
-</p>
-
-
-</template>
-
-
-
-
-
-
-</div>
-
-
-
-
-
-
-
-
-
-<!-- SYSTEM OVERVIEW -->
-
-<div
-
-class="
-bg-white
-rounded-2xl
-border
-border-gray-100
-shadow-sm
-p-6
-"
-
->
-
-
-
-<h2
-
-class="
-text-lg
-font-semibold
-text-[#101064]
-mb-5
-"
-
->
-
-System Overview
-
-</h2>
-
-
-
-
-
-
-<div
-
-class="
-space-y-4
-"
-
->
-
-
-
-
-<div
-
-class="
-border
-rounded-xl
-p-4
-"
-
->
-
-
-<p
-
-class="
-text-sm
-text-gray-500
-"
-
->
-
-Personnel Accounts
-
-</p>
-
-
-<p
-
-class="
-text-3xl
-font-bold
-text-[#D4A017]
-mt-2
-"
-
->
-
-24
-
-</p>
-
-
-<p
-
-class="
-text-xs
-text-gray-500
-"
-
->
-
-Active personnel users
-
-</p>
-
-
-</div>
-
-
-
-
-
-
-
-<div
-
-class="
-border
-rounded-xl
-p-4
-"
-
->
-
-
-<p
-
-class="
-text-sm
-text-gray-500
-"
-
->
-
-Registered Students
-
-</p>
-
-
-<p
-
-class="
-text-3xl
-font-bold
-text-[#D4A017]
-mt-2
-"
-
->
-
-1,542
-
-</p>
-
-
-<p
-
-class="
-text-xs
-text-gray-500
-"
-
->
-
-Student identity records
-
-</p>
-
-
-</div>
-
-
-
-
-
-
-
-<div
-
-class="
-border
-rounded-xl
-p-4
-"
-
->
-
-
-<p
-
-class="
-text-sm
-text-gray-500
-"
-
->
-
-RFID Credentials
-
-</p>
-
-
-<p
-
-class="
-text-3xl
-font-bold
-text-[#D4A017]
-mt-2
-"
-
->
-
-1,420
-
-</p>
-
-
-<p
-
-class="
-text-xs
-text-gray-500
-"
-
->
-
-Assigned student cards
-
-</p>
-
-
-</div>
-
-
-
-
-
-
-</div>
-
-
-
-</div>
+ 
 
 <!-- UPCOMING EVENTS -->
 
 
-<div
-
-class="
+<div class="
 bg-white
 rounded-2xl
-border
-border-gray-100
 shadow-sm
+border
+border-gray-200
 p-6
-"
+mb-8
+">
 
->
 
 
-<h2
-
-class="
-text-lg
-font-semibold
-text-[#101064]
+<div class="
+flex
+justify-between
+items-center
 mb-5
-"
+">
 
->
+
+<div>
+
+
+<h2 class="
+text-xl
+font-semibold
+text-[#11175A]
+">
 
 Upcoming Events
 
@@ -1009,94 +585,495 @@ Upcoming Events
 
 
 
+<p class="
+text-sm
+text-gray-500
+mt-1
+">
 
-
-
-<div
-
-class="
-space-y-4
-"
-
->
-
-
-
-<div
-
-class="
-border
-border-gray-100
-rounded-xl
-p-4
-"
-
->
-
-
-<p
-
-class="
-font-semibold
-text-[#101064]
-"
-
->
-
-Leadership Seminar
+Scheduled activities from Event Management Module
 
 </p>
 
 
-<p
+</div>
+
+
+
+
+<a
+
+href="{{ route('events.index') }}"
 
 class="
 text-sm
-text-gray-500
-mt-1
+font-semibold
+text-[#11175A]
+hover:underline
 "
 
 >
+
+View Events
+
+</a>
+
+
+
+</div>
+
+
+
+
+
+
+
+
+<!-- EVENT PLACEHOLDER -->
+
+<div class="space-y-4">
+
+
+
+<div class="
+border
+border-gray-200
+rounded-xl
+p-4
+flex
+justify-between
+items-center
+">
+
+
+<div>
+
+
+<h3 class="
+font-semibold
+text-[#11175A]
+">
+
+Leadership Seminar
+
+</h3>
+
+
+
+<p class="
+text-sm
+text-gray-500
+mt-1
+">
+
+September 25, 2026 • Main Auditorium
+
+</p>
+
+
+</div>
+
+
+
+<span class="
+px-3
+py-1
+rounded-full
+text-xs
+bg-yellow-100
+text-yellow-700
+">
+
+Upcoming
+
+</span>
+
+
+</div>
+
+
+
+
+
+
+
+
+<div class="
+border
+border-gray-200
+rounded-xl
+p-4
+flex
+justify-between
+items-center
+">
+
+
+<div>
+
+
+<h3 class="
+font-semibold
+text-[#11175A]
+">
+
+NSTP Orientation
+
+</h3>
+
+
+
+<p class="
+text-sm
+text-gray-500
+mt-1
+">
+
+October 05, 2026 • AVR Room
+
+</p>
+
+
+</div>
+
+
+
+<span class="
+px-3
+py-1
+rounded-full
+text-xs
+bg-blue-100
+text-blue-700
+">
+
+Scheduled
+
+</span>
+
+
+</div>
+
+
+
+</div>
+
+
+
+
+
+</div>
+
+
+<!-- RECENT SYSTEM ACTIVITIES -->
+
+
+<div class="
+bg-white
+rounded-2xl
+shadow-sm
+border
+border-gray-200
+p-6
+mb-8
+">
+
+
+<div class="
+flex
+justify-between
+items-center
+mb-5
+">
+
+
+<div>
+
+
+<h2 class="
+text-xl
+font-semibold
+text-[#11175A]
+">
+
+Recent System Activities
+
+</h2>
+
+
+<p class="
+text-sm
+text-gray-500
+mt-1
+">
+
+Audit Trail monitoring and important system actions
+
+</p>
+
+
+</div>
+
+
+
+<a
+
+href="{{ route('logs.index') }}"
+
+class="
+text-sm
+font-semibold
+text-[#11175A]
+hover:underline
+"
+
+>
+
+View Logs
+
+</a>
+
+
+</div>
+
+
+
+
+
+
+
+<div class="
+space-y-4
+">
+
+
+
+<div class="
+border
+border-gray-200
+rounded-xl
+p-4
+">
+
+
+<p class="
+font-semibold
+text-[#11175A]
+">
+
+System Initialized
+
+</p>
+
+
+<p class="
+text-sm
+text-gray-500
+mt-1
+">
+
+DySign system activity monitoring is ready.
+
+</p>
+
+
+</div>
+
+
+
+
+
+
+
+<div class="
+border
+border-gray-200
+rounded-xl
+p-4
+">
+
+
+<p class="
+font-semibold
+text-[#11175A]
+">
+
+Personnel Management Updated
+
+</p>
+
+
+<p class="
+text-sm
+text-gray-500
+mt-1
+">
+
+Recent account changes will appear here.
+
+</p>
+
+
+</div>
+
+
+
+</div>
+
+
+
+
+</div>
+
+
+
+
+<!-- RECENT SYSTEM ACTIVITIES -->
+
+
+<div class="
+bg-white
+rounded-2xl
+shadow-sm
+border
+border-gray-200
+p-6
+mb-8
+">
+
+
+<div class="
+flex
+justify-between
+items-center
+mb-5
+">
+
+
+<div>
+
+
+<h2 class="
+text-xl
+font-semibold
+text-[#11175A]
+">
+
+Recent System Activities
+
+</h2>
+
+
+<p class="
+text-sm
+text-gray-500
+mt-1
+">
+
+Latest system actions and updates
+
+</p>
+
+
+</div>
+
+
+
+
+<a
+
+href="{{ route('logs.index') }}"
+
+class="
+text-sm
+font-semibold
+text-[#11175A]
+hover:underline
+"
+
+>
+
+View Logs
+
+</a>
+
+
+
+</div>
+
+
+
+
+
+
+
+<div class="space-y-4">
+
+
+
+<div class="
+border
+border-gray-200
+rounded-xl
+p-4
+">
+
+
+<div class="flex items-start gap-3">
+
+
+<div class="
+w-3
+h-3
+rounded-full
+bg-[#D4A017]
+mt-2
+">
+
+</div>
+
+
+
+<div>
+
+
+<h3 class="
+font-semibold
+text-[#11175A]
+">
+
+Administrator Login
+
+</h3>
+
+
+
+<p class="
+text-sm
+text-gray-500
+">
+
+System Administrator accessed DySign portal.
+
+</p>
+
+
+
+<p class="
+text-xs
+text-gray-400
+mt-1
+">
 
 September 25, 2026
 
 </p>
 
 
-<p
-
-class="
-text-sm
-text-gray-500
-"
-
->
-
-Main Auditorium
-
-</p>
+</div>
 
 
-<span
-
-class="
-inline-block
-mt-3
-px-3
-py-1
-rounded-full
-bg-blue-100
-text-blue-700
-text-xs
-font-semibold
-"
-
->
-
-Upcoming
-
-</span>
-
+</div>
 
 
 </div>
@@ -1109,81 +1086,69 @@ Upcoming
 
 
 
-<div
-
-class="
+<div class="
 border
-border-gray-100
+border-gray-200
 rounded-xl
 p-4
-"
-
->
+">
 
 
-<p
-
-class="
-font-semibold
-text-[#101064]
-"
-
->
-
-Freshmen Orientation
-
-</p>
+<div class="flex items-start gap-3">
 
 
-<p
-
-class="
-text-sm
-text-gray-500
-mt-1
-"
-
->
-
-September 30, 2026
-
-</p>
-
-
-<p
-
-class="
-text-sm
-text-gray-500
-"
-
->
-
-University Hall
-
-</p>
-
-
-<span
-
-class="
-inline-block
-mt-3
-px-3
-py-1
+<div class="
+w-3
+h-3
 rounded-full
-bg-blue-100
-text-blue-700
-text-xs
+bg-[#11175A]
+mt-2
+">
+
+</div>
+
+
+
+<div>
+
+
+<h3 class="
 font-semibold
-"
+text-[#11175A]
+">
 
->
+Personnel Account Created
 
-Upcoming
+</h3>
 
-</span>
 
+
+<p class="
+text-sm
+text-gray-500
+">
+
+New personnel record added to the system.
+
+</p>
+
+
+
+<p class="
+text-xs
+text-gray-400
+mt-1
+">
+
+September 18, 2026
+
+</p>
+
+
+</div>
+
+
+</div>
 
 
 </div>
@@ -1193,49 +1158,36 @@ Upcoming
 
 
 
-</div>
-
-
 
 </div>
 
 
 
+</div>
 
 
+<!-- QUICK ACTIONS -->
 
 
-
-
-<!-- RECENT ACTIVITY -->
-
-
-<div
-
-class="
+<div class="
 bg-white
 rounded-2xl
-border
-border-gray-100
 shadow-sm
+border
+border-gray-200
 p-6
-"
+mb-8
+">
 
->
 
-
-<h2
-
-class="
-text-lg
+<h2 class="
+text-xl
 font-semibold
-text-[#101064]
+text-[#11175A]
 mb-5
-"
+">
 
->
-
-Recent Activity
+Quick Actions
 
 </h2>
 
@@ -1243,255 +1195,448 @@ Recent Activity
 
 
 
-
-
-<div
-
-class="
-space-y-5
-"
-
->
-
-
-
-
-<div
-
-class="
-flex
+<div class="
+grid
+grid-cols-1
+md:grid-cols-2
+xl:grid-cols-5
 gap-4
+">
+
+
+
+
+
+<!-- CREATE EVENT -->
+
+
+<a
+
+href="{{ route('events.index') }}"
+
+class="
+border
+border-gray-200
+rounded-xl
+p-5
+hover:bg-gray-50
+transition
 "
 
 >
 
 
-<div
-
-class="
-w-3
-h-3
-rounded-full
-bg-[#D4A017]
-mt-2
-"
-
-></div>
-
-
-
-<div>
-
-
-<p
-
-class="
+<h3 class="
 font-semibold
-text-gray-700
-"
+text-[#11175A]
+">
 
->
+Create Event
 
-Personnel Account Created
-
-</p>
+</h3>
 
 
-<p
-
-class="
+<p class="
 text-sm
 text-gray-500
-"
-
->
-
-Administrator added a new attendance personnel account.
-
-</p>
-
-
-<p
-
-class="
-text-xs
-text-gray-400
-mt-1
-"
-
->
-
-15 minutes ago
-
-</p>
-
-
-</div>
-
-
-
-</div>
-
-
-
-
-
-
-
-
-<div
-
-class="
-flex
-gap-4
-"
-
->
-
-
-<div
-
-class="
-w-3
-h-3
-rounded-full
-bg-[#101064]
 mt-2
-"
+">
 
-></div>
-
-
-
-<div>
-
-
-<p
-
-class="
-font-semibold
-text-gray-700
-"
-
->
-
-RFID Credential Updated
+Manage upcoming school activities.
 
 </p>
 
 
-<p
+</a>
+
+
+
+
+
+
+
+<!-- PERSONNEL -->
+
+
+<a
+
+href="{{ route('personnel.index') }}"
 
 class="
+border
+border-gray-200
+rounded-xl
+p-5
+hover:bg-gray-50
+transition
+"
+
+>
+
+
+<h3 class="
+font-semibold
+text-[#11175A]
+">
+
+Manage Personnel
+
+</h3>
+
+
+<p class="
 text-sm
 text-gray-500
-"
-
->
-
-Student RFID information was modified.
-
-</p>
-
-
-<p
-
-class="
-text-xs
-text-gray-400
-mt-1
-"
-
->
-
-2 hours ago
-
-</p>
-
-
-</div>
-
-
-
-</div>
-
-
-
-
-
-
-
-
-<div
-
-class="
-flex
-gap-4
-"
-
->
-
-
-<div
-
-class="
-w-3
-h-3
-rounded-full
-bg-green-500
 mt-2
-"
+">
 
-></div>
-
-
-
-<div>
-
-
-<p
-
-class="
-font-semibold
-text-gray-700
-"
-
->
-
-System Backup Completed
+Manage authorized accounts.
 
 </p>
 
 
-<p
+</a>
+
+
+
+
+
+
+
+<!-- STUDENTS -->
+
+
+<a
+
+href="{{ route('students.index') }}"
 
 class="
+border
+border-gray-200
+rounded-xl
+p-5
+hover:bg-gray-50
+transition
+"
+
+>
+
+
+<h3 class="
+font-semibold
+text-[#11175A]
+">
+
+Student Records
+
+</h3>
+
+
+<p class="
 text-sm
 text-gray-500
-"
+mt-2
+">
 
->
-
-Database backup process finished successfully.
+View student identity records.
 
 </p>
 
 
-<p
+</a>
+
+
+
+
+
+
+
+<!-- REPORTS -->
+
+
+<a
+
+href="{{ route('reports.attendance') }}"
 
 class="
-text-xs
-text-gray-400
-mt-1
+border
+border-gray-200
+rounded-xl
+p-5
+hover:bg-gray-50
+transition
 "
 
 >
 
-Yesterday
+
+<h3 class="
+font-semibold
+text-[#11175A]
+">
+
+View Reports
+
+</h3>
+
+
+<p class="
+text-sm
+text-gray-500
+mt-2
+">
+
+Generate system reports.
 
 </p>
 
 
+</a>
+
+
+
+
+
+
+
+<!-- BACKUP -->
+
+
+<a
+
+href="{{ route('backup.index') }}"
+
+class="
+border
+border-gray-200
+rounded-xl
+p-5
+hover:bg-gray-50
+transition
+"
+
+>
+
+
+<h3 class="
+font-semibold
+text-[#11175A]
+">
+
+Backup System
+
+</h3>
+
+
+<p class="
+text-sm
+text-gray-500
+mt-2
+">
+
+Protect system records.
+
+</p>
+
+
+</a>
+
+
+
+
+
+</div>
+
+
+</div>
+
+<!-- RECENT PERSONNEL ACCOUNTS -->
+
+
+<div class="
+bg-white
+rounded-2xl
+shadow-sm
+border
+border-gray-200
+overflow-hidden
+">
+
+
+<div class="p-6 border-b border-gray-200">
+
+
+<h2 class="
+text-xl
+font-semibold
+text-[#11175A]
+">
+
+Recent Personnel Accounts
+
+</h2>
+
+
+</div>
+
+
+
+
+
+
+<div class="overflow-x-auto">
+
+
+<table class="w-full">
+
+
+<thead class="bg-gray-50">
+
+
+<tr class="
+text-left
+text-sm
+text-gray-600
+">
+
+
+<th class="px-6 py-4">
+
+Name
+
+</th>
+
+
+<th class="px-6 py-4">
+
+Department
+
+</th>
+
+
+<th class="px-6 py-4">
+
+Position
+
+</th>
+
+
+<th class="px-6 py-4">
+
+Created
+
+</th>
+
+
+</tr>
+
+
+</thead>
+
+
+
+
+
+
+<tbody>
+
+
+@forelse($recentPersonnel as $person)
+
+
+<tr class="border-t">
+
+
+<td class="px-6 py-4 text-gray-700">
+
+
+{{ $person->first_name }}
+
+{{ $person->last_name }}
+
+
+</td>
+
+
+
+
+
+<td class="px-6 py-4 text-gray-700">
+
+
+{{ $person->department }}
+
+
+</td>
+
+
+
+
+
+<td class="px-6 py-4 text-gray-700">
+
+
+{{ $person->position }}
+
+
+</td>
+
+
+
+
+
+<td class="px-6 py-4 text-gray-500">
+
+
+{{ $person->created_at->format('M d, Y') }}
+
+
+</td>
+
+
+
+</tr>
+
+
+
+
+@empty
+
+
+<tr>
+
+
+<td colspan="4"
+
+class="
+px-6
+py-8
+text-center
+text-gray-400
+">
+
+No personnel records available.
+
+</td>
+
+
+</tr>
+
+
+
+@endforelse
+
+
+
+
+</tbody>
+
+
+
+</table>
+
+
+
 </div>
 
 
@@ -1503,25 +1648,44 @@ Yesterday
 
 
 
-
 </div>
 
 
+<script>
 
-</div>
-
-
-
+let currentDate = new Date(2026,8,1);
 
 
+function changeMonth(direction)
+{
 
-</div>
+    currentDate.setMonth(
+        currentDate.getMonth() + direction
+    );
 
 
-</div>
+    let month =
+    currentDate.toLocaleString(
+        'default',
+        {
+            month:'long'
+        }
+    );
 
 
-</div>
+    let year =
+    currentDate.getFullYear();
 
+
+
+    document.getElementById(
+        'calendarTitle'
+    ).innerHTML =
+    month + " " + year;
+
+}
+
+
+</script>
 
 </x-admin-layout>

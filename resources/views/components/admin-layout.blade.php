@@ -19,10 +19,15 @@
 
 
 
-<body class="bg-gray-100">
+<body class="bg-gray-100 overflow-hidden">
 
 
-<div class="h-screen flex overflow-hidden">
+
+<div class="
+h-screen
+flex
+overflow-hidden
+">
 
 
 
@@ -34,9 +39,16 @@
 
 
 
-    <!-- MAIN AREA -->
+    <!-- MAIN CONTENT AREA -->
 
-    <div class="flex-1 ml-80 h-screen flex flex-col">
+
+    <div class="
+    flex-1
+    h-screen
+    flex
+    flex-col
+    ml-72
+    ">
 
 
 
@@ -44,11 +56,19 @@
 
         <!-- NAVBAR -->
 
-        <div class="sticky top-0 z-40">
+
+        <header class="
+        sticky
+        top-0
+        z-40
+        ">
+
 
             <x-navbar />
 
-        </div>
+
+        </header>
+
 
 
 
@@ -61,18 +81,19 @@
 
         <main
 
-            class="
-            flex-1
-            overflow-y-auto
-            p-8
-            "
+        class="
+        flex-1
+        overflow-y-auto
+        p-8
+        "
 
         >
 
+
             {{ $slot }}
 
-        </main>
 
+        </main>
 
 
 
@@ -88,6 +109,5 @@
 
 
 </body>
-
 
 </html>
