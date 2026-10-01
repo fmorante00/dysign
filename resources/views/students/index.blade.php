@@ -1,65 +1,73 @@
 <x-admin-layout>
 
-<div
+@if(session('success'))
 
-class="space-y-8"
+<div class="
+bg-green-50
+border
+border-green-200
+text-green-700
+px-5
+py-4
+rounded-xl
+mb-6
+">
 
-x-data="{
-    openMenu:null
-}"
+<p class="font-semibold mb-2">
+✓ Student Import Completed
+</p>
 
-@click.outside="openMenu=null"
+<p>
+New Students Added:
+{{ session('success')['created'] }}
+</p>
 
->
+<p>
+Updated Records:
+{{ session('success')['updated'] }}
+</p>
+
+<p>
+Failed Records:
+{{ session('success')['failed'] }}
+</p>
+
+</div>
+
+@endif
+
+
+
+<div class="space-y-8">
+
 
 
 <!-- HEADER -->
 
 <div class="flex justify-between items-center">
 
-
 <div>
 
-<h1 class="
-text-3xl
-font-bold
-text-[#101064]
-">
-Student Data Management
+<h1 class="text-3xl font-bold text-[#101064]">
+Student Records
 </h1>
 
 
-<p class="
-mt-2
-text-gray-500
-">
-Manage student records and RFID identity information.
+<p class="mt-2 text-gray-500">
+View imported student information and RFID identifiers used for attendance identification.
 </p>
 
+</div>
 
 </div>
 
 
-</div>
 
 
 
+<!-- SUMMARY -->
 
-
-
-
-
-
-<!-- SUMMARY CARDS -->
-
-
-<div class="
-grid
-grid-cols-1
-md:grid-cols-3
-gap-5
-">
-
+<div class="grid grid-cols-1 md:grid-cols-3 gap-5">
 
 
 <div class="
@@ -70,7 +78,6 @@ border-gray-100
 p-5
 shadow-sm
 ">
-
 
 <p class="text-sm text-gray-500">
 Total Students
@@ -84,19 +91,17 @@ text-[#101064]
 mt-2
 ">
 
-1,250
+{{ $students->count() }}
 
 </h2>
 
 
 <p class="text-xs text-gray-400 mt-1">
-Registered records
+Imported student records
 </p>
 
 
 </div>
-
-
 
 
 
@@ -110,9 +115,8 @@ p-5
 shadow-sm
 ">
 
-
 <p class="text-sm text-gray-500">
-RFID Assigned
+Students with RFID Identifier
 </p>
 
 
@@ -123,19 +127,17 @@ text-green-600
 mt-2
 ">
 
-1,100
+{{ $students->whereNotNull('rfid_identifier')->count() }}
 
 </h2>
 
 
 <p class="text-xs text-gray-400 mt-1">
-Active identity cards
+Available for attendance identification
 </p>
 
 
 </div>
-
-
 
 
 
@@ -149,9 +151,8 @@ p-5
 shadow-sm
 ">
 
-
 <p class="text-sm text-gray-500">
-Pending RFID
+Missing RFID Identifier
 </p>
 
 
@@ -162,13 +163,13 @@ text-[#D4A017]
 mt-2
 ">
 
-150
+{{ $students->whereNull('rfid_identifier')->count() }}
 
 </h2>
 
 
 <p class="text-xs text-gray-400 mt-1">
-Waiting assignment
+Requires data verification
 </p>
 
 
@@ -183,9 +184,7 @@ Waiting assignment
 
 
 
-
-
-<!-- TABLE -->
+<!-- DIRECTORY -->
 
 <div class="
 bg-white
@@ -197,12 +196,14 @@ shadow-sm
 
 
 
-
-
 <div class="
 p-6
 border-b
 border-gray-100
+">
+
+
+<div class="
 flex
 justify-between
 items-center
@@ -216,7 +217,9 @@ text-xl
 font-semibold
 text-[#101064]
 ">
+
 Student Directory
+
 </h2>
 
 
@@ -225,7 +228,9 @@ text-sm
 text-gray-500
 mt-1
 ">
-View and manage registered students.
+
+View imported student records.
+
 </p>
 
 
@@ -233,15 +238,7 @@ View and manage registered students.
 
 
 
-
-
-<div class="flex gap-3">
-
-
-<a
-
-href="{{ route('students.import') }}"
-
+<a href="{{ route('students.import') }}"
 class="
 px-5
 py-2
@@ -253,34 +250,169 @@ hover:bg-[#F8F5E8]
 transition
 text-sm
 font-semibold
-"
->
+">
 
 Import Students
 
 </a>
 
 
+</div>
 
+
+
+
+
+<!-- FILTERS -->
+
+<form method="GET"
+action="{{ route('students.index') }}"
+class="
+mt-6
+grid
+grid-cols-1
+md:grid-cols-4
+gap-4
+">
+
+
+<input
+type="text"
+name="search"
+value="{{ request('search') }}"
+placeholder="Search student number or name..."
+class="
+border
+border-gray-200
+rounded-xl
+px-4
+py-3
+text-sm
+"
+/>
+
+
+
+<select
+name="college"
+class="
+border
+border-gray-200
+rounded-xl
+px-4
+py-3
+text-sm
+">
+
+<option value="">
+All Colleges
+</option>
+
+
+@foreach($students->pluck('college')->unique() as $college)
+
+<option
+value="{{ $college }}"
+{{ request('college') == $college ? 'selected' : '' }}
+>
+
+{{ $college }}
+
+</option>
+
+@endforeach
+
+</select>
+
+
+
+
+<select
+name="program_code"
+class="
+border
+border-gray-200
+rounded-xl
+px-4
+py-3
+text-sm
+">
+
+<option value="">
+All Programs
+</option>
+
+
+@foreach($students->pluck('program_code')->unique() as $program)
+
+<option
+value="{{ $program }}"
+{{ request('program_code') == $program ? 'selected' : '' }}
+>
+
+{{ $program }}
+
+</option>
+
+@endforeach
+
+</select>
+
+
+
+
+<select
+name="year_level"
+class="
+border
+border-gray-200
+rounded-xl
+px-4
+py-3
+text-sm
+">
+
+<option value="">
+All Year Levels
+</option>
+
+
+@for($year = 1; $year <= 5; $year++)
+
+<option
+value="{{ $year }}"
+{{ request('year_level') == $year ? 'selected' : '' }}
+>
+
+{{ $year }} Year
+
+</option>
+
+@endfor
+
+
+</select>
+
+
+
+<div class="md:col-span-4 flex justify-end">
 
 
 <button
-
+type="submit"
 class="
+px-6
+py-3
+rounded-xl
 bg-[#101064]
 text-white
-px-5
-py-2
-rounded-xl
-text-sm
 font-semibold
+text-sm
 hover:bg-[#D4A017]
 transition
-"
+">
 
->
-
-+ Add Student
+Search
 
 </button>
 
@@ -288,6 +420,9 @@ transition
 </div>
 
 
+</form>
+
+
 </div>
 
 
@@ -296,6 +431,8 @@ transition
 
 
 
+
+<!-- TABLE -->
 
 
 <div class="overflow-visible">
@@ -350,10 +487,14 @@ Action
 
 </thead>
 
+
+
+
 <tbody>
 
 
-<!-- SAMPLE STUDENT 1 -->
+@forelse($students as $student)
+
 
 <tr class="
 border-t
@@ -362,32 +503,25 @@ transition
 ">
 
 
+
 <td class="
 px-6
 py-6
-text-gray-700
 font-medium
+text-gray-700
 ">
 
-2026-0001
+{{ $student->student_number }}
 
 </td>
 
 
 
 
-
-<td class="
-px-6
-py-6
-">
+<td class="px-6 py-6">
 
 
-<div class="
-flex
-items-center
-gap-3
-">
+<div class="flex items-center gap-3">
 
 
 <div class="
@@ -402,19 +536,23 @@ justify-center
 font-bold
 ">
 
-J
+{{ strtoupper(substr($student->first_name,0,1)) }}
 
 </div>
 
 
+
 <div>
+
 
 <p class="
 font-semibold
 text-[#101064]
 ">
 
-Juan Dela Cruz
+{{ $student->first_name }}
+{{ $student->middle_name }}
+{{ $student->last_name }}
 
 </p>
 
@@ -424,7 +562,7 @@ text-sm
 text-gray-500
 ">
 
-juan.delacruz@student.edu
+{{ $student->student_number }}
 
 </p>
 
@@ -440,45 +578,28 @@ juan.delacruz@student.edu
 
 
 
+<td class="px-6 py-6 text-gray-600">
 
-
-
-<td class="
-px-6
-py-6
-text-gray-600
-">
-
-BS Information Technology
+{{ $student->program_code }}
 
 </td>
 
 
 
 
+<td class="px-6 py-6 text-gray-600">
 
-
-<td class="
-px-6
-py-6
-text-gray-600
-">
-
-1st Year
+{{ $student->year_level }} Year
 
 </td>
 
 
 
 
+<td class="px-6 py-6">
 
 
-
-<td class="
-px-6
-py-6
-">
-
+@if($student->rfid_identifier)
 
 <span class="
 bg-green-50
@@ -495,331 +616,7 @@ Assigned
 </span>
 
 
-</td>
-
-
-
-
-
-
-
-<td class="
-px-6
-py-6
-">
-
-
-<span class="
-bg-green-50
-text-green-700
-px-3
-py-1
-rounded-full
-text-xs
-font-semibold
-">
-
-Active
-
-</span>
-
-
-</td>
-
-
-
-
-
-
-
-<td class="
-px-6
-py-6
-relative
-">
-
-
-<div class="relative">
-
-
-<button
-
-@click="
-openMenu === 1 
-? openMenu=null 
-: openMenu=1
-"
-
-class="
-w-10
-h-10
-rounded-xl
-border
-border-gray-200
-hover:bg-gray-100
-transition
-text-gray-600
-"
-
->
-
-⋮
-
-</button>
-
-<div
-
-x-show="openMenu===1"
-
-x-transition
-
-class="
-absolute
-right-0
-bottom-12
-w-52
-bg-white
-rounded-xl
-shadow-xl
-border
-border-gray-100
-z-[999]
-overflow-hidden
-"
-
-style="display:none;"
-
->
-
-
-<a
-
-href="{{ route('students.show',1) }}"
-
-class="
-block
-px-5
-py-3
-text-sm
-text-gray-700
-hover:bg-gray-50
-"
-
->
-
-View Student Profile
-
-</a>
-
-
-
-<a
-
-href="#"
-
-class="
-block
-px-5
-py-3
-text-sm
-text-gray-700
-hover:bg-gray-50
-"
-
->
-
-Edit Student
-
-</a>
-
-
-
-<a
-
-href="#"
-
-class="
-block
-px-5
-py-3
-text-sm
-text-[#8A6D00]
-hover:bg-[#F8F5E8]
-"
-
->
-
-Assign RFID
-
-</a>
-
-
-
-<a
-
-href="#"
-
-class="
-block
-px-5
-py-3
-text-sm
-text-gray-600
-hover:bg-gray-50
-"
-
->
-
-Deactivate Student
-
-</a>
-
-
-</div>
-
-</div>
-
-
-</td>
-
-
-
-</tr>
-
-
-
-
-
-
-
-
-
-<!-- SAMPLE STUDENT 2 -->
-
-
-<tr class="
-border-t
-hover:bg-gray-50
-transition
-">
-
-
-<td class="
-px-6
-py-6
-text-gray-700
-font-medium
-">
-
-2026-0002
-
-</td>
-
-
-
-
-
-<td class="
-px-6
-py-6
-">
-
-
-<div class="
-flex
-items-center
-gap-3
-">
-
-
-<div class="
-w-10
-h-10
-rounded-full
-bg-[#101064]
-text-white
-flex
-items-center
-justify-center
-font-bold
-">
-
-M
-
-</div>
-
-
-<div>
-
-<p class="
-font-semibold
-text-[#101064]
-">
-
-Maria Santos
-
-</p>
-
-
-<p class="
-text-sm
-text-gray-500
-">
-
-maria.santos@student.edu
-
-</p>
-
-
-</div>
-
-
-</div>
-
-
-</td>
-
-
-
-
-
-
-
-<td class="
-px-6
-py-6
-text-gray-600
-">
-
-BS Accountancy
-
-</td>
-
-
-
-
-
-
-<td class="
-px-6
-py-6
-text-gray-600
-">
-
-2nd Year
-
-</td>
-
-
-
-
-
-
-
-<td class="
-px-6
-py-6
-">
+@else
 
 
 <span class="
@@ -832,9 +629,12 @@ text-xs
 font-semibold
 ">
 
-Pending
+Missing
 
 </span>
+
+
+@endif
 
 
 </td>
@@ -842,14 +642,10 @@ Pending
 
 
 
+<td class="px-6 py-6">
 
 
-
-<td class="
-px-6
-py-6
-">
-
+@if($student->status === 'Active')
 
 <span class="
 bg-green-50
@@ -866,163 +662,46 @@ Active
 </span>
 
 
+@else
+
+
+<span class="
+bg-gray-100
+text-gray-600
+px-3
+py-1
+rounded-full
+text-xs
+font-semibold
+">
+
+Inactive
+
+</span>
+
+
+@endif
+
+
 </td>
 
 
 
 
+<td class="px-6 py-6">
 
 
-
-<td class="
-px-6
-py-6
-relative
+<a href="{{ route('students.show', $student->student_id) }}"
+class="
+text-[#101064]
+text-sm
+font-semibold
+hover:underline
 ">
 
-
-<div class="relative">
-
-
-<button
-
-@click="
-openMenu === 2 
-? openMenu=null 
-: openMenu=2
-"
-
-class="
-w-10
-h-10
-rounded-xl
-border
-border-gray-200
-hover:bg-gray-100
-transition
-text-gray-600
-"
-
->
-
-⋮
-
-</button>
-
-
-
-<div
-
-x-show="openMenu===2"
-
-x-transition
-
-class="
-absolute
-right-0
-bottom-12
-w-52
-bg-white
-rounded-xl
-shadow-xl
-border
-border-gray-100
-z-[999]
-overflow-hidden
-"
-
-style="display:none;"
-
->
-
-
-<a
-
-href="{{ route('students.show',2) }}"
-
-class="
-block
-px-5
-py-3
-text-sm
-text-gray-700
-hover:bg-gray-50
-"
-
->
-
-View Student Profile
+View
 
 </a>
-
-
-
-<a
-
-href="#"
-
-class="
-block
-px-5
-py-3
-text-sm
-text-gray-700
-hover:bg-gray-50
-"
-
->
-
-Edit Student
-
-</a>
-
-
-
-<a
-
-href="#"
-
-class="
-block
-px-5
-py-3
-text-sm
-text-[#8A6D00]
-hover:bg-[#F8F5E8]
-"
-
->
-
-Assign RFID
-
-</a>
-
-
-
-<a
-
-href="#"
-
-class="
-block
-px-5
-py-3
-text-sm
-text-gray-600
-hover:bg-gray-50
-"
-
->
-
-Deactivate Student
-
-</a>
-
-
-</div>
-
-
-</div>
 
 
 </td>
@@ -1032,7 +711,27 @@ Deactivate Student
 </tr>
 
 
+@empty
 
+
+<tr>
+
+<td colspan="7"
+class="
+px-6
+py-10
+text-center
+text-gray-400
+">
+
+No student records found.
+
+</td>
+
+</tr>
+
+
+@endforelse
 
 
 </tbody>
@@ -1045,11 +744,6 @@ Deactivate Student
 
 
 </div>
-
-
-
-
-
 
 
 </div>

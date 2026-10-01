@@ -10,36 +10,18 @@
 
 <div>
 
-<h1 class="
-text-3xl
-font-bold
-text-[#101064]
-">
-
+<h1 class="text-3xl font-bold text-[#101064]">
 Student Profile
-
 </h1>
 
-
-<p class="
-mt-2
-text-gray-500
-">
-
-View student information and RFID identity details.
-
+<p class="mt-2 text-gray-500">
+View student information and attendance identifier details.
 </p>
-
 
 </div>
 
 
-
-
-<a
-
-href="{{ route('students.index') }}"
-
+<a href="{{ route('students.index') }}"
 class="
 px-5
 py-3
@@ -49,9 +31,7 @@ border-gray-300
 text-gray-600
 hover:bg-gray-50
 transition
-"
-
->
+">
 
 Back
 
@@ -65,10 +45,7 @@ Back
 
 
 
-
-
-
-<!-- PROFILE HEADER -->
+<!-- PROFILE CARD -->
 
 
 <div class="
@@ -84,33 +61,33 @@ p-8
 <div class="
 flex
 items-center
-gap-6
+gap-5
+pb-6
+border-b
+border-gray-100
 ">
 
 
 <div class="
-w-20
-h-20
+w-16
+h-16
 rounded-full
 bg-[#101064]
 text-white
 flex
 items-center
 justify-center
-text-3xl
+text-2xl
 font-bold
 ">
 
-J
+{{ strtoupper(substr($student->first_name,0,1)) }}
 
 </div>
 
 
 
-
-
-<div class="flex-1">
-
+<div>
 
 <h2 class="
 text-2xl
@@ -118,27 +95,16 @@ font-bold
 text-[#101064]
 ">
 
-Juan Dela Cruz
+{{ $student->first_name }}
+{{ $student->middle_name }}
+{{ $student->last_name }}
 
 </h2>
 
 
-<p class="
-text-gray-500
-mt-1
-">
+<p class="text-gray-500">
 
-BS Information Technology
-
-</p>
-
-
-<p class="
-text-sm
-text-gray-400
-">
-
-1st Year
+{{ $student->student_number }}
 
 </p>
 
@@ -146,27 +112,6 @@ text-gray-400
 </div>
 
 
-
-
-<span class="
-bg-green-50
-text-green-700
-px-4
-py-2
-rounded-full
-text-sm
-font-semibold
-">
-
-Active Student
-
-</span>
-
-
-
-</div>
-
-
 </div>
 
 
@@ -175,34 +120,22 @@ Active Student
 
 
 
+<!-- STUDENT INFORMATION -->
 
 
-
-<!-- INFORMATION -->
-
-
-<div class="
-bg-white
-rounded-3xl
-border
-border-gray-100
-shadow-sm
-p-8
-">
+<div class="mt-8">
 
 
-<h2 class="
-text-xl
+<h3 class="
+text-lg
 font-semibold
 text-[#101064]
-mb-6
+mb-5
 ">
 
 Student Information
 
-</h2>
-
-
+</h3>
 
 
 <div class="
@@ -213,31 +146,36 @@ gap-6
 ">
 
 
-
 <div>
 
 <p class="text-sm text-gray-400">
-Student ID
+Student Number
 </p>
 
-<p class="font-semibold text-gray-800">
-2026-0001
+<p class="font-semibold text-gray-700">
+{{ $student->student_number }}
 </p>
 
 </div>
 
 
 
-
 <div>
 
 <p class="text-sm text-gray-400">
-Full Name
+Student Status
 </p>
 
-<p class="font-semibold text-gray-800">
-Juan Dela Cruz
+<p class="font-semibold text-gray-700">
+{{ $student->student_status }}
 </p>
+
+</div>
+
+
+
+</div>
+
 
 </div>
 
@@ -245,19 +183,45 @@ Juan Dela Cruz
 
 
 
+
+
+<!-- ACADEMIC INFORMATION -->
+
+
+<div class="mt-10">
+
+
+<h3 class="
+text-lg
+font-semibold
+text-[#101064]
+mb-5
+">
+
+Academic Information
+
+</h3>
+
+
+<div class="
+grid
+grid-cols-1
+md:grid-cols-2
+gap-6
+">
+
+
 <div>
 
 <p class="text-sm text-gray-400">
-Email Address
+College
 </p>
 
-<p class="font-semibold text-gray-800">
-juan.delacruz@student.edu
+<p class="font-semibold text-gray-700">
+{{ $student->college }}
 </p>
 
 </div>
-
-
 
 
 
@@ -267,14 +231,25 @@ juan.delacruz@student.edu
 Program
 </p>
 
-<p class="font-semibold text-gray-800">
-BS Information Technology
+<p class="font-semibold text-gray-700">
+{{ $student->program_name }}
 </p>
 
 </div>
 
 
 
+<div>
+
+<p class="text-sm text-gray-400">
+Program Code
+</p>
+
+<p class="font-semibold text-gray-700">
+{{ $student->program_code }}
+</p>
+
+</div>
 
 
 
@@ -284,34 +259,17 @@ BS Information Technology
 Year Level
 </p>
 
-<p class="font-semibold text-gray-800">
-1st Year
+<p class="font-semibold text-gray-700">
+{{ $student->year_level }} Year
 </p>
 
 </div>
 
 
-
-<div>
-
-<p class="text-sm text-gray-400">
-Section
-</p>
-
-<p class="font-semibold text-gray-800">
-A
-</p>
-
-</div>
-
-
-
 </div>
 
 
 </div>
-
-
 
 
 
@@ -322,138 +280,80 @@ A
 <!-- RFID INFORMATION -->
 
 
-<div class="
-bg-white
-rounded-3xl
-border
-border-gray-100
-shadow-sm
-p-8
-">
+<div class="mt-10">
 
 
-<h2 class="
-text-xl
+<h3 class="
+text-lg
 font-semibold
 text-[#101064]
-mb-6
+mb-5
 ">
 
-RFID Identity Information
+RFID Identifier
 
-</h2>
-
+</h3>
 
 
 
 <div class="
-grid
-grid-cols-1
-md:grid-cols-3
-gap-6
+bg-[#F8F5E8]
+rounded-2xl
+p-5
 ">
 
 
-
-<div>
-
-<p class="text-sm text-gray-400">
-RFID UID
-</p>
-
-<p class="font-semibold text-gray-800">
-04-A8-93-XX-21
-</p>
-
-</div>
+@if($student->rfid_identifier)
 
 
+<p class="
+text-sm
+text-gray-500
+">
 
+Identifier
 
-<div>
-
-<p class="text-sm text-gray-400">
-Card Status
 </p>
 
 
-<span class="
-bg-green-50
+<p class="
+text-xl
+font-bold
+text-[#101064]
+">
+
+{{ $student->rfid_identifier }}
+
+</p>
+
+
+<p class="
+text-sm
 text-green-700
-px-3
-py-1
-rounded-full
-text-xs
-font-semibold
+mt-2
 ">
 
-Active
+✓ Available for attendance identification
 
-</span>
-
-
-</div>
-
-
-
-
-
-<div>
-
-<p class="text-sm text-gray-400">
-Assigned Date
 </p>
 
-<p class="font-semibold text-gray-800">
-September 18, 2026
-</p>
 
-</div>
+@else
 
 
-
-</div>
-
-
-
-</div>
-
-
-
-
-
-
-
-
-
-<!-- ACTIONS -->
-
-
-<div class="
-flex
-justify-end
-gap-3
+<p class="
+text-gray-500
 ">
 
+No RFID identifier available.
 
-<button
+</p>
 
-class="
-px-6
-py-3
-rounded-xl
-bg-[#101064]
-text-white
-font-semibold
-hover:bg-[#D4A017]
-transition
-"
 
->
+@endif
 
-Edit Student
 
-</button>
+</div>
 
 
 </div>
@@ -462,6 +362,7 @@ Edit Student
 
 
 
+</div>
 
 
 </div>

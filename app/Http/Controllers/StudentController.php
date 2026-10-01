@@ -2,55 +2,97 @@
 
 namespace App\Http\Controllers;
 
+use App\Imports\StudentsImport;
+use App\Models\Student;
 use Illuminate\Http\Request;
+
 
 class StudentController extends Controller
 {
 
-    public function index()
-    {
-        return view('students.index');
+    public function index(Request $request)
+{
+    $query = Student::query();
+
+
+    if ($request->search) {
+
+        $query->where(function($q) use ($request){
+
+            $q->where('student_number', 'like', '%' . $request->search . '%')
+            ->orWhere('first_name', 'like', '%' . $request->search . '%')
+            ->orWhere('last_name', 'like', '%' . $request->search . '%');
+
+        });
+
     }
 
-    public function import()
-{
-    return view('students.import');
+
+    if ($request->college) {
+
+        $query->where('college', $request->college);
+
+    }
+
+
+    if ($request->program_code) {
+
+        $query->where('program_code', $request->program_code);
+
+    }
+
+
+    if ($request->year_level) {
+
+        $query->where('year_level', $request->year_level);
+
+    }
+
+
+    $students = $query->latest()->get();
+
+
+    return view('students.index', compact('students'));
 }
 
 
-    public function create()
+    public function import()
     {
-        return view('students.create');
+        return view('students.import');
     }
 
 
-    public function store(Request $request)
+    public function processImport(Request $request)
     {
-        //
+        $request->validate([
+            'file' => [
+                'required',
+                'file',
+                'mimes:xlsx,csv,xls'
+            ],
+        ]);
+
+
+        $import = new StudentsImport();
+
+$import->import($request->file('file'));
+
+
+return redirect()
+    ->route('students.index')
+    ->with('success', [
+        'created' => $import->created,
+        'updated' => $import->updated,
+        'failed' => $import->failed,
+    ]);
     }
 
 
     public function show(string $id)
     {
-        return view('students.show');
-    }
+        $student = Student::findOrFail($id);
 
-
-    public function edit(string $id)
-    {
-        return view('students.edit');
-    }
-
-
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-
-    public function destroy(string $id)
-    {
-        //
+        return view('students.show', compact('student'));
     }
 
 }

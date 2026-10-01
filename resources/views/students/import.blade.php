@@ -2,74 +2,97 @@
 
 <div class="space-y-8">
 
-
-<!-- HEADER -->
-
 <div class="flex justify-between items-center">
 
+    <div>
+        <h1 class="text-3xl font-bold text-[#101064]">
+            Import Student Data
+        </h1>
 
-<div>
+        <p class="mt-2 text-gray-500">
+            Upload student records provided by the registrar.
+        </p>
+    </div>
 
-<h1 class="
-text-3xl
+
+    <a href="{{ route('students.index') }}"
+    class="
+    px-5
+    py-3
+    rounded-xl
+    border
+    border-gray-300
+    text-gray-600
+    hover:bg-gray-50
+    transition
+    ">
+        Back
+    </a>
+
+</div>
+
+
+
+@if(session('success'))
+
+<div class="
+bg-green-50
+border
+border-green-200
+text-green-700
+px-5
+py-4
+rounded-xl
+flex
+items-center
+gap-3
+">
+
+<div class="
+w-8
+h-8
+rounded-full
+bg-green-500
+text-white
+flex
+items-center
+justify-center
 font-bold
-text-[#101064]
 ">
 
-Import Student Data
+✓
 
-</h1>
+</div>
 
-
-<p class="
-mt-2
-text-gray-500
-">
-
-Upload and register student records through bulk import.
-
+<p class="font-semibold">
+{{ session('success') }}
 </p>
 
-
 </div>
 
+@endif
 
 
 
+@if($errors->any())
 
-<a
-
-href="{{ route('students.index') }}"
-
-class="
-px-5
-py-3
-rounded-xl
+<div class="
+bg-red-50
 border
-border-gray-300
-text-gray-600
-hover:bg-gray-50
-transition
-"
+border-red-200
+text-red-700
+px-5
+py-4
+rounded-xl
+">
 
->
-
-Back
-
-</a>
-
+{{ $errors->first() }}
 
 </div>
 
+@endif
 
 
-
-
-
-
-
-
-<!-- UPLOAD CARD -->
 
 
 <div class="
@@ -95,11 +118,17 @@ Upload Student File
 
 
 
+<form action="{{ route('students.process-import') }}"
+method="POST"
+enctype="multipart/form-data">
+
+@csrf
 
 
 
-
-<div class="
+<div
+x-data="{ fileName: '' }"
+class="
 border-2
 border-dashed
 border-gray-300
@@ -110,8 +139,8 @@ text-center
 
 
 <div class="
-w-16
-h-16
+w-14
+h-14
 mx-auto
 rounded-full
 bg-[#F8F5E8]
@@ -121,53 +150,35 @@ justify-center
 mb-4
 ">
 
-
 <span class="
 text-2xl
-text-[#D4A017]
 font-bold
+text-[#D4A017]
 ">
 
 ↑
 
 </span>
 
-
 </div>
 
 
 
-
-
-<h3 class="
+<p class="
 font-semibold
 text-gray-700
+mb-4
 ">
 
-Choose Student Data File
-
-</h3>
-
-
-
-<p class="
-text-sm
-text-gray-400
-mt-2
-">
-
-Supported formats: .xlsx, .csv
+Select student Excel or CSV file
 
 </p>
 
 
 
-
-
-<button
-
-class="
-mt-6
+<label class="
+inline-block
+cursor-pointer
 px-6
 py-3
 rounded-xl
@@ -176,185 +187,78 @@ text-white
 font-semibold
 hover:bg-[#D4A017]
 transition
-"
-
->
+">
 
 Choose File
 
-</button>
 
+<input
+type="file"
+name="file"
+accept=".xlsx,.xls,.csv"
+required
+class="hidden"
 
-
-</div>
-
-
-
-</div>
-
-
-
-
-
-
-
-
-<!-- TEMPLATE CARD -->
-
-
-<div class="
-bg-white
-rounded-3xl
-border
-border-gray-100
-shadow-sm
-p-8
-flex
-justify-between
-items-center
-">
-
-
-<div>
-
-
-<h2 class="
-text-xl
-font-semibold
-text-[#101064]
-">
-
-Import Template
-
-</h2>
-
-
-<p class="
-text-sm
-text-gray-500
-mt-1
-">
-
-Use the standard student information template before uploading.
-
-</p>
-
-
-</div>
-
-
-
-
-
-<button
-
-class="
-px-5
-py-3
-rounded-xl
-border
-border-[#D4A017]
-text-[#8A6D00]
-hover:bg-[#F8F5E8]
-transition
-font-semibold
-"
+@change="fileName = $event.target.files[0].name"
 
 >
 
-Download Template
-
-</button>
+</label>
 
 
 
-</div>
-
-
-
-
-
-
-
-
-<!-- PROCESS -->
-
-
-<div class="
-bg-white
-rounded-3xl
+<div
+x-show="fileName"
+class="
+mt-5
+bg-green-50
 border
-border-gray-100
-shadow-sm
-p-8
-">
-
-
-<h2 class="
-text-xl
-font-semibold
-text-[#101064]
-mb-6
-">
-
-Import Process
-
-</h2>
-
-
-
-
-
-<div class="
-grid
-grid-cols-1
-md:grid-cols-4
-gap-5
-">
-
-
-@foreach([
-'Upload File',
-'Validate Records',
-'Preview Data',
-'Confirm Import'
-] as $index=>$step)
-
-
-<div class="
-border
-border-gray-100
-rounded-2xl
-p-5
-text-center
+border-green-200
+rounded-xl
+px-5
+py-4
+flex
+items-center
+justify-center
+gap-3
 ">
 
 
 <div class="
-w-10
-h-10
-mx-auto
+w-9
+h-9
 rounded-full
-bg-[#101064]
+bg-green-500
 text-white
 flex
 items-center
 justify-center
 font-bold
-mb-3
 ">
 
-{{ $index + 1 }}
+✓
 
 </div>
 
 
+
+<div>
+
 <p class="
+text-green-700
 font-semibold
-text-gray-700
+"
+x-text="fileName">
+
+</p>
+
+
+<p class="
+text-sm
+text-green-600
 ">
 
-{{ $step }}
+File ready for import
 
 </p>
 
@@ -362,7 +266,19 @@ text-gray-700
 </div>
 
 
-@endforeach
+</div>
+
+
+
+<p class="
+text-sm
+text-gray-400
+mt-5
+">
+
+Accepted formats: .xlsx, .xls, .csv
+
+</p>
 
 
 </div>
@@ -370,48 +286,35 @@ text-gray-700
 
 
 
-</div>
-
-
-
-
-
-
-
-
-
-<div class="flex justify-end">
-
+<div class="flex justify-end mt-6">
 
 <button
-
+type="submit"
 class="
 px-7
 py-3
 rounded-xl
-bg-[#101064]
+bg-[#D4A017]
 text-white
 font-semibold
-hover:bg-[#D4A017]
+hover:bg-[#101064]
 transition
-"
+">
 
->
-
-Validate File
+Import Students
 
 </button>
 
-
 </div>
 
 
 
-
-
+</form>
 
 
 </div>
 
+
+</div>
 
 </x-admin-layout>

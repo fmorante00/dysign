@@ -115,16 +115,31 @@ Route::patch(
 
 
     Route::get(
-        '/students/import',
-        [StudentController::class, 'import']
-    )
-    ->name('students.import');
+    '/students/import',
+    [StudentController::class, 'import']
+)
+->name('students.import');
 
 
-    Route::resource(
-        'students',
-        StudentController::class
-    );
+Route::post(
+    '/students/import',
+    [StudentController::class, 'processImport']
+)
+->name('students.process-import');
+
+
+Route::get(
+    '/students',
+    [StudentController::class, 'index']
+)
+->name('students.index');
+
+
+Route::get(
+    '/students/{student}',
+    [StudentController::class, 'show']
+)
+->name('students.show');
 
 
 
