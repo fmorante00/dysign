@@ -10,18 +10,27 @@ class Student extends Model
     protected $primaryKey = 'student_id';
 
 
-    protected $fillable = [
-        'student_number',
-        'first_name',
-        'middle_name',
-        'last_name',
-        'college',
-        'program_name',
-        'program_code',
-        'year_level',
-        'student_status',
-        'rfid_identifier',
-        'status',
-    ];
+   protected $fillable = [
+    'student_number',
+    'first_name',
+    'middle_name',
+    'last_name',
+    'college',
+    'program_name',
+    'program_code',
+    'year_level',
+    'student_status',
+    'rfid_identifier',
+    'status',
+];
 
+
+public function attendanceRecords()
+{
+    return $this->hasMany(
+        AttendanceRecord::class,
+        'student_id',
+        'student_id'
+    );
+}
 }

@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Personnel extends Model
 {
     protected $table = 'personnel';
-    
+
     protected $primaryKey = 'personnel_id';
 
     protected $fillable = [
@@ -18,8 +18,23 @@ class Personnel extends Model
         'position',
     ];
 
+
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id', 'user_id');
+        return $this->belongsTo(
+            User::class,
+            'user_id',
+            'user_id'
+        );
+    }
+
+
+    public function assignments()
+    {
+        return $this->hasMany(
+            EventAssignment::class,
+            'personnel_id',
+            'personnel_id'
+        );
     }
 }

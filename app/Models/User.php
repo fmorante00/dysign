@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
+use App\Models\Department;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -26,6 +27,7 @@ protected $fillable = [
     'password',
     'status',
     'role_id',
+    'department_id',
     'must_change_password',
 ];
 
@@ -33,6 +35,15 @@ protected $fillable = [
     {
         return $this->belongsTo(Role::class, 'role_id', 'role_id');
     }
+
+    public function department()
+{
+    return $this->belongsTo(
+        Department::class,
+        'department_id',
+        'department_id'
+    );
+}
 
     public function personnel()
     {

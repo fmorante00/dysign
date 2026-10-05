@@ -1,545 +1,725 @@
 <aside class="fixed left-0 top-0 h-screen w-72 bg-[#101064] text-white shadow-xl">
 
-<div class="flex flex-col h-full">
+    <div class="flex h-full flex-col">
 
 
-<div class="px-6 py-5 border-b border-white/10">
+        <!-- LOGO -->
 
-<div class="flex items-center gap-3">
+        <div class="border-b border-white/10 px-6 py-5">
 
-<img src="{{ asset('images/logo.png') }}"
-class="w-12 h-12 object-contain">
+            <div class="flex items-center gap-3">
 
+                <img
+                    src="{{ asset('images/logo.png') }}"
+                    class="h-12 w-12 object-contain"
+                >
 
-<div>
+                <div>
 
-<h1 class="text-2xl font-bold">
-Dy<span class="text-[#D4A017]">Sign</span>
-</h1>
+                    <h1 class="text-2xl font-bold">
+                        Dy<span class="text-[#D4A017]">Sign</span>
+                    </h1>
 
+                    <p class="text-xs text-gray-300">
+                        Digital Identity System
+                    </p>
 
-<p class="text-xs text-gray-300">
-Digital Identity System
-</p>
+                </div>
 
+            </div>
 
-</div>
+        </div>
 
-</div>
 
-</div>
 
+        <!-- NAVIGATION -->
 
+        <nav
+            x-data="{
+                user: {{ request()->routeIs('personnel.*') || request()->routeIs('roles.*') ? 'true' : 'false' }},
+                student: {{ request()->routeIs('students.*') ? 'true' : 'false' }},
+                event: {{ request()->routeIs('events.*') || request()->routeIs('announcements.*') ? 'true' : 'false' }},
+                attendance: {{ request()->routeIs('attendance.*') || request()->routeIs('participation.*') ? 'true' : 'false' }},
+                reports: {{ request()->routeIs('reports.*') ? 'true' : 'false' }},
+                system: {{ request()->routeIs('logs.*') || request()->routeIs('backup.*') ? 'true' : 'false' }}
+            }"
+            class="flex-1 overflow-y-auto px-4 py-5"
+        >
 
-<nav
-x-data="{
-user: {{ request()->routeIs('personnel.*') || request()->routeIs('roles.*') ? 'true':'false' }},
-student: {{ request()->routeIs('students.*') ? 'true':'false' }},
-event: {{ request()->routeIs('events.*') || request()->routeIs('announcements.*') ? 'true':'false' }},
-attendance: {{ request()->routeIs('attendance.*') || request()->routeIs('participation.*') ? 'true':'false' }},
-reports: {{ request()->routeIs('reports.*') ? 'true':'false' }},
-system: {{ request()->routeIs('logs.*') || request()->routeIs('backup.*') ? 'true':'false' }}
-}"
-class="flex-1 px-4 py-5 overflow-y-auto">
+            @php
 
+                $role = auth()->user()->role->role_name;
 
-@php
+                $link = 'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition hover:bg-white/10';
 
-$role = auth()->user()->role->role_name;
+                $child = 'ml-5 flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition hover:bg-white/10';
 
-$link = "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition hover:bg-white/10";
+                $active = 'bg-[#D4A017]/20 text-[#D4A017]';
 
-$child = "flex items-center gap-3 ml-5 px-3 py-2 rounded-lg text-sm transition hover:bg-white/10";
+            @endphp
 
-$active = "bg-[#D4A017]/20 text-[#D4A017]";
 
-@endphp
 
 
 
-@if($role === 'Administrator')
+            <!-- ================================================= -->
+            <!-- ADMINISTRATOR -->
+            <!-- ================================================= -->
 
+            @if($role === 'Administrator')
 
 
-<!-- DASHBOARD -->
+                <!-- DASHBOARD -->
 
-<a href="/dashboard"
-class="{{ $link }} {{ request()->is('dashboard') ? $active : '' }}">
+                <a
+                    href="/dashboard"
+                    class="{{ $link }} {{ request()->is('dashboard') ? $active : '' }}"
+                >
 
+                    <svg
+                        class="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M3 12l9-9 9 9M5 10v10h14V10"
+                        />
+                    </svg>
 
-<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <span>
+                        Dashboard
+                    </span>
 
-<path stroke-width="2"
-d="M3 12l9-9 9 9M5 10v10h14V10"/>
+                </a>
 
-</svg>
 
 
-<span>
-Dashboard
-</span>
 
 
-</a>
+                <!-- USER MANAGEMENT -->
 
+                <button
+                    @click="user=!user"
+                    class="{{ $link }} mt-4 w-full"
+                >
 
+                    <svg
+                        class="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M17 20h5v-2a4 4 0 0 0-4-4h-1M9 20H4v-2a4 4 0 0 1 4-4h1m4-4a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"
+                        />
+                    </svg>
 
+                    <span class="flex-1 text-left">
+                        User Management
+                    </span>
 
+                    <span x-text="user ? '⌄' : '›'"></span>
 
-<!-- USER MANAGEMENT -->
+                </button>
 
-<button
-@click="user=!user"
-class="{{ $link }} w-full mt-4">
 
+                <div
+                    x-show="user"
+                    x-collapse
+                    class="mt-1"
+                >
 
-<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    @if(auth()->user()->hasPermission('manage_personnel_accounts'))
 
-<path stroke-width="2"
-d="M17 20h5v-2a4 4 0 0 0-4-4h-1M9 20H4v-2a4 4 0 0 1 4-4h1m4-4a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/>
+                        <a
+                            href="{{ route('personnel.index') }}"
+                            class="{{ $child }} {{ request()->routeIs('personnel.*') ? $active : '' }}"
+                        >
 
-</svg>
+                            <span class="text-[#D4A017]">
+                                •
+                            </span>
 
+                            Personnel Management
 
-<span class="flex-1 text-left">
-User Management
-</span>
+                        </a>
 
+                    @endif
 
-<span x-text="user ? '⌄':'›'"></span>
 
 
-</button>
+                    @if(auth()->user()->hasPermission('assign_roles'))
 
+                        <a
+                            href="{{ route('roles.index') }}"
+                            class="{{ $child }} {{ request()->routeIs('roles.*') ? $active : '' }}"
+                        >
 
+                            <span class="text-[#D4A017]">
+                                •
+                            </span>
 
-<div x-show="user" x-collapse class="mt-1">
+                            Roles & Access
 
+                        </a>
 
-@if(auth()->user()->hasPermission('manage_personnel_accounts'))
+                    @endif
 
-<a href="{{ route('personnel.index') }}"
-class="{{ $child }} {{ request()->routeIs('personnel.*') ? $active : '' }}">
+                </div>
 
 
-<span class="text-[#D4A017]">
-•
-</span>
 
 
-Personnel Management
 
-</a>
+                <!-- STUDENT RECORDS -->
 
-@endif
+                <button
+                    @click="student=!student"
+                    class="{{ $link }} mt-3 w-full"
+                >
 
+                    <svg
+                        class="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M12 14l9-5-9-5-9 5 9 5zM12 14l6.16-3.42M12 14v7"
+                        />
+                    </svg>
 
+                    <span class="flex-1 text-left">
+                        Student Records
+                    </span>
 
-@if(auth()->user()->hasPermission('assign_roles'))
+                    <span x-text="student ? '⌄' : '›'"></span>
 
-<a href="{{ route('roles.index') }}"
-class="{{ $child }} {{ request()->routeIs('roles.*') ? $active : '' }}">
+                </button>
 
 
-<span class="text-[#D4A017]">
-•
-</span>
+                <div
+                    x-show="student"
+                    x-collapse
+                    class="mt-1"
+                >
 
+                    @if(auth()->user()->hasPermission('import_student_data'))
 
-Roles & Access
+                        <a
+                            href="{{ route('students.index') }}"
+                            class="{{ $child }} {{ request()->routeIs('students.*') ? $active : '' }}"
+                        >
 
-</a>
+                            <span class="text-[#D4A017]">
+                                •
+                            </span>
 
-@endif
+                            Student Data
 
+                        </a>
 
-</div>
+                    @endif
 
+                </div>
 
 
 
 
-<!-- STUDENT RECORDS -->
 
-<button
-@click="student=!student"
-class="{{ $link }} w-full mt-3">
+                <!-- EVENT MANAGEMENT -->
 
+                <button
+                    @click="event=!event"
+                    class="{{ $link }} mt-3 w-full"
+                >
 
-<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg
+                        class="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M8 7V3m8 4V3M5 11h14M5 19h14M5 7h14v14H5z"
+                        />
+                    </svg>
 
-<path stroke-width="2"
-d="M12 14l9-5-9-5-9 5 9 5zM12 14l6.16-3.42M12 14v7"/>
+                    <span class="flex-1 text-left">
+                        Event Management
+                    </span>
 
-</svg>
+                    <span x-text="event ? '⌄' : '›'"></span>
 
+                </button>
 
 
-<span class="flex-1 text-left">
-Student Records
-</span>
+                <div
+                    x-show="event"
+                    x-collapse
+                    class="mt-1"
+                >
 
+                    <a
+                        href="{{ route('events.index') }}"
+                        class="{{ $child }} {{ request()->routeIs('events.*') ? $active : '' }}"
+                    >
 
-<span x-text="student ? '⌄':'›'"></span>
+                        <span class="text-[#D4A017]">
+                            •
+                        </span>
 
+                        Events
 
-</button>
+                    </a>
 
 
+                    <a
+                        href="{{ route('announcements.index') }}"
+                        class="{{ $child }} {{ request()->routeIs('announcements.*') ? $active : '' }}"
+                    >
 
+                        <span class="text-[#D4A017]">
+                            •
+                        </span>
 
-<div x-show="student" x-collapse class="mt-1">
+                        Announcements
 
+                    </a>
 
-@if(auth()->user()->hasPermission('import_student_data'))
+                </div>
 
 
-<a href="{{ route('students.index') }}"
-class="{{ $child }} {{ request()->routeIs('students.*') ? $active : '' }}">
 
 
-<span class="text-[#D4A017]">
-•
-</span>
 
+                <!-- ATTENDANCE MANAGEMENT -->
 
-Student Data
+                <button
+                    @click="attendance=!attendance"
+                    class="{{ $link }} mt-3 w-full"
+                >
 
-</a>
+                    <svg
+                        class="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M13 10V3L4 14h7v7l9-11h-7z"
+                        />
+                    </svg>
 
+                    <span class="flex-1 text-left">
+                        Attendance Management
+                    </span>
 
-@endif
+                    <span x-text="attendance ? '⌄' : '›'"></span>
 
+                </button>
 
-</div>
 
-<!-- EVENT MANAGEMENT -->
+                <div
+                    x-show="attendance"
+                    x-collapse
+                    class="mt-1"
+                >
 
-<button
-@click="event=!event"
-class="{{ $link }} w-full mt-3">
+                    @if(auth()->user()->hasPermission('view_attendance'))
 
+                        <a
+                            href="{{ route('attendance.monitor') }}"
+                            class="{{ $child }} {{ request()->routeIs('attendance.monitor') ? $active : '' }}"
+                        >
 
-<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <span class="text-[#D4A017]">
+                                •
+                            </span>
 
-<path stroke-width="2"
-d="M8 7V3m8 4V3M5 11h14M5 19h14M5 7h14v14H5z"/>
+                            Attendance Monitoring
 
-</svg>
+                        </a>
 
 
-<span class="flex-1 text-left">
-Event Management
-</span>
+                        <a
+                            href="{{ route('attendance.alerts') }}"
+                            class="{{ $child }} {{ request()->routeIs('attendance.alerts') ? $active : '' }}"
+                        >
 
+                            <span class="text-[#D4A017]">
+                                •
+                            </span>
 
-<span x-text="event ? '⌄':'›'"></span>
+                            Attendance Alerts
 
+                        </a>
 
-</button>
+                    @endif
 
 
 
-<div x-show="event" x-collapse class="mt-1">
+                    <a
+                        href="{{ route('participation.records') }}"
+                        class="{{ $child }} {{ request()->routeIs('participation.records') ? $active : '' }}"
+                    >
 
+                        <span class="text-[#D4A017]">
+                            •
+                        </span>
 
-<a href="{{ route('events.index') }}"
-class="{{ $child }} {{ request()->routeIs('events.*') ? $active : '' }}">
+                        Participation Records
 
+                    </a>
 
-<span class="text-[#D4A017]">
-•
-</span>
 
+                    <a
+                        href="{{ route('participation.evaluation') }}"
+                        class="{{ $child }} {{ request()->routeIs('participation.evaluation') ? $active : '' }}"
+                    >
 
-Events
+                        <span class="text-[#D4A017]">
+                            •
+                        </span>
 
-</a>
+                        Participation Evaluation
 
+                    </a>
 
+                </div>
 
-<a href="{{ route('announcements.index') }}"
-class="{{ $child }} {{ request()->routeIs('announcements.*') ? $active : '' }}">
 
 
-<span class="text-[#D4A017]">
-•
-</span>
 
 
-Announcements
+                <!-- REPORTS -->
 
-</a>
+                <button
+                    @click="reports=!reports"
+                    class="{{ $link }} mt-3 w-full"
+                >
 
+                    <svg
+                        class="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M3 3v18h18M7 16v-5m5 5V8m5 8V5"
+                        />
+                    </svg>
 
-</div>
+                    <span class="flex-1 text-left">
+                        Reports & Analytics
+                    </span>
 
+                    <span x-text="reports ? '⌄' : '›'"></span>
 
+                </button>
 
 
+                <div
+                    x-show="reports"
+                    x-collapse
+                    class="mt-1"
+                >
 
+                    <a
+                        href="{{ route('reports.attendance') }}"
+                        class="{{ $child }} {{ request()->routeIs('reports.attendance') ? $active : '' }}"
+                    >
 
-<!-- ATTENDANCE MANAGEMENT -->
+                        <span class="text-[#D4A017]">
+                            •
+                        </span>
 
-<button
-@click="attendance=!attendance"
-class="{{ $link }} w-full mt-3">
+                        Attendance Reports
 
+                    </a>
 
-<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 
-<path stroke-width="2"
-d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    <a
+                        href="{{ route('reports.participation') }}"
+                        class="{{ $child }} {{ request()->routeIs('reports.participation') ? $active : '' }}"
+                    >
 
-</svg>
+                        <span class="text-[#D4A017]">
+                            •
+                        </span>
 
+                        Participation Reports
 
+                    </a>
 
-<span class="flex-1 text-left">
-Attendance Management
-</span>
+                </div>
 
 
-<span x-text="attendance ? '⌄':'›'"></span>
 
 
-</button>
 
+                <!-- SYSTEM MANAGEMENT -->
 
+                <button
+                    @click="system=!system"
+                    class="{{ $link }} mt-3 w-full"
+                >
 
+                    <svg
+                        class="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"
+                        />
+                    </svg>
 
-<div x-show="attendance" x-collapse class="mt-1">
+                    <span class="flex-1 text-left">
+                        System Management
+                    </span>
 
+                    <span x-text="system ? '⌄' : '›'"></span>
 
+                </button>
 
-@if(auth()->user()->hasPermission('view_attendance'))
 
+                <div
+                    x-show="system"
+                    x-collapse
+                    class="mt-1"
+                >
 
-<a href="{{ route('attendance.index') }}"
-class="{{ $child }} {{ request()->routeIs('attendance.index') ? $active : '' }}">
+                    <a
+                        href="{{ route('logs.index') }}"
+                        class="{{ $child }} {{ request()->routeIs('logs.*') ? $active : '' }}"
+                    >
 
+                        <span class="text-[#D4A017]">
+                            •
+                        </span>
 
-<span class="text-[#D4A017]">
-•
-</span>
+                        Activity Logs
 
+                    </a>
 
-Attendance Scanner
 
-</a>
+                    <a
+                        href="{{ route('backup.index') }}"
+                        class="{{ $child }} {{ request()->routeIs('backup.*') ? $active : '' }}"
+                    >
 
+                        <span class="text-[#D4A017]">
+                            •
+                        </span>
 
+                        Backup & Recovery
 
-<a href="{{ route('attendance.monitor') }}"
-class="{{ $child }} {{ request()->routeIs('attendance.monitor') ? $active : '' }}">
+                    </a>
 
+                </div>
 
-<span class="text-[#D4A017]">
-•
-</span>
 
+            @endif
 
-Attendance Monitoring
 
-</a>
 
 
 
-<a href="{{ route('attendance.alerts') }}"
-class="{{ $child }} {{ request()->routeIs('attendance.alerts') ? $active : '' }}">
+            <!-- ================================================= -->
+            <!-- DEPARTMENT STAFF -->
+            <!-- ================================================= -->
 
+            @if($role === 'Department Staff')
 
-<span class="text-[#D4A017]">
-•
-</span>
 
+                <!-- DASHBOARD -->
 
-Attendance Alerts
+                <a
+                    href="/dashboard"
+                    class="{{ $link }} {{ request()->is('dashboard') ? $active : '' }}"
+                >
 
-</a>
+                    <svg
+                        class="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M3 12l9-9 9 9M5 10v10h14V10"
+                        />
+                    </svg>
 
+                    <span>
+                        Dashboard
+                    </span>
 
-@endif
+                </a>
 
 
 
 
-<a href="{{ route('participation.records') }}"
-class="{{ $child }} {{ request()->routeIs('participation.*') ? $active : '' }}">
+                <!-- EVENT MANAGEMENT -->
 
+                <button
+                    @click="event=!event"
+                    class="{{ $link }} mt-4 w-full"
+                >
 
-<span class="text-[#D4A017]">
-•
-</span>
+                    <svg
+                        class="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M8 7V3m8 4V3M5 11h14M5 19h14M5 7h14v14H5z"
+                        />
+                    </svg>
 
+                    <span class="flex-1 text-left">
+                        Event Management
+                    </span>
 
-Participation Records
+                    <span x-text="event ? '⌄' : '›'"></span>
 
-</a>
+                </button>
 
 
+                <div
+                    x-show="event"
+                    x-collapse
+                    class="mt-1"
+                >
 
+                    <a
+                        href="{{ route('events.index') }}"
+                        class="{{ $child }} {{ request()->routeIs('events.*') ? $active : '' }}"
+                    >
 
-<a href="{{ route('participation.evaluation') }}"
-class="{{ $child }} {{ request()->routeIs('participation.evaluation') ? $active : '' }}">
+                        <span class="text-[#D4A017]">
+                            •
+                        </span>
 
+                        Events
 
-<span class="text-[#D4A017]">
-•
-</span>
+                    </a>
 
+                </div>
 
-Participation Evaluation
 
-</a>
+            @endif
 
 
 
-</div>
 
-<!-- REPORTS & ANALYTICS -->
 
-<button
-@click="reports=!reports"
-class="{{ $link }} w-full mt-3">
+            <!-- ================================================= -->
+            <!-- ATTENDANCE PERSONNEL -->
+            <!-- ================================================= -->
 
+            @if($role === 'Attendance Personnel')
 
-<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 
-<path stroke-width="2"
-d="M3 3v18h18M7 16v-5m5 5V8m5 8V5"/>
+                <!-- DASHBOARD -->
 
-</svg>
+                <a
+                    href="/dashboard"
+                    class="{{ $link }} {{ request()->is('dashboard') ? $active : '' }}"
+                >
 
+                    <svg
+                        class="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M3 12l9-9 9 9M5 10v10h14V10"
+                        />
+                    </svg>
 
-<span class="flex-1 text-left">
-Reports & Analytics
-</span>
+                    <span>
+                        Dashboard
+                    </span>
 
+                </a>
 
-<span x-text="reports ? '⌄':'›'"></span>
 
 
-</button>
 
+                <!-- MY ASSIGNED EVENTS -->
 
+                <a
+                    href="{{ route('my-events.index') }}"
+                    class="{{ $link }} mt-3 {{
+                        request()->routeIs('my-events.*') ||
+                        request()->routeIs('attendance.index')
+                            ? $active
+                            : ''
+                    }}"
+                >
 
+                    <svg
+                        class="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M8 7V3m8 4V3M5 11h14M5 19h14M5 7h14v14H5z"
+                        />
+                    </svg>
 
-<div x-show="reports" x-collapse class="mt-1">
+                    <span>
+                        My Assigned Events
+                    </span>
 
+                </a>
 
 
-<a href="{{ route('reports.attendance') }}"
-class="{{ $child }} {{ request()->routeIs('reports.attendance') ? $active : '' }}">
+            @endif
 
 
-<span class="text-[#D4A017]">
-•
-</span>
+        </nav>
 
 
-Attendance Reports
-
-</a>
-
-
-
-
-<a href="{{ route('reports.participation') }}"
-class="{{ $child }} {{ request()->routeIs('reports.participation') ? $active : '' }}">
-
-
-<span class="text-[#D4A017]">
-•
-</span>
-
-
-Participation Reports
-
-</a>
-
-
-
-</div>
-
-
-
-
-
-
-<!-- SYSTEM MANAGEMENT -->
-
-<button
-@click="system=!system"
-class="{{ $link }} w-full mt-3">
-
-
-<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-
-<path stroke-width="2"
-d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/>
-
-</svg>
-
-
-<span class="flex-1 text-left">
-System Management
-</span>
-
-
-<span x-text="system ? '⌄':'›'"></span>
-
-
-</button>
-
-
-
-
-<div x-show="system" x-collapse class="mt-1">
-
-
-<a href="{{ route('logs.index') }}"
-class="{{ $child }} {{ request()->routeIs('logs.*') ? $active : '' }}">
-
-
-<span class="text-[#D4A017]">
-•
-</span>
-
-
-Activity Logs
-
-</a>
-
-
-
-
-<a href="{{ route('backup.index') }}"
-class="{{ $child }} {{ request()->routeIs('backup.*') ? $active : '' }}">
-
-
-<span class="text-[#D4A017]">
-•
-</span>
-
-
-Backup & Recovery
-
-</a>
-
-
-
-</div>
-
-
-
-@endif
-
-
-</nav>
-
-
-</div>
-
+    </div>
 
 </aside>

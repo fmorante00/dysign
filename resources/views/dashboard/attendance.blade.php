@@ -1,892 +1,824 @@
 <x-admin-layout>
 
-<div class="
-h-[calc(100vh-80px)]
-overflow-y-auto
-pr-3
-pb-10
-space-y-8
-">
+<div class="space-y-8">
 
 
-<!-- HEADER -->
+    <!-- HEADER -->
 
-<div>
+    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
 
-<h1 class="
-text-3xl
-font-bold
-text-[#101064]
-">
+        <div>
 
-Good day, {{ auth()->user()->name }}
+            <h1 class="text-3xl font-bold text-[#101064]">
+                Good day, {{ auth()->user()->name }}
+            </h1>
 
-</h1>
+            <p class="mt-2 text-sm text-gray-500">
+                View your assigned events and manage attendance operations.
+            </p>
 
+        </div>
 
-<p class="
-mt-2
-text-sm
-text-gray-500
-">
 
-Your assigned attendance operations for today.
+        <a
+            href="{{ route('my-events.index') }}"
+            class="inline-flex items-center justify-center rounded-xl bg-[#101064] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#0c0c4f]"
+        >
+            View My Assigned Events
+        </a>
 
-</p>
+    </div>
 
-</div>
 
 
 
 
+    <!-- SUMMARY CARDS -->
 
+    <div class="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
 
 
+        <!-- TOTAL ASSIGNED EVENTS -->
 
-<!-- CURRENT EVENT -->
+        <div class="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
 
-<div class="
-bg-[#101064]
-rounded-2xl
-p-8
-text-white
-shadow-sm
-">
+            <div class="flex items-center justify-between">
 
+                <div>
 
-<div class="
-flex
-justify-between
-items-start
-">
+                    <p class="text-sm text-gray-500">
+                        Assigned Events
+                    </p>
 
+                    <h2 class="mt-2 text-3xl font-bold text-[#101064]">
+                        {{ $totalAssignedEvents }}
+                    </h2>
 
-<div>
+                    <p class="mt-1 text-xs text-gray-400">
+                        Total events assigned to you
+                    </p>
 
+                </div>
 
-<p class="
-text-xs
-uppercase
-tracking-wider
-text-blue-200
-">
 
-Current Assigned Event
+                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-[#101064] text-white">
 
-</p>
+                    <svg
+                        class="h-6 w-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M8 7V3m8 4V3M5 11h14M5 19h14M5 7h14v14H5z"
+                        />
+                    </svg>
 
+                </div>
 
+            </div>
 
-<h2 class="
-mt-3
-text-3xl
-font-bold
-">
+        </div>
 
-Freshmen Orientation 2026
 
-</h2>
 
 
+        <!-- UPCOMING EVENTS -->
 
-<div class="
-mt-5
-space-y-2
-text-sm
-text-blue-100
-">
+        <div class="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
 
+            <div class="flex items-center justify-between">
 
-<p>
-Date: September 25, 2026
-</p>
+                <div>
 
+                    <p class="text-sm text-gray-500">
+                        Upcoming
+                    </p>
 
-<p>
-Time: 8:00 AM - 11:00 AM
-</p>
+                    <h2 class="mt-2 text-3xl font-bold text-[#D4A017]">
+                        {{ $upcomingEventsCount }}
+                    </h2>
 
+                    <p class="mt-1 text-xs text-gray-400">
+                        Upcoming assigned events
+                    </p>
 
-<p>
-Venue: Main Auditorium
-</p>
+                </div>
 
 
-</div>
+                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-yellow-50 text-[#D4A017]">
 
+                    <svg
+                        class="h-6 w-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                    </svg>
 
-</div>
+                </div>
 
+            </div>
 
+        </div>
 
 
-<div>
 
-<span class="
-rounded-full
-bg-[#D4A017]
-px-4
-py-2
-text-sm
-font-semibold
-text-[#101064]
-">
 
-Upcoming
+        <!-- TODAY SCANNED -->
 
-</span>
+        <div class="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
 
+            <div class="flex items-center justify-between">
 
-</div>
+                <div>
 
+                    <p class="text-sm text-gray-500">
+                        Scanned Today
+                    </p>
 
-</div>
+                    <h2 class="mt-2 text-3xl font-bold text-green-600">
+                        {{ $todayScanned }}
+                    </h2>
 
+                    <p class="mt-1 text-xs text-gray-400">
+                        Attendance recorded today
+                    </p>
 
+                </div>
 
 
+                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-green-50 text-green-600">
 
-<div class="
-mt-8
-">
+                    <svg
+                        class="h-6 w-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M5 13l4 4L19 7"
+                        />
+                    </svg>
 
+                </div>
 
-<a href="#"
-class="
-inline-flex
-items-center
-rounded-xl
-bg-white
-px-6
-py-3
-font-semibold
-text-[#101064]
-transition
-hover:bg-gray-100
-"
->
+            </div>
 
-Start Attendance
+        </div>
 
-</a>
 
 
-</div>
 
+        <!-- TOTAL SCANS -->
 
-</div>
+        <div class="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
 
+            <div class="flex items-center justify-between">
 
+                <div>
 
+                    <p class="text-sm text-gray-500">
+                        Total Scans
+                    </p>
 
+                    <h2 class="mt-2 text-3xl font-bold text-[#101064]">
+                        {{ $totalScanned }}
+                    </h2>
 
+                    <p class="mt-1 text-xs text-gray-400">
+                        Across your assigned events
+                    </p>
 
+                </div>
 
 
+                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-[#101064]">
 
-<!-- ATTENDANCE SUMMARY -->
+                    <svg
+                        class="h-6 w-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M13 10V3L4 14h7v7l9-11h-7z"
+                        />
+                    </svg>
 
+                </div>
 
-<div class="
-grid
-grid-cols-1
-md:grid-cols-3
-gap-6
-">
+            </div>
 
+        </div>
 
+    </div>
 
-<div class="
-bg-white
-rounded-2xl
-border
-border-gray-200
-p-6
-shadow-sm
-">
 
 
-<p class="
-text-sm
-text-gray-500
-">
 
-Registered Students
 
-</p>
+    <!-- CURRENT / NEXT EVENT -->
 
+    @if($currentEvent)
 
-<h2 class="
-mt-3
-text-4xl
-font-bold
-text-[#101064]
-">
+        <div class="overflow-hidden rounded-3xl bg-[#101064] text-white shadow-sm">
 
-500
+            <div class="p-8">
 
-</h2>
+                <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
 
 
-</div>
+                    <div>
 
+                        <p class="text-xs font-semibold uppercase tracking-widest text-blue-200">
 
+                            @if($currentEvent->status === 'Ongoing')
+                                Current Assigned Event
+                            @else
+                                Next Assigned Event
+                            @endif
 
+                        </p>
 
 
-<div class="
-bg-white
-rounded-2xl
-border
-border-gray-200
-p-6
-shadow-sm
-">
+                        <h2 class="mt-3 text-3xl font-bold">
+                            {{ $currentEvent->event_name }}
+                        </h2>
 
 
-<p class="
-text-sm
-text-gray-500
-">
+                        <div class="mt-5 flex flex-wrap gap-x-6 gap-y-3 text-sm text-blue-100">
 
-Present
+                            <span>
+                                {{ \Carbon\Carbon::parse($currentEvent->event_date)->format('F d, Y') }}
+                            </span>
 
-</p>
 
+                            <span>
+                                {{ \Carbon\Carbon::parse($currentEvent->start_time)->format('g:i A') }}
+                                -
+                                {{ \Carbon\Carbon::parse($currentEvent->end_time)->format('g:i A') }}
+                            </span>
 
-<h2 class="
-mt-3
-text-4xl
-font-bold
-text-green-600
-">
 
-342
+                            <span>
+                                {{ $currentEvent->location }}
+                            </span>
 
-</h2>
 
+                            <span>
+                                {{ $currentEvent->department->department_name ?? 'University-wide Event' }}
+                            </span>
 
-</div>
+                        </div>
 
+                    </div>
 
 
 
 
-<div class="
-bg-white
-rounded-2xl
-border
-border-gray-200
-p-6
-shadow-sm
-">
+                    <div class="flex flex-col items-start gap-4 lg:items-end">
 
+                        @if($currentEvent->status === 'Ongoing')
 
-<p class="
-text-sm
-text-gray-500
-">
+                            <span class="rounded-full bg-green-100 px-4 py-2 text-sm font-semibold text-green-700">
+                                Ongoing
+                            </span>
 
-Absent
+                        @elseif($currentEvent->status === 'Upcoming')
 
-</p>
+                            <span class="rounded-full bg-[#D4A017] px-4 py-2 text-sm font-semibold text-[#101064]">
+                                Upcoming
+                            </span>
 
+                        @endif
 
-<h2 class="
-mt-3
-text-4xl
-font-bold
-text-red-500
-">
 
-158
+                        <div class="text-left lg:text-right">
 
-</h2>
+                            <p class="text-xs uppercase tracking-wider text-blue-200">
+                                Attendance Recorded
+                            </p>
 
+                            <p class="mt-1 text-3xl font-bold">
+                                {{ $currentEventScanned }}
+                            </p>
 
-</div>
+                        </div>
 
+                    </div>
 
-</div>
+                </div>
 
-<!-- RECENT RFID SCANS -->
 
 
-<div class="
-bg-white
-rounded-2xl
-border
-border-gray-200
-shadow-sm
-overflow-hidden
-">
+                <div class="mt-8 flex flex-wrap gap-3">
 
+                    <a
+                        href="{{ route('my-events.show', $currentEvent->event_id) }}"
+                        class="inline-flex items-center rounded-xl border border-white/20 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+                    >
+                        View Event
+                    </a>
 
-<div class="
-px-6
-py-5
-border-b
-border-gray-200
-">
 
+                    <a
+                        href="{{ route('attendance.index', $currentEvent->event_id) }}"
+                        class="inline-flex items-center rounded-xl bg-white px-6 py-3 text-sm font-semibold text-[#101064] transition hover:bg-gray-100"
+                    >
+                        Start Attendance
+                    </a>
 
-<h2 class="
-text-xl
-font-semibold
-text-[#101064]
-">
+                </div>
 
-Recent RFID Scans
+            </div>
 
-</h2>
+        </div>
 
 
-<p class="
-mt-1
-text-sm
-text-gray-500
-">
+    @else
 
-Latest attendance records from your active event.
+        <div class="rounded-3xl border border-gray-100 bg-white p-10 text-center shadow-sm">
 
-</p>
+            <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 text-gray-400">
 
+                <svg
+                    class="h-7 w-7"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M8 7V3m8 4V3M5 11h14M5 19h14M5 7h14v14H5z"
+                    />
+                </svg>
 
-</div>
+            </div>
 
 
+            <h2 class="mt-4 text-xl font-semibold text-[#101064]">
+                No current assigned event
+            </h2>
 
+            <p class="mt-2 text-sm text-gray-500">
+                You currently have no ongoing or upcoming assigned event.
+            </p>
 
 
-<div class="
-overflow-x-auto
-">
+            <a
+                href="{{ route('my-events.index') }}"
+                class="mt-6 inline-flex rounded-xl bg-[#101064] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#0c0c4f]"
+            >
+                View My Assigned Events
+            </a>
 
+        </div>
 
-<table class="
-w-full
-text-left
-">
+    @endif
 
 
-<thead class="
-bg-gray-50
-">
 
 
-<tr>
 
+    <!-- MAIN GRID -->
 
-<th class="
-px-6
-py-4
-text-xs
-uppercase
-tracking-wide
-text-gray-500
-">
+    <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
 
-Student ID
 
-</th>
+        <!-- RECENT RFID SCANS -->
 
+        <div class="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm xl:col-span-2">
 
-<th class="
-px-6
-py-4
-text-xs
-uppercase
-tracking-wide
-text-gray-500
-">
 
-Student Name
+            <div class="border-b border-gray-100 px-6 py-5">
 
-</th>
+                <h2 class="text-xl font-semibold text-[#101064]">
+                    Recent RFID Scans
+                </h2>
 
+                <p class="mt-1 text-sm text-gray-500">
+                    Latest attendance records from your assigned events.
+                </p>
 
-<th class="
-px-6
-py-4
-text-xs
-uppercase
-tracking-wide
-text-gray-500
-">
+            </div>
 
-Time Scanned
 
-</th>
 
+            @if($recentAttendance->count())
 
-<th class="
-px-6
-py-4
-text-xs
-uppercase
-tracking-wide
-text-gray-500
-">
 
-Status
+                <div class="divide-y divide-gray-100">
 
-</th>
 
+                    @foreach($recentAttendance as $record)
 
-</tr>
+                        <div class="flex flex-col gap-4 px-6 py-5 transition hover:bg-gray-50 md:flex-row md:items-center md:justify-between">
 
 
-</thead>
+                            <div class="flex items-center gap-4">
 
+                                <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#101064] font-semibold text-white">
 
+                                    {{ strtoupper(substr($record->student->first_name ?? 'S', 0, 1)) }}
 
+                                </div>
 
 
+                                <div>
 
-<tbody>
+                                    <p class="font-semibold text-[#101064]">
 
+                                        {{ $record->student->first_name ?? '' }}
+                                        {{ $record->student->last_name ?? 'Unknown Student' }}
 
-<tr class="
-border-t
-">
+                                    </p>
 
 
-<td class="
-px-6
-py-4
-text-sm
-text-gray-700
-">
+                                    <p class="mt-1 text-sm text-gray-500">
 
-2026-00124
+                                        {{ $record->student->student_number ?? 'No student number' }}
 
-</td>
+                                        @if($record->student && $record->student->program_code)
+                                            • {{ $record->student->program_code }}
+                                        @endif
 
+                                    </p>
 
-<td class="
-px-6
-py-4
-text-sm
-font-medium
-text-[#101064]
-">
 
-Angela Ramos
+                                    @if($record->event)
 
-</td>
+                                        <p class="mt-1 text-xs text-gray-400">
+                                            {{ $record->event->event_name }}
+                                        </p>
 
+                                    @endif
 
-<td class="
-px-6
-py-4
-text-sm
-text-gray-600
-">
+                                </div>
 
-8:03 AM
+                            </div>
 
-</td>
 
 
-<td class="
-px-6
-py-4
-">
+                            <div class="flex items-center gap-4 md:text-right">
 
+                                <div>
 
-<span class="
-rounded-full
-bg-green-100
-px-3
-py-1
-text-xs
-font-medium
-text-green-700
-">
+                                    <p class="text-sm font-medium text-gray-700">
 
-Present
+                                        {{ \Carbon\Carbon::parse($record->time_in)->format('h:i A') }}
 
-</span>
+                                    </p>
 
 
-</td>
+                                    <p class="mt-1 text-xs text-gray-400">
 
+                                        {{ \Carbon\Carbon::parse($record->time_in)->format('M d, Y') }}
 
-</tr>
+                                    </p>
 
+                                </div>
 
 
+                                @if($record->status === 'Late')
 
+                                    <span class="rounded-full bg-yellow-100 px-3 py-1 text-xs font-semibold text-yellow-700">
+                                        Late
+                                    </span>
 
+                                @else
 
+                                    <span class="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
+                                        Present
+                                    </span>
 
-<tr class="
-border-t
-">
+                                @endif
 
+                            </div>
 
-<td class="
-px-6
-py-4
-text-sm
-text-gray-700
-">
+                        </div>
 
-2026-00157
+                    @endforeach
 
-</td>
 
+                </div>
 
-<td class="
-px-6
-py-4
-text-sm
-font-medium
-text-[#101064]
-">
 
-Michael Torres
+            @else
 
-</td>
 
+                <div class="px-6 py-12 text-center">
 
-<td class="
-px-6
-py-4
-text-sm
-text-gray-600
-">
+                    <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-gray-100 text-gray-400">
 
-8:05 AM
+                        <svg
+                            class="h-6 w-6"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="M5 13l4 4L19 7"
+                            />
+                        </svg>
 
-</td>
+                    </div>
 
+                    <h3 class="mt-4 font-semibold text-gray-700">
+                        No attendance scans yet
+                    </h3>
 
-<td class="
-px-6
-py-4
-">
+                    <p class="mt-1 text-sm text-gray-400">
+                        Students you scan during assigned events will appear here.
+                    </p>
 
+                </div>
 
-<span class="
-rounded-full
-bg-green-100
-px-3
-py-1
-text-xs
-font-medium
-text-green-700
-">
 
-Present
+            @endif
 
-</span>
 
+        </div>
 
-</td>
 
 
-</tr>
 
 
+        <!-- UPCOMING ASSIGNED EVENTS -->
 
+        <div class="rounded-2xl border border-gray-100 bg-white shadow-sm">
 
 
+            <div class="flex items-center justify-between border-b border-gray-100 px-6 py-5">
 
+                <div>
 
-<tr class="
-border-t
-">
+                    <h2 class="text-xl font-semibold text-[#101064]">
+                        Upcoming Events
+                    </h2>
 
+                    <p class="mt-1 text-sm text-gray-500">
+                        Your next assignments.
+                    </p>
 
-<td class="
-px-6
-py-4
-text-sm
-text-gray-700
-">
+                </div>
 
-2026-00201
 
-</td>
+                <a
+                    href="{{ route('my-events.index') }}"
+                    class="text-sm font-semibold text-[#D4A017] hover:underline"
+                >
+                    View All
+                </a>
 
+            </div>
 
-<td class="
-px-6
-py-4
-text-sm
-font-medium
-text-[#101064]
-">
 
-Sofia Mendoza
 
-</td>
+            @if($upcomingEvents->count())
 
 
-<td class="
-px-6
-py-4
-text-sm
-text-gray-600
-">
+                <div class="divide-y divide-gray-100">
 
-8:07 AM
 
-</td>
+                    @foreach($upcomingEvents as $event)
 
+                        <a
+                            href="{{ route('my-events.show', $event->event_id) }}"
+                            class="block px-6 py-5 transition hover:bg-gray-50"
+                        >
 
-<td class="
-px-6
-py-4
-">
+                            <div class="flex items-start justify-between gap-4">
 
+                                <div class="min-w-0">
 
-<span class="
-rounded-full
-bg-green-100
-px-3
-py-1
-text-xs
-font-medium
-text-green-700
-">
+                                    <h3 class="truncate font-semibold text-[#101064]">
+                                        {{ $event->event_name }}
+                                    </h3>
 
-Present
 
-</span>
+                                    <p class="mt-2 text-sm text-gray-500">
+                                        {{ \Carbon\Carbon::parse($event->event_date)->format('M d, Y') }}
+                                    </p>
 
 
-</td>
+                                    <p class="mt-1 text-sm text-gray-500">
 
+                                        {{ \Carbon\Carbon::parse($event->start_time)->format('g:i A') }}
 
-</tr>
+                                        • {{ $event->location }}
 
+                                    </p>
 
-</tbody>
 
+                                    <p class="mt-2 text-xs text-gray-400">
+                                        {{ $event->department->department_name ?? 'University-wide Event' }}
+                                    </p>
 
-</table>
+                                </div>
 
 
-</div>
+                                <span class="shrink-0 rounded-full bg-yellow-100 px-3 py-1 text-xs font-semibold text-yellow-700">
+                                    Upcoming
+                                </span>
 
+                            </div>
 
-</div>
+                        </a>
 
+                    @endforeach
 
 
+                </div>
 
 
+            @else
 
 
+                <div class="px-6 py-12 text-center">
 
+                    <h3 class="font-semibold text-gray-700">
+                        No upcoming events
+                    </h3>
 
-<!-- UPCOMING EVENTS -->
+                    <p class="mt-2 text-sm text-gray-400">
+                        New event assignments will appear here.
+                    </p>
 
+                </div>
 
-<div class="
-bg-white
-rounded-2xl
-border
-border-gray-200
-p-6
-shadow-sm
-">
 
+            @endif
 
-<div class="
-flex
-items-center
-justify-between
-">
 
+        </div>
 
-<div>
 
+    </div>
 
-<h2 class="
-text-xl
-font-semibold
-text-[#101064]
-">
 
-Upcoming Assigned Events
 
-</h2>
 
 
-<p class="
-mt-1
-text-sm
-text-gray-500
-">
+    <!-- QUICK ACTIONS -->
 
-Events assigned to you in the future.
+    <div class="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
 
-</p>
+        <h2 class="text-xl font-semibold text-[#101064]">
+            Quick Actions
+        </h2>
 
+        <p class="mt-1 text-sm text-gray-500">
+            Common attendance tasks.
+        </p>
 
-</div>
 
+        <div class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
 
 
+            <a
+                href="{{ route('my-events.index') }}"
+                class="flex items-center gap-4 rounded-xl border border-gray-100 p-5 transition hover:border-[#101064]/20 hover:bg-gray-50"
+            >
 
+                <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#101064] text-white">
 
-<a href="{{ route('my-events.index') }}"
+                    <svg
+                        class="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M8 7V3m8 4V3M5 11h14M5 19h14M5 7h14v14H5z"
+                        />
+                    </svg>
 
-class="
-text-sm
-font-medium
-text-[#D4A017]
-hover:underline
-"
->
+                </div>
 
-View All
 
-</a>
+                <div>
 
+                    <p class="font-semibold text-[#101064]">
+                        My Assigned Events
+                    </p>
 
+                    <p class="mt-1 text-xs text-gray-400">
+                        View all events assigned to you.
+                    </p>
 
-</div>
+                </div>
 
+            </a>
 
 
 
+            @if($currentEvent)
 
+                <a
+                    href="{{ route('attendance.index', $currentEvent->event_id) }}"
+                    class="flex items-center gap-4 rounded-xl border border-gray-100 p-5 transition hover:border-[#D4A017]/30 hover:bg-gray-50"
+                >
 
-<div class="
-mt-5
-space-y-3
-">
+                    <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-yellow-50 text-[#D4A017]">
 
+                        <svg
+                            class="h-5 w-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="M13 10V3L4 14h7v7l9-11h-7z"
+                            />
+                        </svg>
 
-<div class="
-rounded-xl
-border
-border-gray-200
-p-4
-flex
-justify-between
-items-center
-">
+                    </div>
 
 
-<div>
+                    <div>
 
+                        <p class="font-semibold text-[#101064]">
+                            Start Attendance
+                        </p>
 
-<h3 class="
-font-semibold
-text-[#101064]
-">
+                        <p class="mt-1 text-xs text-gray-400">
+                            Open the RFID scanner for your current event.
+                        </p>
 
-Leadership Training Seminar
+                    </div>
 
-</h3>
+                </a>
 
+            @else
 
-<p class="
-text-sm
-text-gray-500
-mt-1
-">
+                <div class="flex items-center gap-4 rounded-xl border border-gray-100 bg-gray-50 p-5">
 
-October 3, 2026 • AVR 2
+                    <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-gray-100 text-gray-400">
 
-</p>
+                        <svg
+                            class="h-5 w-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="M13 10V3L4 14h7v7l9-11h-7z"
+                            />
+                        </svg>
 
+                    </div>
 
-</div>
 
+                    <div>
 
-<span class="
-rounded-full
-bg-blue-100
-px-3
-py-1
-text-xs
-font-medium
-text-blue-700
-">
+                        <p class="font-semibold text-gray-500">
+                            Start Attendance
+                        </p>
 
-Scheduled
+                        <p class="mt-1 text-xs text-gray-400">
+                            No current or upcoming event available.
+                        </p>
 
-</span>
+                    </div>
 
+                </div>
 
-</div>
+            @endif
 
 
+        </div>
 
-
-
-
-<div class="
-rounded-xl
-border
-border-gray-200
-p-4
-flex
-justify-between
-items-center
-">
-
-
-<div>
-
-
-<h3 class="
-font-semibold
-text-[#101064]
-">
-
-College Assembly
-
-</h3>
-
-
-<p class="
-text-sm
-text-gray-500
-mt-1
-">
-
-October 10, 2026 • Conference Hall
-
-</p>
-
-
-</div>
-
-
-<span class="
-rounded-full
-bg-blue-100
-px-3
-py-1
-text-xs
-font-medium
-text-blue-700
-">
-
-Scheduled
-
-</span>
-
-
-</div>
-
-
-
-</div>
-
-
-</div>
-
-
-
-
+    </div>
 
 
 </div>
