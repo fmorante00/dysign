@@ -1,5 +1,10 @@
 <x-admin-layout>
 
+@php
+    $logs = $logs ?? collect();
+    $modules = $modules ?? collect();
+@endphp
+
 <style>
 
     /*
@@ -254,7 +259,9 @@
             "
         >
 
-            <div
+            <form
+                method="GET"
+                action="{{ route('logs.index') }}"
                 class="
                     grid
                     grid-cols-1
@@ -270,6 +277,7 @@
                 <div>
 
                     <label
+                        for="search"
                         class="
                             mb-2
                             block
@@ -308,7 +316,10 @@
 
 
                         <input
+                            id="search"
+                            name="search"
                             type="text"
+                            value="{{ request('search') }}"
                             placeholder="Search user, action, or activity..."
                             class="
                                 w-full
@@ -341,6 +352,7 @@
                 <div>
 
                     <label
+                        for="module"
                         class="
                             mb-2
                             block
@@ -354,6 +366,8 @@
 
 
                     <select
+                        id="module"
+                        name="module"
                         class="
                             w-full
                             rounded-xl
@@ -372,25 +386,21 @@
                         "
                     >
 
-                        <option>
+                        <option value="">
                             All Modules
                         </option>
 
-                        <option>
-                            Users
-                        </option>
 
-                        <option>
-                            Students
-                        </option>
+                        @foreach($modules as $module)
 
-                        <option>
-                            RFID
-                        </option>
+                            <option
+                                value="{{ $module }}"
+                                @selected(request('module') === $module)
+                            >
+                                {{ $module }}
+                            </option>
 
-                        <option>
-                            Events
-                        </option>
+                        @endforeach
 
                     </select>
 
@@ -398,12 +408,12 @@
 
 
 
-                {{-- FILTER BUTTON --}}
+                {{-- FILTER ACTIONS --}}
 
-                <div>
+                <div class="flex flex-col gap-2 sm:flex-row">
 
                     <button
-                        type="button"
+                        type="submit"
                         class="
                             inline-flex
                             w-full
@@ -442,9 +452,38 @@
 
                     </button>
 
+
+                    @if(
+                        request()->filled('search')
+                        || request()->filled('module')
+                    )
+
+                        <a
+                            href="{{ route('logs.index') }}"
+                            class="
+                                inline-flex
+                                items-center
+                                justify-center
+                                rounded-xl
+                                border
+                                border-gray-200
+                                px-5
+                                py-3
+                                text-sm
+                                font-semibold
+                                text-gray-500
+                                transition
+                                hover:bg-gray-50
+                            "
+                        >
+                            Reset
+                        </a>
+
+                    @endif
+
                 </div>
 
-            </div>
+            </form>
 
         </div>
 
@@ -535,7 +574,11 @@
                     "
                 ></span>
 
-                System Logs
+                @if(method_exists($logs, 'total'))
+                    {{ number_format($logs->total()) }} System Logs
+                @else
+                    {{ number_format($logs->count()) }} System Logs
+                @endif
 
             </div>
 
@@ -557,7 +600,7 @@
                 <table
                     class="
                         w-full
-                        min-w-[900px]
+                        min-w-[1000px]
                         text-left
                     "
                 >
@@ -648,589 +691,375 @@
 
                     <tbody class="divide-y divide-gray-100">
 
+                        @forelse($logs as $log)
 
-                        {{-- LOG 1 --}}
+                            @php
 
-                        <tr
-                            class="
-                                transition
-                                hover:bg-gray-50/70
-                            "
-                        >
+                                $userName =
+                                    $log->user?->name
+                                    ?? 'System';
 
-                            <td class="px-6 py-5">
+                                $nameParts =
+                                    preg_split(
+                                        '/\s+/',
+                                        trim($userName)
+                                    );
 
-                                <p
+                                $initials =
+                                    collect($nameParts)
+                                        ->filter()
+                                        ->take(2)
+                                        ->map(
+                                            fn ($word) =>
+                                                strtoupper(
+                                                    substr(
+                                                        $word,
+                                                        0,
+                                                        1
+                                                    )
+                                                )
+                                        )
+                                        ->implode('');
+
+
+                                $moduleClass = match(
+                                    $log->module
+                                ) {
+
+                                    'Users' =>
+                                        'bg-blue-50 text-blue-700',
+
+                                    'Students' =>
+                                        'bg-green-50 text-green-700',
+
+                                    'RFID' =>
+                                        'bg-purple-50 text-purple-700',
+
+                                    'Attendance' =>
+                                        'bg-purple-50 text-purple-700',
+
+                                    'Events' =>
+                                        'bg-[#FFF8E1] text-[#A87900]',
+
+                                    'Announcements' =>
+                                        'bg-cyan-50 text-cyan-700',
+
+                                    'Participation' =>
+                                        'bg-indigo-50 text-indigo-700',
+
+                                    default =>
+                                        'bg-gray-100 text-gray-600',
+
+                                };
+
+                            @endphp
+
+
+                            <tr
+                                class="
+                                    transition
+                                    hover:bg-gray-50/70
+                                "
+                            >
+
+                                {{-- DATE & TIME --}}
+
+                                <td class="px-6 py-5">
+
+                                    <p
+                                        class="
+                                            whitespace-nowrap
+                                            text-sm
+                                            font-semibold
+                                            text-gray-700
+                                        "
+                                    >
+                                        {{ optional($log->created_at)->format('M d, Y') ?? '—' }}
+                                    </p>
+
+
+                                    <p
+                                        class="
+                                            mt-1
+                                            whitespace-nowrap
+                                            text-xs
+                                            text-gray-400
+                                        "
+                                    >
+                                        {{ optional($log->created_at)->format('h:i A') ?? '—' }}
+                                    </p>
+
+                                </td>
+
+
+
+                                {{-- USER --}}
+
+                                <td class="px-6 py-5">
+
+                                    <div
+                                        class="
+                                            flex
+                                            items-center
+                                            gap-3
+                                        "
+                                    >
+
+                                        <div
+                                            class="
+                                                flex
+                                                h-9
+                                                w-9
+                                                shrink-0
+                                                items-center
+                                                justify-center
+                                                rounded-xl
+                                                bg-[#F1F2FA]
+                                                text-xs
+                                                font-bold
+                                                text-[#101064]
+                                            "
+                                        >
+                                            {{ $initials ?: 'SY' }}
+                                        </div>
+
+
+                                        <div class="min-w-0">
+
+                                            <p
+                                                class="
+                                                    font-semibold
+                                                    text-[#101064]
+                                                "
+                                            >
+                                                {{ $userName }}
+                                            </p>
+
+
+                                            @if($log->user)
+
+                                                <p
+                                                    class="
+                                                        mt-0.5
+                                                        text-xs
+                                                        text-gray-400
+                                                    "
+                                                >
+                                                    {{ $log->user->username }}
+                                                </p>
+
+                                            @endif
+
+                                        </div>
+
+                                    </div>
+
+                                </td>
+
+
+
+                                {{-- ACTION --}}
+
+                                <td class="px-6 py-5">
+
+                                    <p
+                                        class="
+                                            text-sm
+                                            font-medium
+                                            text-gray-700
+                                        "
+                                    >
+                                        {{ $log->action }}
+                                    </p>
+
+
+                                    @if($log->description)
+
+                                        <p
+                                            class="
+                                                mt-1
+                                                max-w-md
+                                                text-xs
+                                                leading-5
+                                                text-gray-400
+                                            "
+                                        >
+                                            {{ $log->description }}
+                                        </p>
+
+                                    @endif
+
+                                </td>
+
+
+
+                                {{-- MODULE --}}
+
+                                <td class="px-6 py-5">
+
+                                    <span
+                                        class="
+                                            inline-flex
+                                            rounded-full
+                                            px-3
+                                            py-1
+                                            text-xs
+                                            font-semibold
+                                            {{ $moduleClass }}
+                                        "
+                                    >
+                                        {{ $log->module }}
+                                    </span>
+
+                                </td>
+
+
+
+                                {{-- STATUS --}}
+
+                                <td class="px-6 py-5">
+
+                                    @if($log->status === 'Success')
+
+                                        <span
+                                            class="
+                                                inline-flex
+                                                items-center
+                                                gap-2
+                                                rounded-full
+                                                bg-green-50
+                                                px-3
+                                                py-1
+                                                text-xs
+                                                font-semibold
+                                                text-green-700
+                                            "
+                                        >
+
+                                            <span
+                                                class="
+                                                    h-1.5
+                                                    w-1.5
+                                                    rounded-full
+                                                    bg-green-500
+                                                "
+                                            ></span>
+
+                                            Success
+
+                                        </span>
+
+                                    @else
+
+                                        <span
+                                            class="
+                                                inline-flex
+                                                items-center
+                                                gap-2
+                                                rounded-full
+                                                bg-red-50
+                                                px-3
+                                                py-1
+                                                text-xs
+                                                font-semibold
+                                                text-red-600
+                                            "
+                                        >
+
+                                            <span
+                                                class="
+                                                    h-1.5
+                                                    w-1.5
+                                                    rounded-full
+                                                    bg-red-500
+                                                "
+                                            ></span>
+
+                                            Failed
+
+                                        </span>
+
+                                    @endif
+
+                                </td>
+
+                            </tr>
+
+
+                        @empty
+
+                            <tr>
+
+                                <td
+                                    colspan="5"
                                     class="
-                                        text-sm
-                                        font-semibold
-                                        text-gray-700
-                                    "
-                                >
-                                    Sept 19, 2026
-                                </p>
-
-
-                                <p
-                                    class="
-                                        mt-1
-                                        text-xs
-                                        text-gray-400
-                                    "
-                                >
-                                    08:30 AM
-                                </p>
-
-                            </td>
-
-
-                            <td class="px-6 py-5">
-
-                                <div
-                                    class="
-                                        flex
-                                        items-center
-                                        gap-3
+                                        px-6
+                                        py-16
+                                        text-center
                                     "
                                 >
 
                                     <div
                                         class="
+                                            mx-auto
                                             flex
-                                            h-9
-                                            w-9
-                                            shrink-0
+                                            h-12
+                                            w-12
                                             items-center
                                             justify-center
                                             rounded-xl
                                             bg-[#F1F2FA]
-                                            text-xs
-                                            font-bold
                                             text-[#101064]
                                         "
                                     >
-                                        SA
+
+                                        <svg
+                                            class="h-6 w-6"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                stroke-width="1.8"
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                d="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                            />
+                                        </svg>
+
                                     </div>
 
 
-                                    <span
+                                    <p
                                         class="
+                                            mt-4
                                             font-semibold
                                             text-[#101064]
                                         "
                                     >
-                                        System Administrator
-                                    </span>
-
-                                </div>
-
-                            </td>
+                                        No activity logs found
+                                    </p>
 
 
-                            <td
-                                class="
-                                    px-6
-                                    py-5
-                                    text-sm
-                                    text-gray-600
-                                "
-                            >
-                                Created personnel account
-                            </td>
-
-
-                            <td class="px-6 py-5">
-
-                                <span
-                                    class="
-                                        inline-flex
-                                        rounded-full
-                                        bg-blue-50
-                                        px-3
-                                        py-1
-                                        text-xs
-                                        font-semibold
-                                        text-blue-700
-                                    "
-                                >
-                                    Users
-                                </span>
-
-                            </td>
-
-
-                            <td class="px-6 py-5">
-
-                                <span
-                                    class="
-                                        inline-flex
-                                        items-center
-                                        gap-2
-                                        rounded-full
-                                        bg-green-50
-                                        px-3
-                                        py-1
-                                        text-xs
-                                        font-semibold
-                                        text-green-700
-                                    "
-                                >
-
-                                    <span
+                                    <p
                                         class="
-                                            h-1.5
-                                            w-1.5
-                                            rounded-full
-                                            bg-green-500
-                                        "
-                                    ></span>
-
-                                    Success
-
-                                </span>
-
-                            </td>
-
-                        </tr>
-
-
-
-                        {{-- LOG 2 --}}
-
-                        <tr
-                            class="
-                                transition
-                                hover:bg-gray-50/70
-                            "
-                        >
-
-                            <td class="px-6 py-5">
-
-                                <p
-                                    class="
-                                        text-sm
-                                        font-semibold
-                                        text-gray-700
-                                    "
-                                >
-                                    Sept 19, 2026
-                                </p>
-
-
-                                <p
-                                    class="
-                                        mt-1
-                                        text-xs
-                                        text-gray-400
-                                    "
-                                >
-                                    09:15 AM
-                                </p>
-
-                            </td>
-
-
-                            <td class="px-6 py-5">
-
-                                <div
-                                    class="
-                                        flex
-                                        items-center
-                                        gap-3
-                                    "
-                                >
-
-                                    <div
-                                        class="
-                                            flex
-                                            h-9
-                                            w-9
-                                            shrink-0
-                                            items-center
-                                            justify-center
-                                            rounded-xl
-                                            bg-purple-50
-                                            text-xs
-                                            font-bold
-                                            text-purple-700
+                                            mx-auto
+                                            mt-1
+                                            max-w-md
+                                            text-sm
+                                            leading-6
+                                            text-gray-400
                                         "
                                     >
-                                        JR
-                                    </div>
+                                        System activities will appear here
+                                        once users perform operations.
+                                    </p>
 
+                                </td>
 
-                                    <span
-                                        class="
-                                            font-semibold
-                                            text-[#101064]
-                                        "
-                                    >
-                                        John Reyes
-                                    </span>
+                            </tr>
 
-                                </div>
-
-                            </td>
-
-
-                            <td
-                                class="
-                                    px-6
-                                    py-5
-                                    text-sm
-                                    text-gray-600
-                                "
-                            >
-                                Attendance scan recorded
-                            </td>
-
-
-                            <td class="px-6 py-5">
-
-                                <span
-                                    class="
-                                        inline-flex
-                                        rounded-full
-                                        bg-purple-50
-                                        px-3
-                                        py-1
-                                        text-xs
-                                        font-semibold
-                                        text-purple-700
-                                    "
-                                >
-                                    RFID
-                                </span>
-
-                            </td>
-
-
-                            <td class="px-6 py-5">
-
-                                <span
-                                    class="
-                                        inline-flex
-                                        items-center
-                                        gap-2
-                                        rounded-full
-                                        bg-green-50
-                                        px-3
-                                        py-1
-                                        text-xs
-                                        font-semibold
-                                        text-green-700
-                                    "
-                                >
-
-                                    <span
-                                        class="
-                                            h-1.5
-                                            w-1.5
-                                            rounded-full
-                                            bg-green-500
-                                        "
-                                    ></span>
-
-                                    Success
-
-                                </span>
-
-                            </td>
-
-                        </tr>
-
-
-
-                        {{-- LOG 3 --}}
-
-                        <tr
-                            class="
-                                transition
-                                hover:bg-gray-50/70
-                            "
-                        >
-
-                            <td class="px-6 py-5">
-
-                                <p
-                                    class="
-                                        text-sm
-                                        font-semibold
-                                        text-gray-700
-                                    "
-                                >
-                                    Sept 19, 2026
-                                </p>
-
-
-                                <p
-                                    class="
-                                        mt-1
-                                        text-xs
-                                        text-gray-400
-                                    "
-                                >
-                                    10:00 AM
-                                </p>
-
-                            </td>
-
-
-                            <td class="px-6 py-5">
-
-                                <div
-                                    class="
-                                        flex
-                                        items-center
-                                        gap-3
-                                    "
-                                >
-
-                                    <div
-                                        class="
-                                            flex
-                                            h-9
-                                            w-9
-                                            shrink-0
-                                            items-center
-                                            justify-center
-                                            rounded-xl
-                                            bg-[#F1F2FA]
-                                            text-xs
-                                            font-bold
-                                            text-[#101064]
-                                        "
-                                    >
-                                        SA
-                                    </div>
-
-
-                                    <span
-                                        class="
-                                            font-semibold
-                                            text-[#101064]
-                                        "
-                                    >
-                                        System Administrator
-                                    </span>
-
-                                </div>
-
-                            </td>
-
-
-                            <td
-                                class="
-                                    px-6
-                                    py-5
-                                    text-sm
-                                    text-gray-600
-                                "
-                            >
-                                Created new event
-                            </td>
-
-
-                            <td class="px-6 py-5">
-
-                                <span
-                                    class="
-                                        inline-flex
-                                        rounded-full
-                                        bg-[#FFF8E1]
-                                        px-3
-                                        py-1
-                                        text-xs
-                                        font-semibold
-                                        text-[#A87900]
-                                    "
-                                >
-                                    Events
-                                </span>
-
-                            </td>
-
-
-                            <td class="px-6 py-5">
-
-                                <span
-                                    class="
-                                        inline-flex
-                                        items-center
-                                        gap-2
-                                        rounded-full
-                                        bg-green-50
-                                        px-3
-                                        py-1
-                                        text-xs
-                                        font-semibold
-                                        text-green-700
-                                    "
-                                >
-
-                                    <span
-                                        class="
-                                            h-1.5
-                                            w-1.5
-                                            rounded-full
-                                            bg-green-500
-                                        "
-                                    ></span>
-
-                                    Success
-
-                                </span>
-
-                            </td>
-
-                        </tr>
-
-
-
-                        {{-- LOG 4 --}}
-
-                        <tr
-                            class="
-                                transition
-                                hover:bg-gray-50/70
-                            "
-                        >
-
-                            <td class="px-6 py-5">
-
-                                <p
-                                    class="
-                                        text-sm
-                                        font-semibold
-                                        text-gray-700
-                                    "
-                                >
-                                    Sept 18, 2026
-                                </p>
-
-
-                                <p
-                                    class="
-                                        mt-1
-                                        text-xs
-                                        text-gray-400
-                                    "
-                                >
-                                    04:30 PM
-                                </p>
-
-                            </td>
-
-
-                            <td class="px-6 py-5">
-
-                                <div
-                                    class="
-                                        flex
-                                        items-center
-                                        gap-3
-                                    "
-                                >
-
-                                    <div
-                                        class="
-                                            flex
-                                            h-9
-                                            w-9
-                                            shrink-0
-                                            items-center
-                                            justify-center
-                                            rounded-xl
-                                            bg-[#F1F2FA]
-                                            text-xs
-                                            font-bold
-                                            text-[#101064]
-                                        "
-                                    >
-                                        SA
-                                    </div>
-
-
-                                    <span
-                                        class="
-                                            font-semibold
-                                            text-[#101064]
-                                        "
-                                    >
-                                        System Administrator
-                                    </span>
-
-                                </div>
-
-                            </td>
-
-
-                            <td
-                                class="
-                                    px-6
-                                    py-5
-                                    text-sm
-                                    text-gray-600
-                                "
-                            >
-                                Updated student information
-                            </td>
-
-
-                            <td class="px-6 py-5">
-
-                                <span
-                                    class="
-                                        inline-flex
-                                        rounded-full
-                                        bg-green-50
-                                        px-3
-                                        py-1
-                                        text-xs
-                                        font-semibold
-                                        text-green-700
-                                    "
-                                >
-                                    Students
-                                </span>
-
-                            </td>
-
-
-                            <td class="px-6 py-5">
-
-                                <span
-                                    class="
-                                        inline-flex
-                                        items-center
-                                        gap-2
-                                        rounded-full
-                                        bg-green-50
-                                        px-3
-                                        py-1
-                                        text-xs
-                                        font-semibold
-                                        text-green-700
-                                    "
-                                >
-
-                                    <span
-                                        class="
-                                            h-1.5
-                                            w-1.5
-                                            rounded-full
-                                            bg-green-500
-                                        "
-                                    ></span>
-
-                                    Success
-
-                                </span>
-
-                            </td>
-
-                        </tr>
-
+                        @endforelse
 
                     </tbody>
 
@@ -1270,6 +1099,25 @@
                 </span>
 
             </div>
+
+
+            {{-- PAGINATION --}}
+
+            @if(method_exists($logs, 'hasPages') && $logs->hasPages())
+
+                <div
+                    class="
+                        border-t
+                        border-gray-100
+                        bg-white
+                        px-6
+                        py-4
+                    "
+                >
+                    {{ $logs->links() }}
+                </div>
+
+            @endif
 
         </div>
 

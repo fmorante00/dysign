@@ -14,13 +14,26 @@ use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\AttendanceMonitoringController;
 use App\Http\Controllers\ParticipationRecordsController;
 use App\Http\Controllers\ParticipationEvaluationController;
+use App\Http\Controllers\AttendanceReportController;
+use App\Http\Controllers\ParticipationReportController;
+use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\BackupController;
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 
 
+/*
+|--------------------------------------------------------------------------
+| Root
+|--------------------------------------------------------------------------
+*/
+
 Route::get('/', function () {
-    return redirect()->route('login');
+
+    return redirect()
+        ->route('login');
+
 });
 
 
@@ -32,7 +45,9 @@ Route::get('/', function () {
 
 Route::get('/dashboard', function () {
 
-    $role = Auth::user()->role->role_name;
+    $role = Auth::user()
+        ->role
+        ->role_name;
 
 
     if ($role === 'Administrator') {
@@ -101,7 +116,9 @@ Route::middleware([
             'resendInvitation'
         ]
     )
-    ->name('personnel.resendInvitation');
+    ->name(
+        'personnel.resendInvitation'
+    );
 
 
     Route::patch(
@@ -111,7 +128,9 @@ Route::middleware([
             'activate'
         ]
     )
-    ->name('personnel.activate');
+    ->name(
+        'personnel.activate'
+    );
 
 
     /*
@@ -127,7 +146,9 @@ Route::middleware([
             'import'
         ]
     )
-    ->name('students.import');
+    ->name(
+        'students.import'
+    );
 
 
     Route::post(
@@ -137,7 +158,9 @@ Route::middleware([
             'processImport'
         ]
     )
-    ->name('students.process-import');
+    ->name(
+        'students.process-import'
+    );
 
 
     Route::get(
@@ -147,7 +170,9 @@ Route::middleware([
             'index'
         ]
     )
-    ->name('students.index');
+    ->name(
+        'students.index'
+    );
 
 
     Route::get(
@@ -157,7 +182,10 @@ Route::middleware([
             'show'
         ]
     )
-    ->name('students.show');
+    ->whereNumber('student')
+    ->name(
+        'students.show'
+    );
 
 
     /*
@@ -180,7 +208,9 @@ Route::middleware([
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth'])
+Route::middleware([
+    'auth'
+])
 ->group(function () {
 
 
@@ -197,7 +227,10 @@ Route::middleware(['auth'])
             'personnel'
         ]
     )
-    ->name('events.personnel');
+    ->whereNumber('id')
+    ->name(
+        'events.personnel'
+    );
 
 
     Route::put(
@@ -207,7 +240,10 @@ Route::middleware(['auth'])
             'updatePersonnel'
         ]
     )
-    ->name('events.personnel.update');
+    ->whereNumber('id')
+    ->name(
+        'events.personnel.update'
+    );
 
 
     /*
@@ -236,6 +272,7 @@ Route::middleware([
 ])
 ->group(function () {
 
+
     Route::get(
         '/attendance/monitor',
         [
@@ -243,7 +280,9 @@ Route::middleware([
             'index'
         ]
     )
-    ->name('attendance.monitor');
+    ->name(
+        'attendance.monitor'
+    );
 
 
     Route::get(
@@ -254,7 +293,9 @@ Route::middleware([
         ]
     )
     ->whereNumber('event')
-    ->name('attendance.monitor.feed');
+    ->name(
+        'attendance.monitor.feed'
+    );
 
 });
 
@@ -285,7 +326,9 @@ Route::middleware([
             'index'
         ]
     )
-    ->name('my-events.index');
+    ->name(
+        'my-events.index'
+    );
 
 
     Route::get(
@@ -295,7 +338,10 @@ Route::middleware([
             'show'
         ]
     )
-    ->name('my-events.show');
+    ->whereNumber('event')
+    ->name(
+        'my-events.show'
+    );
 
 
     /*
@@ -311,7 +357,10 @@ Route::middleware([
             'index'
         ]
     )
-    ->name('attendance.index');
+    ->whereNumber('event')
+    ->name(
+        'attendance.index'
+    );
 
 
     Route::post(
@@ -321,7 +370,10 @@ Route::middleware([
             'scan'
         ]
     )
-    ->name('attendance.scan');
+    ->whereNumber('event')
+    ->name(
+        'attendance.scan'
+    );
 
 
     Route::get(
@@ -331,7 +383,10 @@ Route::middleware([
             'feed'
         ]
     )
-    ->name('attendance.feed');
+    ->whereNumber('event')
+    ->name(
+        'attendance.feed'
+    );
 
 });
 
@@ -342,133 +397,259 @@ Route::middleware([
 |--------------------------------------------------------------------------
 */
 
-Route::get(
-    '/roles/{id}/permissions',
-    [
-        RolePermissionController::class,
-        'edit'
-    ]
-)
-->middleware(['auth'])
-->name('roles.permissions');
+Route::middleware([
+    'auth'
+])
+->group(function () {
 
 
-Route::put(
-    '/roles/{id}/permissions',
-    [
-        RolePermissionController::class,
-        'update'
-    ]
-)
-->middleware(['auth'])
-->name('roles.permissions.update');
+    /*
+    |--------------------------------------------------------------------------
+    | Role Permissions
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/roles/{id}/permissions',
+        [
+            RolePermissionController::class,
+            'edit'
+        ]
+    )
+    ->whereNumber('id')
+    ->name(
+        'roles.permissions'
+    );
 
 
-Route::get(
-    '/backup',
-    function () {
+    Route::put(
+        '/roles/{id}/permissions',
+        [
+            RolePermissionController::class,
+            'update'
+        ]
+    )
+    ->whereNumber('id')
+    ->name(
+        'roles.permissions.update'
+    );
 
-        return view(
-            'backup.index'
+
+    /*
+    |--------------------------------------------------------------------------
+    | Backup
+    |--------------------------------------------------------------------------
+    */
+
+Route::middleware([
+    'auth',
+    'role:Administrator'
+])
+->group(function () {
+
+    Route::get(
+        '/backup',
+        [
+            BackupController::class,
+            'index'
+        ]
+    )
+    ->name(
+        'backup.index'
+    );
+
+
+        Route::post(
+            '/backup',
+            [
+                BackupController::class,
+                'store'
+            ]
+        )
+        ->name(
+            'backup.store'
         );
 
-    }
-)
-->name('backup.index');
 
-
-Route::get(
-    '/logs',
-    function () {
-
-        return view(
-            'logs.index'
+        Route::get(
+            '/backup/{backup}/download',
+            [
+                BackupController::class,
+                'download'
+            ]
+        )
+        ->whereNumber('backup')
+        ->name(
+            'backup.download'
         );
 
-    }
-)
-->name('logs.index');
+    });
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Audit Logs
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/logs',
+        [
+            ActivityLogController::class,
+            'index'
+        ]
+    )
+    ->middleware([
+        'auth',
+        'role:Administrator'
+    ])
+    ->name(
+        'logs.index'
+    );
+
+});
 
 
 /*
 |--------------------------------------------------------------------------
-| Participation
+| Participation Management
 |--------------------------------------------------------------------------
 */
 
-Route::get(
-    '/participation/records',
-    [
-        ParticipationRecordsController::class,
-        'index'
-    ]
-)
-->name('participation.records');
+Route::middleware([
+    'auth'
+])
+->group(function () {
 
 
-Route::get(
-    '/participation/evaluation',
-    [
-        ParticipationEvaluationController::class,
-        'index'
-    ]
-)
-->name('participation.evaluation');
+    /*
+    |--------------------------------------------------------------------------
+    | Participation Records
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/participation/records',
+        [
+            ParticipationRecordsController::class,
+            'index'
+        ]
+    )
+    ->name(
+        'participation.records'
+    );
 
 
-Route::post(
-    '/participation/evaluation/re-evaluate',
-    [
-        ParticipationEvaluationController::class,
-        'reevaluate'
-    ]
-)
-->name('participation.evaluation.reevaluate');
+    /*
+    |--------------------------------------------------------------------------
+    | Participation Evaluation
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/participation/evaluation',
+        [
+            ParticipationEvaluationController::class,
+            'index'
+        ]
+    )
+    ->name(
+        'participation.evaluation'
+    );
+
+
+    Route::post(
+        '/participation/evaluation/re-evaluate',
+        [
+            ParticipationEvaluationController::class,
+            'reevaluate'
+        ]
+    )
+    ->name(
+        'participation.evaluation.reevaluate'
+    );
+
+});
 
 
 /*
 |--------------------------------------------------------------------------
-| Reports
+| Reports & Analytics
 |--------------------------------------------------------------------------
 */
 
-Route::get(
-    '/reports/attendance',
-    function () {
-
-        return view(
-            'reports.attendance'
-        );
-
-    }
-)
-->name('reports.attendance');
+Route::middleware([
+    'auth'
+])
+->group(function () {
 
 
-Route::get(
-    '/reports/participation',
-    function () {
+    /*
+    |--------------------------------------------------------------------------
+    | Attendance Reports
+    |--------------------------------------------------------------------------
+    |
+    | Connected to AttendanceReportController.
+    |
+    */
 
-        return view(
+    Route::get(
+        '/reports/attendance',
+        [
+            AttendanceReportController::class,
+            'index'
+        ]
+    )
+    ->name(
+        'reports.attendance'
+    );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Participation Reports
+    |--------------------------------------------------------------------------
+    |
+    | Static for now. We can connect this to the database next.
+    |
+    */
+
+        Route::get(
+            '/reports/participation',
+            [
+                ParticipationReportController::class,
+                'index'
+            ]
+        )
+        ->name(
             'reports.participation'
         );
 
-    }
-)
-->name('reports.participation');
 
+    /*
+    |--------------------------------------------------------------------------
+    | Attendance Alerts
+    |--------------------------------------------------------------------------
+    |
+    | Static for now.
+    |
+    */
 
-Route::get(
-    '/attendance/alerts',
-    function () {
+    Route::get(
+        '/attendance/alerts',
+        function () {
 
-        return view(
-            'alerts.index'
-        );
+            return view(
+                'alerts.index'
+            );
 
-    }
-)
-->name('attendance.alerts');
+        }
+    )
+    ->name(
+        'attendance.alerts'
+    );
+
+});
 
 
 /*
@@ -477,7 +658,9 @@ Route::get(
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth'])
+Route::middleware([
+    'auth'
+])
 ->group(function () {
 
 
@@ -488,7 +671,9 @@ Route::middleware(['auth'])
             'index'
         ]
     )
-    ->name('announcements.index');
+    ->name(
+        'announcements.index'
+    );
 
 
     Route::post(
@@ -498,7 +683,9 @@ Route::middleware(['auth'])
             'store'
         ]
     )
-    ->name('announcements.store');
+    ->name(
+        'announcements.store'
+    );
 
 
     Route::post(
@@ -508,7 +695,9 @@ Route::middleware(['auth'])
             'previewRecipients'
         ]
     )
-    ->name('announcements.preview-recipients');
+    ->name(
+        'announcements.preview-recipients'
+    );
 
 });
 
@@ -519,7 +708,9 @@ Route::middleware(['auth'])
 |--------------------------------------------------------------------------
 */
 
-Route::middleware('auth')
+Route::middleware([
+    'auth'
+])
 ->group(function () {
 
 
@@ -530,7 +721,9 @@ Route::middleware('auth')
             'edit'
         ]
     )
-    ->name('profile.edit');
+    ->name(
+        'profile.edit'
+    );
 
 
     Route::patch(
@@ -540,7 +733,9 @@ Route::middleware('auth')
             'update'
         ]
     )
-    ->name('profile.update');
+    ->name(
+        'profile.update'
+    );
 
 });
 
@@ -558,7 +753,9 @@ Route::get(
         'show'
     ]
 )
-->name('account.setup');
+->name(
+    'account.setup'
+);
 
 
 Route::post(
@@ -568,7 +765,15 @@ Route::post(
         'store'
     ]
 )
-->name('account.setup.store');
+->name(
+    'account.setup.store'
+);
 
+
+/*
+|--------------------------------------------------------------------------
+| Authentication Routes
+|--------------------------------------------------------------------------
+*/
 
 require __DIR__.'/auth.php';

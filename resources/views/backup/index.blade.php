@@ -1,5 +1,12 @@
 <x-admin-layout>
 
+@php
+    $backups = $backups ?? collect();
+    $lastBackup = $lastBackup ?? null;
+    $latestRecord = $latestRecord ?? null;
+    $storageUsed = $storageUsed ?? '0 KB';
+@endphp
+
 <style>
 
     /*
@@ -26,6 +33,101 @@
 
 
 <div class="min-w-0 space-y-8">
+
+
+    {{-- ====================================================== --}}
+    {{-- FLASH MESSAGES --}}
+    {{-- ====================================================== --}}
+
+    @if(session('success'))
+
+        <div
+            class="
+                flex
+                items-start
+                gap-3
+                rounded-2xl
+                border
+                border-green-200
+                bg-green-50
+                px-5
+                py-4
+                text-sm
+                text-green-700
+            "
+        >
+            <svg
+                class="mt-0.5 h-5 w-5 shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+            >
+                <path
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M5 13l4 4L19 7"
+                />
+            </svg>
+
+            <div>
+                <p class="font-semibold">
+                    Backup completed
+                </p>
+
+                <p class="mt-1 text-green-600">
+                    {{ session('success') }}
+                </p>
+            </div>
+        </div>
+
+    @endif
+
+
+    @if(session('error'))
+
+        <div
+            class="
+                flex
+                items-start
+                gap-3
+                rounded-2xl
+                border
+                border-red-200
+                bg-red-50
+                px-5
+                py-4
+                text-sm
+                text-red-700
+            "
+        >
+            <svg
+                class="mt-0.5 h-5 w-5 shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+            >
+                <path
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M12 9v4m0 4h.01M10.3 3.6L2.7 17a2 2 0 001.7 3h15.2a2 2 0 001.7-3L13.7 3.6a2 2 0 00-3.4 0z"
+                />
+            </svg>
+
+            <div>
+                <p class="font-semibold">
+                    Backup failed
+                </p>
+
+                <p class="mt-1 text-red-600">
+                    {{ session('error') }}
+                </p>
+            </div>
+        </div>
+
+    @endif
+
 
 
     {{-- ====================================================== --}}
@@ -303,7 +405,11 @@
                                 text-[#101064]
                             "
                         >
-                            September 19, 2026
+                            @if($lastBackup)
+                                {{ $lastBackup->created_at->format('F d, Y') }}
+                            @else
+                                No Backup Yet
+                            @endif
                         </p>
 
 
@@ -314,7 +420,11 @@
                                 text-gray-400
                             "
                         >
-                            05:00 AM
+                            @if($lastBackup)
+                                {{ $lastBackup->created_at->format('h:i A') }}
+                            @else
+                                Create your first backup
+                            @endif
                         </p>
 
                     </div>
@@ -395,33 +505,113 @@
 
                         <div class="mt-3">
 
-                            <span
-                                class="
-                                    inline-flex
-                                    items-center
-                                    gap-2
-                                    rounded-full
-                                    bg-green-50
-                                    px-3
-                                    py-1.5
-                                    text-xs
-                                    font-semibold
-                                    text-green-700
-                                "
-                            >
+                            @if($latestRecord)
+
+                                @if($latestRecord->status === 'Completed')
+
+                                    <span
+                                        class="
+                                            inline-flex
+                                            items-center
+                                            gap-2
+                                            rounded-full
+                                            bg-green-50
+                                            px-3
+                                            py-1.5
+                                            text-xs
+                                            font-semibold
+                                            text-green-700
+                                        "
+                                    >
+                                        <span
+                                            class="
+                                                h-1.5
+                                                w-1.5
+                                                rounded-full
+                                                bg-green-500
+                                            "
+                                        ></span>
+
+                                        Completed
+                                    </span>
+
+                                @elseif($latestRecord->status === 'Processing')
+
+                                    <span
+                                        class="
+                                            inline-flex
+                                            items-center
+                                            gap-2
+                                            rounded-full
+                                            bg-[#FFF8E1]
+                                            px-3
+                                            py-1.5
+                                            text-xs
+                                            font-semibold
+                                            text-[#A87900]
+                                        "
+                                    >
+                                        <span
+                                            class="
+                                                h-1.5
+                                                w-1.5
+                                                animate-pulse
+                                                rounded-full
+                                                bg-[#D4A017]
+                                            "
+                                        ></span>
+
+                                        Processing
+                                    </span>
+
+                                @else
+
+                                    <span
+                                        class="
+                                            inline-flex
+                                            items-center
+                                            gap-2
+                                            rounded-full
+                                            bg-red-50
+                                            px-3
+                                            py-1.5
+                                            text-xs
+                                            font-semibold
+                                            text-red-600
+                                        "
+                                    >
+                                        <span
+                                            class="
+                                                h-1.5
+                                                w-1.5
+                                                rounded-full
+                                                bg-red-500
+                                            "
+                                        ></span>
+
+                                        Failed
+                                    </span>
+
+                                @endif
+
+                            @else
 
                                 <span
                                     class="
-                                        h-1.5
-                                        w-1.5
+                                        inline-flex
                                         rounded-full
-                                        bg-green-500
+                                        bg-gray-100
+                                        px-3
+                                        py-1.5
+                                        text-xs
+                                        font-semibold
+                                        text-gray-500
                                     "
-                                ></span>
+                                >
+                                    No backups yet
+                                </span>
 
-                                Completed
-
-                            </span>
+                            @endif
 
                         </div>
 
@@ -437,24 +627,63 @@
                             items-center
                             justify-center
                             rounded-xl
-                            bg-green-50
-                            text-green-600
+                            {{ $latestRecord?->status === 'Failed'
+                                ? 'bg-red-50 text-red-600'
+                                : ($latestRecord?->status === 'Processing'
+                                    ? 'bg-[#FFF8E1] text-[#A87900]'
+                                    : 'bg-green-50 text-green-600') }}
                         "
                     >
 
-                        <svg
-                            class="h-5 w-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                stroke-width="1.8"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M5 13l4 4L19 7"
-                            />
-                        </svg>
+                        @if($latestRecord?->status === 'Failed')
+
+                            <svg
+                                class="h-5 w-5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-width="1.8"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    d="M12 9v4m0 4h.01M10.3 3.6L2.7 17a2 2 0 001.7 3h15.2a2 2 0 001.7-3L13.7 3.6a2 2 0 00-3.4 0z"
+                                />
+                            </svg>
+
+                        @elseif($latestRecord?->status === 'Processing')
+
+                            <svg
+                                class="h-5 w-5 animate-spin"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-width="1.8"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    d="M12 3a9 9 0 108.5 6"
+                                />
+                            </svg>
+
+                        @else
+
+                            <svg
+                                class="h-5 w-5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-width="1.8"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    d="M5 13l4 4L19 7"
+                                />
+                            </svg>
+
+                        @endif
 
                     </div>
 
@@ -501,7 +730,7 @@
                                 text-[#D4A017]
                             "
                         >
-                            2.4 GB
+                            {{ $storageUsed }}
                         </p>
 
 
@@ -512,7 +741,7 @@
                                 text-gray-400
                             "
                         >
-                            Backup storage consumption
+                            Completed backup files only
                         </p>
 
                     </div>
@@ -676,8 +905,9 @@
                                 text-gray-500
                             "
                         >
-                            Generate a new backup copy of essential DySign
-                            system records and configuration data.
+                            Generate a protected SQL backup copy of the current
+                            DySign database. The backup can be downloaded later
+                            from the backup history.
                         </p>
 
                     </div>
@@ -685,44 +915,58 @@
                 </div>
 
 
-                <button
-                    type="button"
-                    class="
-                        inline-flex
-                        shrink-0
-                        items-center
-                        justify-center
-                        gap-2
-                        rounded-xl
-                        bg-[#101064]
-                        px-6
-                        py-3
-                        text-sm
-                        font-semibold
-                        text-white
-                        transition
-                        hover:bg-[#D4A017]
-                        hover:text-[#101064]
-                    "
+                <form
+                    method="POST"
+                    action="{{ route('backup.store') }}"
+                    onsubmit="handleBackupSubmit(this)"
                 >
+                    @csrf
 
-                    <svg
-                        class="h-4 w-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
+                    <button
+                        id="create-backup-button"
+                        type="submit"
+                        class="
+                            inline-flex
+                            shrink-0
+                            items-center
+                            justify-center
+                            gap-2
+                            rounded-xl
+                            bg-[#101064]
+                            px-6
+                            py-3
+                            text-sm
+                            font-semibold
+                            text-white
+                            transition
+                            hover:bg-[#D4A017]
+                            hover:text-[#101064]
+                            disabled:cursor-not-allowed
+                            disabled:opacity-60
+                        "
                     >
-                        <path
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            d="M12 5v14m7-7H5"
-                        />
-                    </svg>
 
-                    Create Backup
+                        <svg
+                            class="h-4 w-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="M12 5v14m7-7H5"
+                            />
+                        </svg>
 
-                </button>
+                        <span id="create-backup-text">
+                            Create Backup
+                        </span>
+
+                    </button>
+
+                </form>
 
             </div>
 
@@ -784,7 +1028,7 @@
                         text-gray-500
                     "
                 >
-                    Review previously generated system backup records.
+                    Review and download previously generated system backups.
                 </p>
 
             </div>
@@ -815,7 +1059,13 @@
                     "
                 ></span>
 
-                Backup Archive
+                @if(method_exists($backups, 'total'))
+                    {{ number_format($backups->total()) }}
+                    Backup{{ $backups->total() === 1 ? '' : 's' }}
+                @else
+                    {{ number_format($backups->count()) }}
+                    Backup{{ $backups->count() === 1 ? '' : 's' }}
+                @endif
 
             </div>
 
@@ -837,7 +1087,7 @@
                 <table
                     class="
                         w-full
-                        min-w-[760px]
+                        min-w-[980px]
                         text-left
                     "
                 >
@@ -857,7 +1107,7 @@
                                     text-gray-400
                                 "
                             >
-                                Date
+                                Date & Time
                             </th>
 
 
@@ -872,7 +1122,7 @@
                                     text-gray-400
                                 "
                             >
-                                Time
+                                Backup File
                             </th>
 
 
@@ -905,6 +1155,22 @@
                                 Status
                             </th>
 
+
+                            <th
+                                class="
+                                    px-6
+                                    py-4
+                                    text-right
+                                    text-[10px]
+                                    font-bold
+                                    uppercase
+                                    tracking-[0.16em]
+                                    text-gray-400
+                                "
+                            >
+                                Action
+                            </th>
+
                         </tr>
 
                     </thead>
@@ -913,348 +1179,474 @@
 
                     <tbody class="divide-y divide-gray-100">
 
+                        @forelse($backups as $backup)
 
-                        {{-- BACKUP 1 --}}
+                            @php
 
-                        <tr
-                            class="
-                                transition
-                                hover:bg-gray-50/70
-                            "
-                        >
+                                $creator =
+                                    $backup->creator?->name
+                                    ?? 'System';
 
-                            <td
+                                $initials =
+                                    collect(
+                                        preg_split(
+                                            '/\s+/',
+                                            trim($creator)
+                                        )
+                                    )
+                                    ->filter()
+                                    ->take(2)
+                                    ->map(
+                                        fn ($word) =>
+                                            strtoupper(
+                                                substr(
+                                                    $word,
+                                                    0,
+                                                    1
+                                                )
+                                            )
+                                    )
+                                    ->implode('');
+
+
+                                $size = (int) ($backup->size_bytes ?? 0);
+
+                                if ($size <= 0) {
+
+                                    $formattedSize = '—';
+
+                                } elseif ($size >= 1073741824) {
+
+                                    $formattedSize =
+                                        number_format(
+                                            $size / 1073741824,
+                                            2
+                                        )
+                                        . ' GB';
+
+                                } elseif ($size >= 1048576) {
+
+                                    $formattedSize =
+                                        number_format(
+                                            $size / 1048576,
+                                            2
+                                        )
+                                        . ' MB';
+
+                                } elseif ($size >= 1024) {
+
+                                    $formattedSize =
+                                        number_format(
+                                            $size / 1024,
+                                            2
+                                        )
+                                        . ' KB';
+
+                                } else {
+
+                                    $formattedSize =
+                                        number_format($size)
+                                        . ' B';
+
+                                }
+
+                            @endphp
+
+
+                            <tr
                                 class="
-                                    px-6
-                                    py-5
-                                    text-sm
-                                    font-semibold
-                                    text-gray-700
+                                    transition
+                                    hover:bg-gray-50/70
                                 "
                             >
-                                September 19, 2026
-                            </td>
+
+                                {{-- DATE & TIME --}}
+
+                                <td class="px-6 py-5">
+
+                                    <p
+                                        class="
+                                            whitespace-nowrap
+                                            text-sm
+                                            font-semibold
+                                            text-gray-700
+                                        "
+                                    >
+                                        {{ $backup->created_at->format('F d, Y') }}
+                                    </p>
 
 
-                            <td
-                                class="
-                                    px-6
-                                    py-5
-                                    text-sm
-                                    text-gray-500
-                                "
-                            >
-                                05:00 AM
-                            </td>
+                                    <p
+                                        class="
+                                            mt-1
+                                            whitespace-nowrap
+                                            text-xs
+                                            text-gray-400
+                                        "
+                                    >
+                                        {{ $backup->created_at->format('h:i A') }}
+                                    </p>
+
+                                </td>
 
 
-                            <td class="px-6 py-5">
 
-                                <div
+                                {{-- BACKUP FILE --}}
+
+                                <td class="px-6 py-5">
+
+                                    <p
+                                        class="
+                                            max-w-[300px]
+                                            truncate
+                                            text-sm
+                                            font-semibold
+                                            text-[#101064]
+                                        "
+                                        title="{{ $backup->filename }}"
+                                    >
+                                        {{ $backup->filename }}
+                                    </p>
+
+
+                                    <p
+                                        class="
+                                            mt-1
+                                            text-xs
+                                            text-gray-400
+                                        "
+                                    >
+                                        {{ $formattedSize }}
+                                    </p>
+
+                                </td>
+
+
+
+                                {{-- CREATED BY --}}
+
+                                <td class="px-6 py-5">
+
+                                    <div
+                                        class="
+                                            flex
+                                            items-center
+                                            gap-3
+                                        "
+                                    >
+
+                                        <div
+                                            class="
+                                                flex
+                                                h-9
+                                                w-9
+                                                shrink-0
+                                                items-center
+                                                justify-center
+                                                rounded-xl
+                                                bg-[#F1F2FA]
+                                                text-xs
+                                                font-bold
+                                                text-[#101064]
+                                            "
+                                        >
+                                            {{ $initials ?: 'SY' }}
+                                        </div>
+
+
+                                        <span
+                                            class="
+                                                text-sm
+                                                font-semibold
+                                                text-[#101064]
+                                            "
+                                        >
+                                            {{ $creator }}
+                                        </span>
+
+                                    </div>
+
+                                </td>
+
+
+
+                                {{-- STATUS --}}
+
+                                <td class="px-6 py-5">
+
+                                    @if($backup->status === 'Completed')
+
+                                        <span
+                                            class="
+                                                inline-flex
+                                                items-center
+                                                gap-2
+                                                rounded-full
+                                                bg-green-50
+                                                px-3
+                                                py-1
+                                                text-xs
+                                                font-semibold
+                                                text-green-700
+                                            "
+                                        >
+                                            <span
+                                                class="
+                                                    h-1.5
+                                                    w-1.5
+                                                    rounded-full
+                                                    bg-green-500
+                                                "
+                                            ></span>
+
+                                            Completed
+                                        </span>
+
+                                    @elseif($backup->status === 'Processing')
+
+                                        <span
+                                            class="
+                                                inline-flex
+                                                items-center
+                                                gap-2
+                                                rounded-full
+                                                bg-[#FFF8E1]
+                                                px-3
+                                                py-1
+                                                text-xs
+                                                font-semibold
+                                                text-[#A87900]
+                                            "
+                                        >
+                                            <span
+                                                class="
+                                                    h-1.5
+                                                    w-1.5
+                                                    animate-pulse
+                                                    rounded-full
+                                                    bg-[#D4A017]
+                                                "
+                                            ></span>
+
+                                            Processing
+                                        </span>
+
+                                    @else
+
+                                        <div>
+
+                                            <span
+                                                class="
+                                                    inline-flex
+                                                    items-center
+                                                    gap-2
+                                                    rounded-full
+                                                    bg-red-50
+                                                    px-3
+                                                    py-1
+                                                    text-xs
+                                                    font-semibold
+                                                    text-red-600
+                                                "
+                                            >
+                                                <span
+                                                    class="
+                                                        h-1.5
+                                                        w-1.5
+                                                        rounded-full
+                                                        bg-red-500
+                                                    "
+                                                ></span>
+
+                                                Failed
+                                            </span>
+
+
+                                            @if($backup->error_message)
+
+                                                <p
+                                                    class="
+                                                        mt-2
+                                                        max-w-[280px]
+                                                        truncate
+                                                        text-xs
+                                                        text-red-400
+                                                    "
+                                                    title="{{ $backup->error_message }}"
+                                                >
+                                                    {{ $backup->error_message }}
+                                                </p>
+
+                                            @endif
+
+                                        </div>
+
+                                    @endif
+
+                                </td>
+
+
+
+                                {{-- ACTION --}}
+
+                                <td
                                     class="
-                                        flex
-                                        items-center
-                                        gap-3
+                                        px-6
+                                        py-5
+                                        text-right
+                                    "
+                                >
+
+                                    @if($backup->status === 'Completed')
+
+                                        <a
+                                            href="{{ route(
+                                                'backup.download',
+                                                $backup->backup_id
+                                            ) }}"
+                                            class="
+                                                inline-flex
+                                                items-center
+                                                justify-center
+                                                gap-2
+                                                rounded-xl
+                                                border
+                                                border-[#101064]/15
+                                                bg-[#F1F2FA]
+                                                px-4
+                                                py-2
+                                                text-xs
+                                                font-semibold
+                                                text-[#101064]
+                                                transition
+                                                hover:border-[#D4A017]
+                                                hover:bg-[#FFF8E1]
+                                            "
+                                        >
+
+                                            <svg
+                                                class="h-4 w-4"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path
+                                                    stroke-width="2"
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"
+                                                />
+                                            </svg>
+
+                                            Download
+
+                                        </a>
+
+                                    @elseif($backup->status === 'Processing')
+
+                                        <span
+                                            class="
+                                                text-xs
+                                                font-medium
+                                                text-gray-400
+                                            "
+                                        >
+                                            Please wait
+                                        </span>
+
+                                    @else
+
+                                        <span
+                                            class="
+                                                text-xs
+                                                font-medium
+                                                text-red-400
+                                            "
+                                        >
+                                            Unavailable
+                                        </span>
+
+                                    @endif
+
+                                </td>
+
+                            </tr>
+
+
+                        @empty
+
+                            <tr>
+
+                                <td
+                                    colspan="5"
+                                    class="
+                                        px-6
+                                        py-16
+                                        text-center
                                     "
                                 >
 
                                     <div
                                         class="
+                                            mx-auto
                                             flex
-                                            h-9
-                                            w-9
-                                            shrink-0
+                                            h-12
+                                            w-12
                                             items-center
                                             justify-center
                                             rounded-xl
                                             bg-[#F1F2FA]
-                                            text-xs
-                                            font-bold
                                             text-[#101064]
                                         "
                                     >
-                                        SA
+
+                                        <svg
+                                            class="h-6 w-6"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                stroke-width="1.8"
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                d="M4 7h16M6 3h12a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V5a2 2 0 012-2zm4 8h4"
+                                            />
+                                        </svg>
+
                                     </div>
 
 
-                                    <span
+                                    <p
                                         class="
-                                            text-sm
+                                            mt-4
                                             font-semibold
                                             text-[#101064]
                                         "
                                     >
-                                        System Administrator
-                                    </span>
-
-                                </div>
-
-                            </td>
+                                        No backups created yet
+                                    </p>
 
 
-                            <td class="px-6 py-5">
-
-                                <span
-                                    class="
-                                        inline-flex
-                                        items-center
-                                        gap-2
-                                        rounded-full
-                                        bg-green-50
-                                        px-3
-                                        py-1
-                                        text-xs
-                                        font-semibold
-                                        text-green-700
-                                    "
-                                >
-
-                                    <span
+                                    <p
                                         class="
-                                            h-1.5
-                                            w-1.5
-                                            rounded-full
-                                            bg-green-500
-                                        "
-                                    ></span>
-
-                                    Completed
-
-                                </span>
-
-                            </td>
-
-                        </tr>
-
-
-
-                        {{-- BACKUP 2 --}}
-
-                        <tr
-                            class="
-                                transition
-                                hover:bg-gray-50/70
-                            "
-                        >
-
-                            <td
-                                class="
-                                    px-6
-                                    py-5
-                                    text-sm
-                                    font-semibold
-                                    text-gray-700
-                                "
-                            >
-                                September 18, 2026
-                            </td>
-
-
-                            <td
-                                class="
-                                    px-6
-                                    py-5
-                                    text-sm
-                                    text-gray-500
-                                "
-                            >
-                                05:00 AM
-                            </td>
-
-
-                            <td class="px-6 py-5">
-
-                                <div
-                                    class="
-                                        flex
-                                        items-center
-                                        gap-3
-                                    "
-                                >
-
-                                    <div
-                                        class="
-                                            flex
-                                            h-9
-                                            w-9
-                                            shrink-0
-                                            items-center
-                                            justify-center
-                                            rounded-xl
-                                            bg-[#F1F2FA]
-                                            text-xs
-                                            font-bold
-                                            text-[#101064]
-                                        "
-                                    >
-                                        SA
-                                    </div>
-
-
-                                    <span
-                                        class="
+                                            mx-auto
+                                            mt-1
+                                            max-w-md
                                             text-sm
-                                            font-semibold
-                                            text-[#101064]
+                                            leading-6
+                                            text-gray-400
                                         "
                                     >
-                                        System Administrator
-                                    </span>
+                                        Create your first database backup
+                                        using the backup control above.
+                                    </p>
 
-                                </div>
+                                </td>
 
-                            </td>
+                            </tr>
 
-
-                            <td class="px-6 py-5">
-
-                                <span
-                                    class="
-                                        inline-flex
-                                        items-center
-                                        gap-2
-                                        rounded-full
-                                        bg-green-50
-                                        px-3
-                                        py-1
-                                        text-xs
-                                        font-semibold
-                                        text-green-700
-                                    "
-                                >
-
-                                    <span
-                                        class="
-                                            h-1.5
-                                            w-1.5
-                                            rounded-full
-                                            bg-green-500
-                                        "
-                                    ></span>
-
-                                    Completed
-
-                                </span>
-
-                            </td>
-
-                        </tr>
-
-
-
-                        {{-- BACKUP 3 --}}
-
-                        <tr
-                            class="
-                                transition
-                                hover:bg-gray-50/70
-                            "
-                        >
-
-                            <td
-                                class="
-                                    px-6
-                                    py-5
-                                    text-sm
-                                    font-semibold
-                                    text-gray-700
-                                "
-                            >
-                                September 17, 2026
-                            </td>
-
-
-                            <td
-                                class="
-                                    px-6
-                                    py-5
-                                    text-sm
-                                    text-gray-500
-                                "
-                            >
-                                05:00 AM
-                            </td>
-
-
-                            <td class="px-6 py-5">
-
-                                <div
-                                    class="
-                                        flex
-                                        items-center
-                                        gap-3
-                                    "
-                                >
-
-                                    <div
-                                        class="
-                                            flex
-                                            h-9
-                                            w-9
-                                            shrink-0
-                                            items-center
-                                            justify-center
-                                            rounded-xl
-                                            bg-[#F1F2FA]
-                                            text-xs
-                                            font-bold
-                                            text-[#101064]
-                                        "
-                                    >
-                                        SA
-                                    </div>
-
-
-                                    <span
-                                        class="
-                                            text-sm
-                                            font-semibold
-                                            text-[#101064]
-                                        "
-                                    >
-                                        System Administrator
-                                    </span>
-
-                                </div>
-
-                            </td>
-
-
-                            <td class="px-6 py-5">
-
-                                <span
-                                    class="
-                                        inline-flex
-                                        items-center
-                                        gap-2
-                                        rounded-full
-                                        bg-[#FFF8E1]
-                                        px-3
-                                        py-1
-                                        text-xs
-                                        font-semibold
-                                        text-[#A87900]
-                                    "
-                                >
-
-                                    <span
-                                        class="
-                                            h-1.5
-                                            w-1.5
-                                            rounded-full
-                                            bg-[#D4A017]
-                                            animate-pulse
-                                        "
-                                    ></span>
-
-                                    Processing
-
-                                </span>
-
-                            </td>
-
-                        </tr>
-
+                        @endforelse
 
                     </tbody>
 
@@ -1295,12 +1687,65 @@
 
             </div>
 
+
+
+            {{-- PAGINATION --}}
+
+            @if(method_exists($backups, 'hasPages') && $backups->hasPages())
+
+                <div
+                    class="
+                        border-t
+                        border-gray-100
+                        bg-white
+                        px-6
+                        py-4
+                    "
+                >
+                    {{ $backups->links() }}
+                </div>
+
+            @endif
+
         </div>
 
     </section>
 
 
 </div>
+
+
+
+<script>
+
+    function handleBackupSubmit(form) {
+
+        const button =
+            document.getElementById(
+                'create-backup-button'
+            );
+
+        const text =
+            document.getElementById(
+                'create-backup-text'
+            );
+
+
+        if (!button || !text) {
+            return true;
+        }
+
+
+        button.disabled = true;
+
+        text.textContent =
+            'Creating Backup...';
+
+
+        return true;
+    }
+
+</script>
 
 
 </x-admin-layout>

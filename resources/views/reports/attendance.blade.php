@@ -9,6 +9,7 @@
     */
 
     .attendance-report-hero {
+
         background:
             linear-gradient(
                 100deg,
@@ -20,9 +21,11 @@
 
         background-size: cover;
         background-position: center;
+
     }
 
 </style>
+
 
 
 <div class="min-w-0 space-y-8">
@@ -110,7 +113,8 @@
                     "
                 >
                     Generate and review official attendance reports
-                    from finalized event attendance records.
+                    using recorded RFID attendance information
+                    from school events.
                 </p>
 
             </div>
@@ -239,7 +243,8 @@
                     text-gray-500
                 "
             >
-                Summary of attendance activity across recorded school events.
+                Summary calculated directly from recorded RFID
+                attendance information.
             </p>
 
         </div>
@@ -272,14 +277,7 @@
                 "
             >
 
-                <div
-                    class="
-                        flex
-                        items-start
-                        justify-between
-                        gap-4
-                    "
-                >
+                <div class="flex items-start justify-between gap-4">
 
                     <div>
 
@@ -292,7 +290,7 @@
                                 text-gray-400
                             "
                         >
-                            Total Events
+                            Recorded Events
                         </p>
 
 
@@ -305,7 +303,12 @@
                                 text-[#101064]
                             "
                         >
-                            0
+                            {{ number_format($totalEvents ?? 0) }}
+                        </p>
+
+
+                        <p class="mt-2 text-xs text-gray-400">
+                            Events with attendance entries
                         </p>
 
                     </div>
@@ -360,14 +363,7 @@
                 "
             >
 
-                <div
-                    class="
-                        flex
-                        items-start
-                        justify-between
-                        gap-4
-                    "
-                >
+                <div class="flex items-start justify-between gap-4">
 
                     <div>
 
@@ -393,7 +389,12 @@
                                 text-green-600
                             "
                         >
-                            0
+                            {{ number_format($totalPresent ?? 0) }}
+                        </p>
+
+
+                        <p class="mt-2 text-xs text-gray-400">
+                            On-time attendance entries
                         </p>
 
                     </div>
@@ -448,14 +449,7 @@
                 "
             >
 
-                <div
-                    class="
-                        flex
-                        items-start
-                        justify-between
-                        gap-4
-                    "
-                >
+                <div class="flex items-start justify-between gap-4">
 
                     <div>
 
@@ -481,7 +475,12 @@
                                 text-[#D4A017]
                             "
                         >
-                            0
+                            {{ number_format($totalLate ?? 0) }}
+                        </p>
+
+
+                        <p class="mt-2 text-xs text-gray-400">
+                            Attendance marked as late
                         </p>
 
                     </div>
@@ -523,18 +522,11 @@
 
 
 
-            {{-- COMPLETION RATE --}}
+            {{-- ON-TIME RATE --}}
 
             <div class="px-6 py-6">
 
-                <div
-                    class="
-                        flex
-                        items-start
-                        justify-between
-                        gap-4
-                    "
-                >
+                <div class="flex items-start justify-between gap-4">
 
                     <div>
 
@@ -547,7 +539,7 @@
                                 text-gray-400
                             "
                         >
-                            Completion Rate
+                            On-Time Rate
                         </p>
 
 
@@ -560,7 +552,12 @@
                                 text-[#101064]
                             "
                         >
-                            0%
+                            {{ number_format($onTimeRate ?? 0, 1) }}%
+                        </p>
+
+
+                        <p class="mt-2 text-xs text-gray-400">
+                            Present versus total entries
                         </p>
 
                     </div>
@@ -639,20 +636,17 @@
             </h2>
 
 
-            <p
-                class="
-                    mt-1
-                    text-sm
-                    text-gray-500
-                "
-            >
-                Select the event and attendance status to prepare a report.
+            <p class="mt-1 text-sm text-gray-500">
+                Select an event and attendance status,
+                then generate the report.
             </p>
 
         </div>
 
 
-        <div
+        <form
+            method="GET"
+            action="{{ route('reports.attendance') }}"
             class="
                 border
                 border-gray-200
@@ -660,6 +654,13 @@
                 p-6
             "
         >
+
+            <input
+                type="hidden"
+                name="generated"
+                value="1"
+            >
+
 
             <div
                 class="
@@ -677,6 +678,7 @@
                 <div>
 
                     <label
+                        for="event_id"
                         class="
                             mb-2
                             block
@@ -690,6 +692,8 @@
 
 
                     <select
+                        id="event_id"
+                        name="event_id"
                         class="
                             w-full
                             rounded-xl
@@ -708,9 +712,28 @@
                         "
                     >
 
-                        <option>
-                            Select Event
+                        <option value="all">
+                            All Events
                         </option>
+
+
+                        @foreach($events as $event)
+
+                            <option
+                                value="{{ $event->event_id }}"
+                                @selected(
+                                    (string) $selectedEvent ===
+                                    (string) $event->event_id
+                                )
+                            >
+                                {{ $event->event_name }}
+                                —
+                                {{ \Carbon\Carbon::parse(
+                                    $event->event_date
+                                )->format('M d, Y') }}
+                            </option>
+
+                        @endforeach
 
                     </select>
 
@@ -718,11 +741,12 @@
 
 
 
-                {{-- ATTENDANCE STATUS --}}
+                {{-- STATUS --}}
 
                 <div>
 
                     <label
+                        for="status"
                         class="
                             mb-2
                             block
@@ -736,6 +760,8 @@
 
 
                     <select
+                        id="status"
+                        name="status"
                         class="
                             w-full
                             rounded-xl
@@ -754,20 +780,33 @@
                         "
                     >
 
-                        <option>
+                        <option
+                            value="all"
+                            @selected(
+                                $selectedStatus === 'all'
+                            )
+                        >
                             All
                         </option>
 
-                        <option>
+
+                        <option
+                            value="Present"
+                            @selected(
+                                $selectedStatus === 'Present'
+                            )
+                        >
                             Present
                         </option>
 
-                        <option>
-                            Late
-                        </option>
 
-                        <option>
-                            Absent
+                        <option
+                            value="Late"
+                            @selected(
+                                $selectedStatus === 'Late'
+                            )
+                        >
+                            Late
                         </option>
 
                     </select>
@@ -776,12 +815,19 @@
 
 
 
-                {{-- GENERATE BUTTON --}}
+                {{-- ACTIONS --}}
 
-                <div>
+                <div
+                    class="
+                        flex
+                        flex-col
+                        gap-2
+                        sm:flex-row
+                    "
+                >
 
                     <button
-                        type="button"
+                        type="submit"
                         class="
                             inline-flex
                             w-full
@@ -820,11 +866,39 @@
 
                     </button>
 
+
+                    @if($generated)
+
+                        <a
+                            href="{{ route(
+                                'reports.attendance'
+                            ) }}"
+                            class="
+                                inline-flex
+                                items-center
+                                justify-center
+                                rounded-xl
+                                border
+                                border-gray-200
+                                px-5
+                                py-3
+                                text-sm
+                                font-semibold
+                                text-gray-500
+                                transition
+                                hover:bg-gray-50
+                            "
+                        >
+                            Reset
+                        </a>
+
+                    @endif
+
                 </div>
 
             </div>
 
-        </div>
+        </form>
 
     </section>
 
@@ -875,14 +949,29 @@
                 </h2>
 
 
-                <p
-                    class="
-                        mt-1
-                        text-sm
-                        text-gray-500
-                    "
-                >
-                    Finalized attendance information from school events.
+                <p class="mt-1 text-sm text-gray-500">
+
+                    @if($generated)
+
+                        @if($selectedEventData)
+
+                            Report for
+                            <span class="font-semibold text-gray-700">
+                                {{ $selectedEventData->event_name }}
+                            </span>
+
+                        @else
+
+                            Attendance records across all events
+
+                        @endif
+
+                    @else
+
+                        Generate a report to display attendance records.
+
+                    @endif
+
                 </p>
 
             </div>
@@ -913,7 +1002,16 @@
                     "
                 ></span>
 
-                Attendance Report
+                @if($generated && $records)
+
+                    {{ number_format($records->total()) }}
+                    Record{{ $records->total() === 1 ? '' : 's' }}
+
+                @else
+
+                    Attendance Report
+
+                @endif
 
             </div>
 
@@ -935,7 +1033,7 @@
                 <table
                     class="
                         w-full
-                        min-w-[900px]
+                        min-w-[1100px]
                         text-left
                     "
                 >
@@ -985,7 +1083,7 @@
                                     text-gray-400
                                 "
                             >
-                                Time In
+                                Event Date
                             </th>
 
 
@@ -1000,7 +1098,7 @@
                                     text-gray-400
                                 "
                             >
-                                Time Out
+                                Time In
                             </th>
 
 
@@ -1018,84 +1116,506 @@
                                 Status
                             </th>
 
+
+                            <th
+                                class="
+                                    px-6
+                                    py-4
+                                    text-[10px]
+                                    font-bold
+                                    uppercase
+                                    tracking-[0.16em]
+                                    text-gray-400
+                                "
+                            >
+                                Scanned By
+                            </th>
+
                         </tr>
 
                     </thead>
 
 
 
-                    <tbody>
+                    <tbody class="divide-y divide-gray-100">
 
-                        <tr>
+                        @if(
+                            !$generated
+                        )
 
-                            <td
-                                colspan="5"
-                                class="
-                                    px-6
-                                    py-16
-                                    text-center
-                                "
-                            >
+                            <tr>
 
-                                <div
+                                <td
+                                    colspan="6"
                                     class="
-                                        mx-auto
-                                        flex
-                                        h-12
-                                        w-12
-                                        items-center
-                                        justify-center
-                                        rounded-xl
-                                        bg-[#F1F2FA]
-                                        text-[#101064]
+                                        px-6
+                                        py-16
+                                        text-center
                                     "
                                 >
 
-                                    <svg
-                                        class="h-6 w-6"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
+                                    <div
+                                        class="
+                                            mx-auto
+                                            flex
+                                            h-12
+                                            w-12
+                                            items-center
+                                            justify-center
+                                            rounded-xl
+                                            bg-[#F1F2FA]
+                                            text-[#101064]
+                                        "
                                     >
-                                        <path
-                                            stroke-width="1.8"
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            d="M9 17v-6m4 6V7m4 10v-3M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z"
-                                        />
-                                    </svg>
 
-                                </div>
+                                        <svg
+                                            class="h-6 w-6"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                stroke-width="1.8"
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                d="M3 4a1 1 0 011-1h16a1 1 0 01.8 1.6L14 13.7V19a1 1 0 01-.55.9l-4 2A1 1 0 018 21v-7.3L3.2 4.6A1 1 0 013 4z"
+                                            />
+                                        </svg>
+
+                                    </div>
 
 
-                                <p
+                                    <p
+                                        class="
+                                            mt-4
+                                            font-semibold
+                                            text-[#101064]
+                                        "
+                                    >
+                                        Generate an Attendance Report
+                                    </p>
+
+
+                                    <p
+                                        class="
+                                            mx-auto
+                                            mt-1
+                                            max-w-md
+                                            text-sm
+                                            leading-6
+                                            text-gray-400
+                                        "
+                                    >
+                                        Select the report filters above,
+                                        then click Generate Report.
+                                    </p>
+
+                                </td>
+
+                            </tr>
+
+
+                        @elseif(
+                            $records
+                            && $records->count()
+                        )
+
+                            @foreach(
+                                $records
+                                as $record
+                            )
+
+                                @php
+
+                                    $studentName =
+                                        trim(
+                                            $record->first_name
+                                            . ' '
+                                            . (
+                                                $record->middle_name
+                                                    ? $record->middle_name . ' '
+                                                    : ''
+                                            )
+                                            . $record->last_name
+                                        );
+
+                                @endphp
+
+
+                                <tr
                                     class="
-                                        mt-4
-                                        font-semibold
-                                        text-[#101064]
+                                        transition
+                                        hover:bg-gray-50/70
                                     "
                                 >
-                                    No attendance records available
-                                </p>
+
+                                    {{-- STUDENT --}}
+
+                                    <td class="px-6 py-5">
+
+                                        <div
+                                            class="
+                                                flex
+                                                items-center
+                                                gap-3
+                                            "
+                                        >
+
+                                            <div
+                                                class="
+                                                    flex
+                                                    h-11
+                                                    w-11
+                                                    shrink-0
+                                                    items-center
+                                                    justify-center
+                                                    overflow-hidden
+                                                    rounded-xl
+                                                    bg-[#F1F2FA]
+                                                    text-sm
+                                                    font-bold
+                                                    text-[#101064]
+                                                "
+                                            >
+
+                                                @if(
+                                                    !empty(
+                                                        $record->photo_path
+                                                    )
+                                                )
+
+                                                    <img
+                                                        src="{{ asset(
+                                                            'student_photos/'
+                                                            . basename(
+                                                                $record->photo_path
+                                                            )
+                                                        ) }}"
+                                                        alt="{{ $studentName }}"
+                                                        class="
+                                                            h-full
+                                                            w-full
+                                                            object-cover
+                                                        "
+                                                    >
+
+                                                @else
+
+                                                    {{ strtoupper(
+                                                        substr(
+                                                            $record->first_name,
+                                                            0,
+                                                            1
+                                                        )
+                                                    ) }}
+
+                                                @endif
+
+                                            </div>
 
 
-                                <p
+                                            <div class="min-w-0">
+
+                                                <p
+                                                    class="
+                                                        font-semibold
+                                                        text-[#101064]
+                                                    "
+                                                >
+                                                    {{ $studentName }}
+                                                </p>
+
+
+                                                <p
+                                                    class="
+                                                        mt-0.5
+                                                        text-xs
+                                                        text-gray-400
+                                                    "
+                                                >
+                                                    {{ $record->student_number }}
+                                                    •
+                                                    {{ $record->program_code }}
+                                                    {{ $record->year_level }}
+                                                </p>
+
+                                            </div>
+
+                                        </div>
+
+                                    </td>
+
+
+
+                                    {{-- EVENT --}}
+
+                                    <td class="px-6 py-5">
+
+                                        <p
+                                            class="
+                                                text-sm
+                                                font-semibold
+                                                text-gray-700
+                                            "
+                                        >
+                                            {{ $record->event_name }}
+                                        </p>
+
+
+                                        <p
+                                            class="
+                                                mt-1
+                                                text-xs
+                                                text-gray-400
+                                            "
+                                        >
+                                            {{ $record->location }}
+                                        </p>
+
+                                    </td>
+
+
+
+                                    {{-- DATE --}}
+
+                                    <td
+                                        class="
+                                            whitespace-nowrap
+                                            px-6
+                                            py-5
+                                            text-sm
+                                            text-gray-600
+                                        "
+                                    >
+
+                                        {{ \Carbon\Carbon::parse(
+                                            $record->event_date
+                                        )->format('M d, Y') }}
+
+                                    </td>
+
+
+
+                                    {{-- TIME IN --}}
+
+                                    <td
+                                        class="
+                                            whitespace-nowrap
+                                            px-6
+                                            py-5
+                                        "
+                                    >
+
+                                        @if($record->time_in)
+
+                                            <p
+                                                class="
+                                                    text-sm
+                                                    font-semibold
+                                                    text-gray-700
+                                                "
+                                            >
+                                                {{ \Carbon\Carbon::parse(
+                                                    $record->time_in
+                                                )->format('h:i A') }}
+                                            </p>
+
+
+                                            <p
+                                                class="
+                                                    mt-1
+                                                    text-xs
+                                                    text-gray-400
+                                                "
+                                            >
+                                                {{ \Carbon\Carbon::parse(
+                                                    $record->time_in
+                                                )->format('M d, Y') }}
+                                            </p>
+
+                                        @else
+
+                                            <span class="text-sm text-gray-400">
+                                                —
+                                            </span>
+
+                                        @endif
+
+                                    </td>
+
+
+
+                                    {{-- STATUS --}}
+
+                                    <td class="px-6 py-5">
+
+                                        @if(
+                                            $record->status ===
+                                            'Present'
+                                        )
+
+                                            <span
+                                                class="
+                                                    inline-flex
+                                                    items-center
+                                                    gap-2
+                                                    rounded-full
+                                                    bg-green-50
+                                                    px-3
+                                                    py-1.5
+                                                    text-xs
+                                                    font-semibold
+                                                    text-green-700
+                                                "
+                                            >
+
+                                                <span
+                                                    class="
+                                                        h-1.5
+                                                        w-1.5
+                                                        rounded-full
+                                                        bg-green-500
+                                                    "
+                                                ></span>
+
+                                                Present
+
+                                            </span>
+
+                                        @else
+
+                                            <span
+                                                class="
+                                                    inline-flex
+                                                    items-center
+                                                    gap-2
+                                                    rounded-full
+                                                    bg-[#FFF8E1]
+                                                    px-3
+                                                    py-1.5
+                                                    text-xs
+                                                    font-semibold
+                                                    text-[#9A7000]
+                                                "
+                                            >
+
+                                                <span
+                                                    class="
+                                                        h-1.5
+                                                        w-1.5
+                                                        rounded-full
+                                                        bg-[#D4A017]
+                                                    "
+                                                ></span>
+
+                                                Late
+
+                                            </span>
+
+                                        @endif
+
+                                    </td>
+
+
+
+                                    {{-- SCANNED BY --}}
+
+                                    <td class="px-6 py-5">
+
+                                        <p
+                                            class="
+                                                text-sm
+                                                font-medium
+                                                text-gray-600
+                                            "
+                                        >
+                                            {{
+                                                $record->scanned_by_name
+                                                ?? 'Unknown Personnel'
+                                            }}
+                                        </p>
+
+                                    </td>
+
+                                </tr>
+
+                            @endforeach
+
+
+                        @else
+
+                            <tr>
+
+                                <td
+                                    colspan="6"
                                     class="
-                                        mx-auto
-                                        mt-1
-                                        max-w-md
-                                        text-sm
-                                        leading-6
-                                        text-gray-400
+                                        px-6
+                                        py-16
+                                        text-center
                                     "
                                 >
-                                    Attendance records will appear here
-                                    after a report is generated.
-                                </p>
 
-                            </td>
+                                    <div
+                                        class="
+                                            mx-auto
+                                            flex
+                                            h-12
+                                            w-12
+                                            items-center
+                                            justify-center
+                                            rounded-xl
+                                            bg-[#F1F2FA]
+                                            text-[#101064]
+                                        "
+                                    >
 
-                        </tr>
+                                        <svg
+                                            class="h-6 w-6"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                stroke-width="1.8"
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                d="M9 17v-6m4 6V7m4 10v-3M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z"
+                                            />
+                                        </svg>
+
+                                    </div>
+
+
+                                    <p
+                                        class="
+                                            mt-4
+                                            font-semibold
+                                            text-[#101064]
+                                        "
+                                    >
+                                        No Attendance Records Found
+                                    </p>
+
+
+                                    <p
+                                        class="
+                                            mx-auto
+                                            mt-1
+                                            max-w-md
+                                            text-sm
+                                            leading-6
+                                            text-gray-400
+                                        "
+                                    >
+                                        No attendance records match
+                                        the selected report filters.
+                                    </p>
+
+                                </td>
+
+                            </tr>
+
+                        @endif
 
                     </tbody>
 
@@ -1109,30 +1629,91 @@
 
             <div
                 class="
-                    flex
-                    flex-col
-                    gap-2
                     border-t
                     border-gray-100
                     bg-gray-50/50
                     px-6
                     py-4
-                    text-xs
-                    text-gray-400
-                    sm:flex-row
-                    sm:items-center
-                    sm:justify-between
                 "
             >
 
-                <span>
-                    Official attendance reporting
-                </span>
+                <div
+                    class="
+                        flex
+                        flex-col
+                        gap-4
+                        lg:flex-row
+                        lg:items-center
+                        lg:justify-between
+                    "
+                >
+
+                    <div>
+
+                        <p
+                            class="
+                                text-xs
+                                font-medium
+                                text-gray-500
+                            "
+                        >
+                            DySign • Attendance Reports
+                        </p>
 
 
-                <span>
-                    DySign • Attendance Reports
-                </span>
+                        @if(
+                            $generated
+                            && $records
+                        )
+
+                            <p
+                                class="
+                                    mt-1
+                                    text-xs
+                                    text-gray-400
+                                "
+                            >
+                                {{ number_format(
+                                    $records->total()
+                                ) }}
+                                attendance
+                                {{ $records->total() === 1
+                                    ? 'record'
+                                    : 'records'
+                                }}
+                                found.
+                            </p>
+
+                        @else
+
+                            <p
+                                class="
+                                    mt-1
+                                    text-xs
+                                    text-gray-400
+                                "
+                            >
+                                Official RFID attendance reporting
+                            </p>
+
+                        @endif
+
+                    </div>
+
+
+                    @if(
+                        $generated
+                        && $records
+                        && $records->hasPages()
+                    )
+
+                        <div>
+                            {{ $records->links() }}
+                        </div>
+
+                    @endif
+
+                </div>
 
             </div>
 
