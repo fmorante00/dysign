@@ -1,315 +1,1144 @@
 <x-admin-layout>
 
-<div class="p-6">
-
-    <!-- Header -->
-    <div class="mb-8">
-
-        <h1 class="text-3xl font-bold text-[#11175A]">
-            Attendance Reports
-        </h1>
-
-        <p class="mt-2 text-gray-500">
-            Generate and review official attendance reports from finalized event attendance records.
-        </p>
-
-    </div>
-
-
-
-    <!-- Summary Cards -->
-
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-5 mb-8">
-
-
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-
-            <p class="text-sm text-gray-500">
-                Total Events
-            </p>
-
-            <h2 class="text-3xl font-bold text-[#11175A] mt-3">
-                0
-            </h2>
-
-        </div>
-
-
-
-
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-
-            <p class="text-sm text-gray-500">
-                Total Present
-            </p>
-
-            <h2 class="text-3xl font-bold text-green-600 mt-3">
-                0
-            </h2>
-
-        </div>
-
-
-
-
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-
-            <p class="text-sm text-gray-500">
-                Late Attendance
-            </p>
-
-            <h2 class="text-3xl font-bold text-yellow-600 mt-3">
-                0
-            </h2>
-
-        </div>
-
-
-
-
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-
-            <p class="text-sm text-gray-500">
-                Completion Rate
-            </p>
-
-            <h2 class="text-3xl font-bold text-[#11175A] mt-3">
-                0%
-            </h2>
-
-        </div>
-
-
-    </div>
-
-
-
-
-
-    <!-- Filters -->
-
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-8">
-
-
-        <h2 class="text-xl font-semibold text-[#11175A] mb-5">
-            Report Filters
-        </h2>
-
-
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-
-
-            <div>
-
-                <label class="block text-sm text-gray-600 mb-2">
-                    Event
-                </label>
-
-
-                <select
-                class="
-                w-full
-                border
-                border-gray-300
-                rounded-xl
-                px-4
-                py-3
-                text-gray-700
-                focus:ring-2
-                focus:ring-yellow-400
-                "
-                >
-
-                    <option>
-                        Select Event
-                    </option>
-
-                </select>
-
-            </div>
-
-
-
-
-
-            <div>
-
-                <label class="block text-sm text-gray-600 mb-2">
-                    Attendance Status
-                </label>
-
-
-                <select
-                class="
-                w-full
-                border
-                border-gray-300
-                rounded-xl
-                px-4
-                py-3
-                text-gray-700
-                "
-                >
-
-                    <option>
-                        All
-                    </option>
-
-                    <option>
-                        Present
-                    </option>
-
-                    <option>
-                        Late
-                    </option>
-
-                    <option>
-                        Absent
-                    </option>
-
-
-                </select>
-
-
-            </div>
-
-
-
-
-
-            <div class="flex items-end">
-
-
-                <button
-                class="
+<style>
+
+    /*
+    |--------------------------------------------------------------------------
+    | HERO
+    |--------------------------------------------------------------------------
+    */
+
+    .attendance-report-hero {
+        background:
+            linear-gradient(
+                100deg,
+                rgba(16,16,100,.97) 0%,
+                rgba(16,16,100,.92) 52%,
+                rgba(16,16,100,.74) 100%
+            ),
+            url('{{ asset('images/school.jpg') }}');
+
+        background-size: cover;
+        background-position: center;
+    }
+
+</style>
+
+
+<div class="min-w-0 space-y-8">
+
+
+    {{-- ====================================================== --}}
+    {{-- HERO --}}
+    {{-- ====================================================== --}}
+
+    <section
+        class="
+            attendance-report-hero
+            relative
+            overflow-hidden
+            rounded-[28px]
+            px-7
+            py-8
+            text-white
+            sm:px-8
+            lg:px-10
+            lg:py-10
+        "
+    >
+
+        <div
+            class="
+                absolute
+                bottom-0
+                left-0
+                h-1
                 w-full
                 bg-[#D4A017]
-                hover:bg-[#C49310]
-                text-white
-                font-semibold
-                rounded-xl
-                py-3
-                transition
-                "
+            "
+        ></div>
+
+
+        <div
+            class="
+                relative
+                z-10
+                flex
+                flex-col
+                gap-8
+                lg:flex-row
+                lg:items-center
+                lg:justify-between
+            "
+        >
+
+            <div class="max-w-3xl">
+
+                <p
+                    class="
+                        text-xs
+                        font-semibold
+                        uppercase
+                        tracking-[0.32em]
+                        text-[#E7C75B]
+                    "
                 >
+                    Reports & Analytics
+                </p>
 
-                    Generate Report
 
-                </button>
+                <h1
+                    class="
+                        mt-3
+                        text-3xl
+                        font-bold
+                        tracking-tight
+                        md:text-4xl
+                    "
+                >
+                    Attendance Reports
+                </h1>
 
+
+                <p
+                    class="
+                        mt-3
+                        max-w-2xl
+                        text-sm
+                        leading-6
+                        text-white/70
+                    "
+                >
+                    Generate and review official attendance reports
+                    from finalized event attendance records.
+                </p>
 
             </div>
 
 
+            <div
+                class="
+                    hidden
+                    shrink-0
+                    items-center
+                    gap-4
+                    rounded-2xl
+                    border
+                    border-white/15
+                    bg-white/10
+                    px-6
+                    py-5
+                    backdrop-blur-sm
+                    lg:flex
+                "
+            >
+
+                <div
+                    class="
+                        flex
+                        h-11
+                        w-11
+                        items-center
+                        justify-center
+                        rounded-xl
+                        bg-white/10
+                        text-[#E7C75B]
+                    "
+                >
+
+                    <svg
+                        class="h-6 w-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-width="1.8"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M9 17v-6m4 6V7m4 10v-3M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z"
+                        />
+                    </svg>
+
+                </div>
+
+
+                <div>
+
+                    <p
+                        class="
+                            text-[10px]
+                            font-semibold
+                            uppercase
+                            tracking-[0.22em]
+                            text-[#E7C75B]
+                        "
+                    >
+                        Report Type
+                    </p>
+
+
+                    <p
+                        class="
+                            mt-1
+                            text-sm
+                            font-semibold
+                            text-white
+                        "
+                    >
+                        Event Attendance
+                    </p>
+
+                </div>
+
+            </div>
+
         </div>
 
-
-    </div>
-
+    </section>
 
 
 
+    {{-- ====================================================== --}}
+    {{-- SUMMARY --}}
+    {{-- ====================================================== --}}
+
+    <section>
+
+        <div class="mb-4">
+
+            <p
+                class="
+                    text-xs
+                    font-semibold
+                    uppercase
+                    tracking-[0.28em]
+                    text-[#D4A017]
+                "
+            >
+                Report Overview
+            </p>
 
 
-    <!-- Table -->
-
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-
-
-        <div class="p-6 border-b border-gray-200">
-
-            <h2 class="text-xl font-semibold text-[#11175A]">
-                Attendance Records
+            <h2
+                class="
+                    mt-2
+                    text-xl
+                    font-bold
+                    text-[#101064]
+                "
+            >
+                Attendance Summary
             </h2>
 
-            <p class="text-sm text-gray-500 mt-1">
-                Finalized attendance information from school events.
+
+            <p
+                class="
+                    mt-1
+                    text-sm
+                    text-gray-500
+                "
+            >
+                Summary of attendance activity across recorded school events.
             </p>
 
         </div>
 
 
+        <div
+            class="
+                grid
+                grid-cols-1
+                overflow-hidden
+                border
+                border-gray-200
+                bg-white
+                sm:grid-cols-2
+                xl:grid-cols-4
+            "
+        >
 
 
-        <div class="overflow-x-auto">
+            {{-- TOTAL EVENTS --}}
 
+            <div
+                class="
+                    border-b
+                    border-gray-100
+                    px-6
+                    py-6
+                    sm:border-r
+                    xl:border-b-0
+                "
+            >
 
-            <table class="w-full">
+                <div
+                    class="
+                        flex
+                        items-start
+                        justify-between
+                        gap-4
+                    "
+                >
 
+                    <div>
 
-                <thead class="bg-gray-50">
-
-
-                    <tr class="text-left text-sm text-gray-600">
-
-
-                        <th class="px-6 py-4">
-                            Student
-                        </th>
-
-
-                        <th class="px-6 py-4">
-                            Event
-                        </th>
-
-
-                        <th class="px-6 py-4">
-                            Time In
-                        </th>
-
-
-                        <th class="px-6 py-4">
-                            Time Out
-                        </th>
-
-
-                        <th class="px-6 py-4">
-                            Status
-                        </th>
-
-
-                    </tr>
-
-
-                </thead>
-
-
-
-                <tbody>
-
-
-                    <tr class="border-t">
-
-
-                        <td colspan="5"
-                        class="
-                        px-6
-                        py-8
-                        text-center
-                        text-gray-400
-                        "
+                        <p
+                            class="
+                                text-[10px]
+                                font-bold
+                                uppercase
+                                tracking-[0.16em]
+                                text-gray-400
+                            "
                         >
-
-                            No attendance records available.
-
-                        </td>
+                            Total Events
+                        </p>
 
 
-                    </tr>
+                        <p
+                            class="
+                                mt-2
+                                text-3xl
+                                font-bold
+                                tracking-tight
+                                text-[#101064]
+                            "
+                        >
+                            0
+                        </p>
+
+                    </div>
 
 
-                </tbody>
+                    <div
+                        class="
+                            flex
+                            h-10
+                            w-10
+                            shrink-0
+                            items-center
+                            justify-center
+                            rounded-xl
+                            bg-[#F1F2FA]
+                            text-[#101064]
+                        "
+                    >
+
+                        <svg
+                            class="h-5 w-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-width="1.8"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="M8 7V3m8 4V3M5 11h14M5 5h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z"
+                            />
+                        </svg>
+
+                    </div>
+
+                </div>
+
+            </div>
 
 
-            </table>
 
+            {{-- PRESENT --}}
+
+            <div
+                class="
+                    border-b
+                    border-gray-100
+                    px-6
+                    py-6
+                    xl:border-r
+                    xl:border-b-0
+                "
+            >
+
+                <div
+                    class="
+                        flex
+                        items-start
+                        justify-between
+                        gap-4
+                    "
+                >
+
+                    <div>
+
+                        <p
+                            class="
+                                text-[10px]
+                                font-bold
+                                uppercase
+                                tracking-[0.16em]
+                                text-gray-400
+                            "
+                        >
+                            Total Present
+                        </p>
+
+
+                        <p
+                            class="
+                                mt-2
+                                text-3xl
+                                font-bold
+                                tracking-tight
+                                text-green-600
+                            "
+                        >
+                            0
+                        </p>
+
+                    </div>
+
+
+                    <div
+                        class="
+                            flex
+                            h-10
+                            w-10
+                            shrink-0
+                            items-center
+                            justify-center
+                            rounded-xl
+                            bg-green-50
+                            text-green-600
+                        "
+                    >
+
+                        <svg
+                            class="h-5 w-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-width="1.8"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="M5 13l4 4L19 7"
+                            />
+                        </svg>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+
+            {{-- LATE --}}
+
+            <div
+                class="
+                    border-b
+                    border-gray-100
+                    px-6
+                    py-6
+                    sm:border-r
+                    sm:border-b-0
+                "
+            >
+
+                <div
+                    class="
+                        flex
+                        items-start
+                        justify-between
+                        gap-4
+                    "
+                >
+
+                    <div>
+
+                        <p
+                            class="
+                                text-[10px]
+                                font-bold
+                                uppercase
+                                tracking-[0.16em]
+                                text-gray-400
+                            "
+                        >
+                            Late Attendance
+                        </p>
+
+
+                        <p
+                            class="
+                                mt-2
+                                text-3xl
+                                font-bold
+                                tracking-tight
+                                text-[#D4A017]
+                            "
+                        >
+                            0
+                        </p>
+
+                    </div>
+
+
+                    <div
+                        class="
+                            flex
+                            h-10
+                            w-10
+                            shrink-0
+                            items-center
+                            justify-center
+                            rounded-xl
+                            bg-[#FFF8E1]
+                            text-[#A87900]
+                        "
+                    >
+
+                        <svg
+                            class="h-5 w-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-width="1.8"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
+                        </svg>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+
+            {{-- COMPLETION RATE --}}
+
+            <div class="px-6 py-6">
+
+                <div
+                    class="
+                        flex
+                        items-start
+                        justify-between
+                        gap-4
+                    "
+                >
+
+                    <div>
+
+                        <p
+                            class="
+                                text-[10px]
+                                font-bold
+                                uppercase
+                                tracking-[0.16em]
+                                text-gray-400
+                            "
+                        >
+                            Completion Rate
+                        </p>
+
+
+                        <p
+                            class="
+                                mt-2
+                                text-3xl
+                                font-bold
+                                tracking-tight
+                                text-[#101064]
+                            "
+                        >
+                            0%
+                        </p>
+
+                    </div>
+
+
+                    <div
+                        class="
+                            flex
+                            h-10
+                            w-10
+                            shrink-0
+                            items-center
+                            justify-center
+                            rounded-xl
+                            bg-[#F1F2FA]
+                            text-[#101064]
+                        "
+                    >
+
+                        <svg
+                            class="h-5 w-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-width="1.8"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="M9 12l2 2 4-4m6-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
+                        </svg>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    {{-- ====================================================== --}}
+    {{-- FILTERS --}}
+    {{-- ====================================================== --}}
+
+    <section>
+
+        <div class="mb-4">
+
+            <p
+                class="
+                    text-xs
+                    font-semibold
+                    uppercase
+                    tracking-[0.28em]
+                    text-[#D4A017]
+                "
+            >
+                Report Controls
+            </p>
+
+
+            <h2
+                class="
+                    mt-2
+                    text-xl
+                    font-bold
+                    text-[#101064]
+                "
+            >
+                Report Filters
+            </h2>
+
+
+            <p
+                class="
+                    mt-1
+                    text-sm
+                    text-gray-500
+                "
+            >
+                Select the event and attendance status to prepare a report.
+            </p>
 
         </div>
 
 
-    </div>
+        <div
+            class="
+                border
+                border-gray-200
+                bg-white
+                p-6
+            "
+        >
 
+            <div
+                class="
+                    grid
+                    grid-cols-1
+                    gap-5
+                    lg:grid-cols-[1fr_280px_auto]
+                    lg:items-end
+                "
+            >
+
+
+                {{-- EVENT --}}
+
+                <div>
+
+                    <label
+                        class="
+                            mb-2
+                            block
+                            text-sm
+                            font-semibold
+                            text-gray-600
+                        "
+                    >
+                        Event
+                    </label>
+
+
+                    <select
+                        class="
+                            w-full
+                            rounded-xl
+                            border
+                            border-gray-300
+                            bg-white
+                            px-4
+                            py-3
+                            text-sm
+                            text-gray-700
+                            outline-none
+                            transition
+                            focus:border-[#D4A017]
+                            focus:ring-2
+                            focus:ring-[#D4A017]/20
+                        "
+                    >
+
+                        <option>
+                            Select Event
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+
+                {{-- ATTENDANCE STATUS --}}
+
+                <div>
+
+                    <label
+                        class="
+                            mb-2
+                            block
+                            text-sm
+                            font-semibold
+                            text-gray-600
+                        "
+                    >
+                        Attendance Status
+                    </label>
+
+
+                    <select
+                        class="
+                            w-full
+                            rounded-xl
+                            border
+                            border-gray-300
+                            bg-white
+                            px-4
+                            py-3
+                            text-sm
+                            text-gray-700
+                            outline-none
+                            transition
+                            focus:border-[#D4A017]
+                            focus:ring-2
+                            focus:ring-[#D4A017]/20
+                        "
+                    >
+
+                        <option>
+                            All
+                        </option>
+
+                        <option>
+                            Present
+                        </option>
+
+                        <option>
+                            Late
+                        </option>
+
+                        <option>
+                            Absent
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+
+                {{-- GENERATE BUTTON --}}
+
+                <div>
+
+                    <button
+                        type="button"
+                        class="
+                            inline-flex
+                            w-full
+                            items-center
+                            justify-center
+                            gap-2
+                            rounded-xl
+                            bg-[#101064]
+                            px-6
+                            py-3
+                            text-sm
+                            font-semibold
+                            text-white
+                            transition
+                            hover:bg-[#D4A017]
+                            hover:text-[#101064]
+                            lg:w-auto
+                        "
+                    >
+
+                        <svg
+                            class="h-4 w-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="M3 4a1 1 0 011-1h16a1 1 0 01.8 1.6L14 13.7V19a1 1 0 01-.55.9l-4 2A1 1 0 018 21v-7.3L3.2 4.6A1 1 0 013 4z"
+                            />
+                        </svg>
+
+                        Generate Report
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    {{-- ====================================================== --}}
+    {{-- ATTENDANCE RECORDS --}}
+    {{-- ====================================================== --}}
+
+    <section>
+
+        <div
+            class="
+                mb-4
+                flex
+                flex-col
+                gap-3
+                sm:flex-row
+                sm:items-end
+                sm:justify-between
+            "
+        >
+
+            <div>
+
+                <p
+                    class="
+                        text-xs
+                        font-semibold
+                        uppercase
+                        tracking-[0.28em]
+                        text-[#D4A017]
+                    "
+                >
+                    Attendance Data
+                </p>
+
+
+                <h2
+                    class="
+                        mt-2
+                        text-xl
+                        font-bold
+                        text-[#101064]
+                    "
+                >
+                    Attendance Records
+                </h2>
+
+
+                <p
+                    class="
+                        mt-1
+                        text-sm
+                        text-gray-500
+                    "
+                >
+                    Finalized attendance information from school events.
+                </p>
+
+            </div>
+
+
+            <div
+                class="
+                    inline-flex
+                    w-fit
+                    items-center
+                    gap-2
+                    rounded-full
+                    bg-[#F1F2FA]
+                    px-3
+                    py-1.5
+                    text-xs
+                    font-semibold
+                    text-[#101064]
+                "
+            >
+
+                <span
+                    class="
+                        h-1.5
+                        w-1.5
+                        rounded-full
+                        bg-[#D4A017]
+                    "
+                ></span>
+
+                Attendance Report
+
+            </div>
+
+        </div>
+
+
+
+        <div
+            class="
+                overflow-hidden
+                border
+                border-gray-200
+                bg-white
+            "
+        >
+
+            <div class="overflow-x-auto">
+
+                <table
+                    class="
+                        w-full
+                        min-w-[900px]
+                        text-left
+                    "
+                >
+
+                    <thead class="bg-gray-50">
+
+                        <tr>
+
+                            <th
+                                class="
+                                    px-6
+                                    py-4
+                                    text-[10px]
+                                    font-bold
+                                    uppercase
+                                    tracking-[0.16em]
+                                    text-gray-400
+                                "
+                            >
+                                Student
+                            </th>
+
+
+                            <th
+                                class="
+                                    px-6
+                                    py-4
+                                    text-[10px]
+                                    font-bold
+                                    uppercase
+                                    tracking-[0.16em]
+                                    text-gray-400
+                                "
+                            >
+                                Event
+                            </th>
+
+
+                            <th
+                                class="
+                                    px-6
+                                    py-4
+                                    text-[10px]
+                                    font-bold
+                                    uppercase
+                                    tracking-[0.16em]
+                                    text-gray-400
+                                "
+                            >
+                                Time In
+                            </th>
+
+
+                            <th
+                                class="
+                                    px-6
+                                    py-4
+                                    text-[10px]
+                                    font-bold
+                                    uppercase
+                                    tracking-[0.16em]
+                                    text-gray-400
+                                "
+                            >
+                                Time Out
+                            </th>
+
+
+                            <th
+                                class="
+                                    px-6
+                                    py-4
+                                    text-[10px]
+                                    font-bold
+                                    uppercase
+                                    tracking-[0.16em]
+                                    text-gray-400
+                                "
+                            >
+                                Status
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+
+                    <tbody>
+
+                        <tr>
+
+                            <td
+                                colspan="5"
+                                class="
+                                    px-6
+                                    py-16
+                                    text-center
+                                "
+                            >
+
+                                <div
+                                    class="
+                                        mx-auto
+                                        flex
+                                        h-12
+                                        w-12
+                                        items-center
+                                        justify-center
+                                        rounded-xl
+                                        bg-[#F1F2FA]
+                                        text-[#101064]
+                                    "
+                                >
+
+                                    <svg
+                                        class="h-6 w-6"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            stroke-width="1.8"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            d="M9 17v-6m4 6V7m4 10v-3M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z"
+                                        />
+                                    </svg>
+
+                                </div>
+
+
+                                <p
+                                    class="
+                                        mt-4
+                                        font-semibold
+                                        text-[#101064]
+                                    "
+                                >
+                                    No attendance records available
+                                </p>
+
+
+                                <p
+                                    class="
+                                        mx-auto
+                                        mt-1
+                                        max-w-md
+                                        text-sm
+                                        leading-6
+                                        text-gray-400
+                                    "
+                                >
+                                    Attendance records will appear here
+                                    after a report is generated.
+                                </p>
+
+                            </td>
+
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+
+
+            {{-- TABLE FOOTER --}}
+
+            <div
+                class="
+                    flex
+                    flex-col
+                    gap-2
+                    border-t
+                    border-gray-100
+                    bg-gray-50/50
+                    px-6
+                    py-4
+                    text-xs
+                    text-gray-400
+                    sm:flex-row
+                    sm:items-center
+                    sm:justify-between
+                "
+            >
+
+                <span>
+                    Official attendance reporting
+                </span>
+
+
+                <span>
+                    DySign • Attendance Reports
+                </span>
+
+            </div>
+
+        </div>
+
+    </section>
 
 
 </div>
