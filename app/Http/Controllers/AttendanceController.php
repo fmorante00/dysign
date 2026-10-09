@@ -28,11 +28,21 @@ class AttendanceController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Completed / Cancelled Events Cannot Be Scanned
+        | Scanner Availability
         |--------------------------------------------------------------------------
+        |
+        | The event status is automatically synchronized inside assignedEvent().
+        | RFID scanning is available only while the event is actually Ongoing.
+        |
         */
 
         if (!$this->canScan($event)) {
+
+            $message =
+                $event->status === 'Upcoming'
+                    ? 'Attendance scanning will open automatically at the scheduled event start time.'
+                    : 'Attendance scanning is no longer available for this event.';
+
 
             return redirect()
                 ->route(
@@ -41,7 +51,7 @@ class AttendanceController extends Controller
                 )
                 ->with(
                     'error',
-                    'Attendance scanning is no longer available for this event.'
+                    $message
                 );
         }
 
@@ -129,7 +139,12 @@ class AttendanceController extends Controller
                     'event_closed',
 
                 'message' =>
-                    'Attendance scanning is not available for this event.',
+                    $event->status === 'Upcoming'
+                        ? 'Attendance has not opened yet.'
+                        : 'The event has ended. Attendance scanning is now closed.',
+
+                'event_status' =>
+                    $event->status,
 
             ], 409);
         }
@@ -216,6 +231,43 @@ class AttendanceController extends Controller
                 $event,
                 $rfid
             ) {
+
+                /*
+                |--------------------------------------------------------------------------
+                | Re-check Event Time Before Saving
+                |--------------------------------------------------------------------------
+                |
+                | This prevents a scan from being accepted if the event ends
+                | between the first request check and the database insert.
+                |
+                */
+
+                $event->refresh();
+
+                $event =
+                    $this->syncEventStatus(
+                        $event
+                    );
+
+
+                if (!$this->canScan($event)) {
+
+                    return response()->json([
+
+                        'success' =>
+                            false,
+
+                        'code' =>
+                            'event_closed',
+
+                        'message' =>
+                            'The event has ended. Attendance scanning is now closed.',
+
+                        'event_status' =>
+                            $event->status,
+
+                    ], 409);
+                }
 
 
                 $student =
@@ -398,7 +450,6 @@ class AttendanceController extends Controller
                     'message' =>
                         'Attendance recorded.',
 
-
                     /*
                      * Kept for compatibility with the current scanner page.
                      */
@@ -412,7 +463,6 @@ class AttendanceController extends Controller
                         $this->attendancePayload(
                             $attendance
                         ),
-
 
                     /*
                      * Normalized response used by the live feed.
@@ -542,28 +592,143 @@ class AttendanceController extends Controller
         }
 
 
-        return Event::with(
-            'department'
-        )
-        ->where(
-            'event_id',
-            $event
-        )
-        ->whereHas(
-            'assignments',
-            function ($query) use (
-                $personnel
-            ) {
-
-                $query->where(
-                    'personnel_id',
+        $assignedEvent =
+            Event::with(
+                'department'
+            )
+            ->where(
+                'event_id',
+                $event
+            )
+            ->whereHas(
+                'assignments',
+                function ($query) use (
                     $personnel
-                        ->personnel_id
-                );
+                ) {
 
-            }
-        )
-        ->firstOrFail();
+                    $query->where(
+                        'personnel_id',
+                        $personnel
+                            ->personnel_id
+                    );
+
+                }
+            )
+            ->firstOrFail();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Automatically Synchronize Status
+        |--------------------------------------------------------------------------
+        */
+
+        return $this->syncEventStatus(
+            $assignedEvent
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Automatic Event Status
+    |--------------------------------------------------------------------------
+    |
+    | Before start time  = Upcoming
+    | Start to end time  = Ongoing
+    | After end time     = Completed
+    |
+    | Cancelled events remain Cancelled.
+    |
+    */
+
+    private function syncEventStatus(
+        Event $event
+    ): Event {
+
+        if (
+            $event->status
+            === 'Cancelled'
+        ) {
+
+            return $event;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Campus Timezone
+        |--------------------------------------------------------------------------
+        */
+
+        $timezone =
+            'Asia/Manila';
+
+
+        $startsAt =
+            Carbon::parse(
+                $event->event_date
+                . ' '
+                . $event->start_time,
+                $timezone
+            );
+
+
+        $endsAt =
+            Carbon::parse(
+                $event->event_date
+                . ' '
+                . $event->end_time,
+                $timezone
+            );
+
+
+        $now =
+            Carbon::now(
+                $timezone
+            );
+
+
+        $newStatus =
+            match (true) {
+
+                $now->lt(
+                    $startsAt
+                ) =>
+                    'Upcoming',
+
+                $now->lte(
+                    $endsAt
+                ) =>
+                    'Ongoing',
+
+                default =>
+                    'Completed',
+
+            };
+
+
+        if (
+            $event->status
+            !== $newStatus
+        ) {
+
+            $event->status =
+                $newStatus;
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Save Status To Database
+            |--------------------------------------------------------------------------
+            */
+
+            $event->save();
+
+        }
+
+
+        return $event;
     }
 
 
@@ -571,24 +736,18 @@ class AttendanceController extends Controller
     |--------------------------------------------------------------------------
     | Scanner Availability
     |--------------------------------------------------------------------------
+    |
+    | RFID scanning is allowed ONLY while the event is Ongoing.
+    |
     */
 
     private function canScan(
         Event $event
     ): bool {
 
-        return in_array(
-
-            $event->status,
-
-            [
-                'Upcoming',
-                'Ongoing',
-            ],
-
-            true
-
-        );
+        return
+            $event->status
+            === 'Ongoing';
     }
 
 
@@ -597,7 +756,8 @@ class AttendanceController extends Controller
     | Student Response
     |--------------------------------------------------------------------------
     |
-    | Only send information that the attendance screen needs.
+    | Student photo and year level are also returned so the
+    | attendance scanner can show the student's identity after a tap.
     |
     */
 
@@ -624,6 +784,14 @@ class AttendanceController extends Controller
 
             'program_code' =>
                 $student->program_code,
+
+            'year_level' =>
+                $student->year_level,
+
+            'photo_url' =>
+                $this->studentPhotoUrl(
+                    $student
+                ),
 
         ];
     }
@@ -720,6 +888,17 @@ class AttendanceController extends Controller
                 $student
                     ?->program_name,
 
+            'year_level' =>
+                $student
+                    ?->year_level,
+
+            'photo_url' =>
+                $student
+                    ? $this->studentPhotoUrl(
+                        $student
+                    )
+                    : null,
+
             'time_in' =>
                 $timeIn
                     ->toIso8601String(),
@@ -740,5 +919,41 @@ class AttendanceController extends Controller
                 $record->status,
 
         ];
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Student Photo URL
+    |--------------------------------------------------------------------------
+    |
+    | Student images are stored in:
+    | public/student_photos/
+    |
+    | basename() keeps the generated public URL safe even if photo_path
+    | already contains a folder name.
+    |
+    */
+
+    private function studentPhotoUrl(
+        Student $student
+    ): ?string {
+
+        if (
+            empty(
+                $student->photo_path
+            )
+        ) {
+
+            return null;
+        }
+
+
+        return asset(
+            'student_photos/'
+            . basename(
+                $student->photo_path
+            )
+        );
     }
 }
