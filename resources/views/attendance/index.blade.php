@@ -1,424 +1,699 @@
-<x-admin-layout>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DySign Attendance</title>
 
-<div class="space-y-8">
+    @vite([
+        'resources/css/app.css',
+        'resources/js/app.js'
+    ])
 
-    <!-- ========================================================= -->
-    <!-- HEADER -->
-    <!-- ========================================================= -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
 
-    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <style>
+        :root{
+            --dyci-navy:#101064;
+            --dyci-gold:#D4A017;
+            --dyci-cream:#FAFAF7;
+            --dyci-text:#1F2937;
+            --dyci-muted:#6B7280;
+            --dyci-line:#E5E7EB;
+            --dyci-soft:#F4F5FA;
+            --dyci-green:#169c4a;
+        }
 
-        <div>
+        html, body {
+            height: 100%;
+        }
 
-            <div class="flex items-center gap-3">
+        body{
+            margin:0;
+            font-family:'Inter', sans-serif;
+            background:var(--dyci-cream);
+            color:var(--dyci-text);
+        }
 
-                <a
-                    href="{{ route('my-events.show', $event->event_id) }}"
-                    class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-600 transition hover:bg-gray-50"
+        .serif{
+            font-family:'Playfair Display', serif;
+        }
+
+        .kiosk-shell{
+            min-height:100vh;
+            display:flex;
+            flex-direction:column;
+            background:var(--dyci-cream);
+        }
+
+        .kiosk-header{
+            position:relative;
+            overflow:hidden;
+            background:
+                linear-gradient(rgba(16,16,100,.88), rgba(16,16,100,.90)),
+                url('{{ asset('images/school.jpg') }}');
+            background-size:cover;
+            background-position:center;
+            color:#fff;
+            border-bottom:4px solid var(--dyci-gold);
+        }
+
+        .kiosk-header::after{
+            content:"";
+            position:absolute;
+            inset:0;
+            background:
+                linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px),
+                linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px);
+            background-size:48px 48px;
+            opacity:.18;
+            pointer-events:none;
+        }
+
+        .kiosk-header-inner{
+            position:relative;
+            z-index:2;
+            padding:26px 44px 24px;
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:24px;
+        }
+
+        .staff-back{
+            position:absolute;
+            top:14px;
+            left:18px;
+            z-index:3;
+            display:inline-flex;
+            align-items:center;
+            gap:6px;
+            padding:6px 10px;
+            border-radius:999px;
+            background:rgba(255,255,255,.08);
+            color:#fff;
+            text-decoration:none;
+            font-size:12px;
+            letter-spacing:.08em;
+            text-transform:uppercase;
+            opacity:.18;
+            transition:.25s ease;
+            backdrop-filter:blur(4px);
+        }
+
+        .staff-back:hover{
+            opacity:.95;
+            background:rgba(255,255,255,.14);
+        }
+
+        .brand-wrap{
+            display:flex;
+            align-items:center;
+            gap:16px;
+        }
+
+        .brand-logo{
+            width:64px;
+            height:64px;
+            object-fit:contain;
+            flex-shrink:0;
+        }
+
+        .brand-block{
+            display:flex;
+            flex-direction:column;
+            line-height:1;
+        }
+
+        .brand-title{
+            display:flex;
+            align-items:baseline;
+            gap:8px;
+            font-size:40px;
+            font-weight:800;
+            letter-spacing:-0.03em;
+        }
+
+        .brand-title .dy{
+            color:#ffffff;
+        }
+
+        .brand-title .sign{
+            color:var(--dyci-gold);
+            font-family:'Playfair Display', serif;
+            font-style:italic;
+            font-weight:700;
+        }
+
+        .brand-subtitle{
+            margin-top:8px;
+            color:rgba(255,255,255,.82);
+            font-size:14px;
+            letter-spacing:.08em;
+            text-transform:uppercase;
+        }
+
+        .clock-wrap{
+            text-align:right;
+            flex-shrink:0;
+        }
+
+        .clock-time{
+            font-size:48px;
+            font-weight:800;
+            line-height:1;
+            letter-spacing:-0.04em;
+            color:#fff;
+        }
+
+        .clock-date{
+            margin-top:8px;
+            color:rgba(255,255,255,.84);
+            font-size:14px;
+            letter-spacing:.12em;
+            text-transform:uppercase;
+        }
+
+        .kiosk-main{
+            flex:1;
+            display:flex;
+            flex-direction:column;
+            padding:34px 52px 28px;
+        }
+
+        .event-intro{
+            text-align:center;
+            margin-bottom:34px;
+        }
+
+        .event-kicker{
+            font-size:13px;
+            letter-spacing:.55em;
+            text-transform:uppercase;
+            color:#94A3B8;
+        }
+
+        .event-title{
+            margin-top:14px;
+            font-size:76px;
+            line-height:1.02;
+            color:var(--dyci-navy);
+            font-family:'Playfair Display', serif;
+            font-weight:600;
+            letter-spacing:-0.03em;
+        }
+
+        .event-meta{
+            margin-top:22px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            gap:28px;
+            flex-wrap:wrap;
+        }
+
+        .event-meta-group{
+            min-width:220px;
+        }
+
+        .event-meta-label{
+            font-size:12px;
+            letter-spacing:.30em;
+            text-transform:uppercase;
+            color:var(--dyci-gold);
+        }
+
+        .event-meta-value{
+            margin-top:8px;
+            font-size:21px;
+            font-weight:600;
+            color:var(--dyci-navy);
+        }
+
+        .event-divider{
+            width:1px;
+            height:54px;
+            background:#D1D5DB;
+        }
+
+        .fade-enter{
+            animation:fadeEnter .45s ease;
+        }
+
+        @keyframes fadeEnter{
+            from{
+                opacity:0;
+                transform:translateY(14px);
+            }
+            to{
+                opacity:1;
+                transform:translateY(0);
+            }
+        }
+
+        .ticker{
+            display:inline-block;
+            white-space:nowrap;
+            animation:moveTicker 28s linear infinite;
+        }
+
+        @keyframes moveTicker{
+            from{ transform:translateX(100%); }
+            to{ transform:translateX(-100%); }
+        }
+    </style>
+</head>
+<body>
+<div class="kiosk-shell">
+
+    <header class="kiosk-header">
+        <a href="{{ route('my-events.index') }}" class="staff-back">
+            <span>←</span>
+            <span>Back</span>
+        </a>
+
+        <div class="kiosk-header-inner">
+            <div class="brand-wrap">
+                <img
+                    src="{{ asset('images/logo.png') }}"
+                    alt="DySign Logo"
+                    class="brand-logo"
                 >
-                    <svg
-                        class="h-5 w-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            d="M15 19l-7-7 7-7"
-                        />
-                    </svg>
-                </a>
 
+                <div class="brand-block">
+                    <div class="brand-title">
+                        <span class="dy">Dy</span>
+                        <span class="sign">Sign</span>
+                    </div>
 
-                <div>
-
-                    <h1 class="text-3xl font-bold text-[#101064]">
-                        Attendance Scanning
-                    </h1>
-
-                    <p class="mt-1 text-gray-500">
-                        {{ $event->event_name }}
-                    </p>
-
+                    <div class="brand-subtitle">
+                        Dr. Yanga's Colleges, Inc.
+                    </div>
                 </div>
-
             </div>
 
+            <div class="clock-wrap">
+                <div id="live_clock" class="clock-time">00:00:00</div>
+                <div id="live_date" class="clock-date"></div>
+            </div>
         </div>
+    </header>
+
+    <main class="kiosk-main">
+        <section class="event-intro fade-enter">
+            <div class="event-kicker">Welcome To</div>
+
+            <h1 class="event-title">
+                {{ $event->event_name }}
+            </h1>
+
+            <div class="event-meta">
+                <div class="event-meta-group">
+                    <div class="event-meta-label">Schedule</div>
+                    <div class="event-meta-value">
+                        {{ \Carbon\Carbon::parse($event->start_time)->format('g:i A') }}
+                        —
+                        {{ \Carbon\Carbon::parse($event->end_time)->format('g:i A') }}
+                    </div>
+                </div>
+
+                <div class="event-divider"></div>
+
+                <div class="event-meta-group">
+                    <div class="event-meta-label">Venue</div>
+                    <div class="event-meta-value">
+                        {{ $event->location }}
+                    </div>
+                </div>
+            </div>
+        </section>
+
+                <!-- ATTENDANCE AREA -->
+
+        <section
+            class="
+            grid
+            grid-cols-12
+            gap-10
+            flex-1
+            "
+        >
 
 
-        <div class="flex items-center gap-3">
 
-            <!-- LIVE SYNC -->
+            <!-- LATEST STUDENT -->
 
             <div
-                id="sync_status"
-                class="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-600"
+                class="
+                col-span-8
+                flex
+                flex-col
+                "
             >
 
-                <span
-                    id="sync_dot"
-                    class="h-2.5 w-2.5 rounded-full bg-green-500"
-                ></span>
 
-                <span id="sync_text">
-                    Live Sync
-                </span>
-
-            </div>
-
-
-            <!-- TOTAL -->
-
-            <div class="inline-flex items-center gap-3 rounded-xl bg-[#101064] px-5 py-2.5 text-white">
-
-                <span class="text-sm">
-                    Total Scanned
-                </span>
-
-                <span
-                    id="attendance_count"
-                    class="text-xl font-bold"
+                <div
+                    class="
+                    flex
+                    justify-between
+                    items-end
+                    mb-6
+                    "
                 >
-                    {{ $attendanceCount }}
-                </span>
-
-            </div>
-
-        </div>
-
-    </div>
-
-
-
-
-
-    <!-- ========================================================= -->
-    <!-- MAIN GRID -->
-    <!-- ========================================================= -->
-
-    <div class="grid grid-cols-1 gap-8 xl:grid-cols-3">
-
-
-        <!-- ===================================================== -->
-        <!-- LEFT SIDE -->
-        <!-- ===================================================== -->
-
-        <div class="space-y-6 xl:col-span-2">
-
-
-            <!-- EVENT DETAILS -->
-
-            <div class="rounded-3xl border border-gray-100 bg-white p-7 shadow-sm">
-
-                <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
 
                     <div>
 
-                        <h2 class="text-xl font-semibold text-[#101064]">
-                            Event Details
+                        <div
+                            class="
+                            text-xs
+                            uppercase
+                            tracking-[0.35em]
+                            text-[#D4A017]
+                            "
+                        >
+                            Latest Check-In
+                        </div>
+
+
+                        <h2
+                            class="
+                            serif
+                            text-4xl
+                            text-[#101064]
+                            mt-2
+                            "
+                        >
+                            Welcome!
                         </h2>
 
-                        <p class="mt-1 text-sm text-gray-500">
-                            Attendance is being recorded for this event.
-                        </p>
-
                     </div>
 
 
-                    @if($event->status === 'Ongoing')
-
-                        <span class="inline-flex w-fit rounded-full bg-green-100 px-4 py-2 text-sm font-semibold text-green-700">
-                            Ongoing
-                        </span>
-
-                    @else
-
-                        <span class="inline-flex w-fit rounded-full bg-yellow-100 px-4 py-2 text-sm font-semibold text-yellow-700">
-                            Upcoming
-                        </span>
-
-                    @endif
-
-                </div>
-
-
-
-                <div class="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
-
-
-                    <div>
-
-                        <p class="text-xs font-medium uppercase tracking-wide text-gray-400">
-                            Date
-                        </p>
-
-                        <p class="mt-1 font-semibold text-gray-700">
-                            {{ \Carbon\Carbon::parse($event->event_date)->format('F d, Y') }}
-                        </p>
-
-                    </div>
-
-
-
-                    <div>
-
-                        <p class="text-xs font-medium uppercase tracking-wide text-gray-400">
-                            Schedule
-                        </p>
-
-                        <p class="mt-1 font-semibold text-gray-700">
-
-                            {{ \Carbon\Carbon::parse($event->start_time)->format('g:i A') }}
-
-                            -
-
-                            {{ \Carbon\Carbon::parse($event->end_time)->format('g:i A') }}
-
-                        </p>
-
-                    </div>
-
-
-
-                    <div>
-
-                        <p class="text-xs font-medium uppercase tracking-wide text-gray-400">
-                            Location
-                        </p>
-
-                        <p class="mt-1 font-semibold text-gray-700">
-                            {{ $event->location }}
-                        </p>
-
-                    </div>
-
-
-
-                    <div>
-
-                        <p class="text-xs font-medium uppercase tracking-wide text-gray-400">
-                            Department
-                        </p>
-
-                        <p class="mt-1 font-semibold text-gray-700">
-                            {{ $event->department->department_name ?? 'University-wide Event' }}
-                        </p>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-
-
-
-            <!-- ================================================= -->
-            <!-- RFID SCANNER -->
-            <!-- ================================================= -->
-
-            <div class="rounded-3xl border border-gray-100 bg-white p-8 shadow-sm">
-
-                <div class="text-center">
-
-
-                    <!-- SCANNER STATUS ICON -->
 
                     <div
-                        id="scanner_icon"
-                        class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-50 text-green-600"
+                        class="
+                        flex
+                        items-center
+                        gap-2
+                        text-green-600
+                        text-sm
+                        font-semibold
+                        "
                     >
 
-                        <svg
-                            class="h-8 w-8"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                stroke-width="2"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M13 10V3L4 14h7v7l9-11h-7z"
-                            />
-                        </svg>
+                        <span
+                            class="
+                            w-2.5
+                            h-2.5
+                            rounded-full
+                            bg-green-500
+                            animate-pulse
+                            "
+                        ></span>
+
+                        Live Attendance
 
                     </div>
 
 
-                    <h2
-                        id="scanner_title"
-                        class="mt-4 text-xl font-bold text-[#101064]"
-                    >
-                        Ready to Scan
-                    </h2>
-
-
-                    <p
-                        id="scanner_description"
-                        class="mt-2 text-sm text-gray-500"
-                    >
-                        Tap the student's RFID card on the reader.
-                    </p>
-
-
-                    <!-- RFID INPUT -->
-
-                    <input
-                        id="rfid_input"
-                        type="text"
-                        inputmode="numeric"
-                        maxlength="10"
-                        autofocus
-                        autocomplete="off"
-                        spellcheck="false"
-                        class="mt-8 w-full rounded-2xl border-gray-300 text-center text-3xl font-semibold tracking-[0.25em] text-[#101064] focus:border-[#101064] focus:ring-[#101064]"
-                        placeholder="Waiting for RFID..."
-                    >
-
-
-                    <p class="mt-3 text-xs text-gray-400">
-                        RFID must contain exactly 10 digits.
-                    </p>
-
-
-                    <!-- RESULT MESSAGE -->
-
-                    <div
-                        id="result"
-                        class="mt-6 min-h-[28px] text-base font-semibold"
-                    ></div>
-
                 </div>
 
-            </div>
-
-
-        </div>
 
 
 
-
-
-        <!-- ===================================================== -->
-        <!-- RIGHT SIDE -->
-        <!-- ===================================================== -->
-
-        <div class="space-y-6">
-
-
-            <!-- ================================================= -->
-            <!-- LATEST SCAN -->
-            <!-- ================================================= -->
-
-            <div class="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-
-                <div class="flex items-center justify-between">
-
-                    <h2 class="text-lg font-semibold text-[#101064]">
-                        Latest Scan
-                    </h2>
-
-                    <span class="text-xs text-gray-400">
-                        Most recent
-                    </span>
-
-                </div>
 
 
                 <div
                     id="latest_scan"
-                    class="mt-5"
+                    class="
+                    bg-white
+                    rounded-[2rem]
+                    border
+                    border-gray-200
+                    flex-1
+                    flex
+                    items-center
+                    justify-center
+                    shadow-sm
+                    px-12
+                    "
                 >
+
+
 
                     @if($latestAttendance && $latestAttendance->student)
 
-                        <div class="rounded-2xl border border-green-100 bg-green-50 p-6 text-center">
 
-                            <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-white font-bold text-[#101064] shadow-sm">
+                    <div
+                        class="
+                        fade-enter
+                        flex
+                        items-center
+                        gap-14
+                        w-full
+                        "
+                    >
 
-                                {{ strtoupper(substr($latestAttendance->student->first_name, 0, 1)) }}
+
+
+                        <!-- PROFILE -->
+
+                        <div
+                            class="
+                            relative
+                            flex-shrink-0
+                            "
+                        >
+
+                            <div
+                                class="
+                                w-52
+                                h-52
+                                rounded-full
+                                bg-[#F1F2FA]
+                                border-[10px]
+                                border-white
+                                shadow-xl
+                                flex
+                                items-center
+                                justify-center
+                                "
+                            >
+
+                                <span
+                                    class="
+                                    serif
+                                    text-8xl
+                                    text-[#101064]
+                                    "
+                                >
+                                    {{ strtoupper(substr($latestAttendance->student->first_name,0,1)) }}
+                                </span>
+
 
                             </div>
 
 
-                            <h3 class="mt-4 text-xl font-bold text-[#101064]">
+                            <!-- small gold accent -->
+
+                            <div
+                                class="
+                                absolute
+                                bottom-5
+                                right-3
+                                w-7
+                                h-7
+                                rounded-full
+                                bg-[#D4A017]
+                                border-4
+                                border-white
+                                "
+                            ></div>
+
+
+                        </div>
+
+
+
+
+
+
+
+
+
+                        <!-- STUDENT INFORMATION -->
+
+
+                        <div
+                            class="
+                            flex-1
+                            "
+                        >
+
+
+
+                            <p
+                                class="
+                                text-sm
+                                uppercase
+                                tracking-[0.25em]
+                                text-gray-400
+                                "
+                            >
+                                Checked In Student
+                            </p>
+
+
+
+                            <h1
+                                class="
+                                serif
+                                text-6xl
+                                text-[#101064]
+                                leading-tight
+                                mt-3
+                                "
+                            >
 
                                 {{ $latestAttendance->student->first_name }}
 
                                 {{ $latestAttendance->student->last_name }}
 
-                            </h3>
+                            </h1>
 
 
-                            <p class="mt-1 text-sm text-gray-600">
-                                {{ $latestAttendance->student->student_number }}
-                            </p>
 
 
-                            <p class="mt-1 text-sm text-gray-500">
 
-                                {{ $latestAttendance->student->program_code }}
-
-                                @if($latestAttendance->student->program_name)
-
-                                    • {{ $latestAttendance->student->program_name }}
-
-                                @endif
-
-                            </p>
+                            <div
+                                class="
+                                mt-5
+                                flex
+                                items-center
+                                gap-5
+                                "
+                            >
 
 
-                            <div class="mt-4 flex items-center justify-center gap-2">
-
-                                <span class="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
-                                    {{ $latestAttendance->status }}
+                                <span
+                                    class="
+                                    text-2xl
+                                    font-semibold
+                                    text-gray-500
+                                    "
+                                >
+                                    {{ $latestAttendance->student->program_code }}
                                 </span>
 
 
-                                <span class="text-xs text-gray-500">
+
+                                <span
+                                    class="
+                                    w-1.5
+                                    h-1.5
+                                    rounded-full
+                                    bg-gray-300
+                                    "
+                                ></span>
+
+
+
+                                <span
+                                    class="
+                                    text-gray-500
+                                    "
+                                >
                                     {{ $latestAttendance->time_in->format('h:i A') }}
                                 </span>
 
+
+
                             </div>
 
-                        </div>
 
-                    @else
 
-                        <div class="rounded-2xl bg-gray-50 px-5 py-10 text-center">
 
-                            <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-white text-gray-400">
+
+
+
+                            <div
+                                class="
+                                mt-8
+                                inline-flex
+                                items-center
+                                gap-3
+                                px-6
+                                py-3
+                                rounded-full
+                                bg-green-50
+                                text-green-700
+                                font-semibold
+                                "
+                            >
+
 
                                 <svg
-                                    class="h-6 w-6"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    class="w-5 h-5"
                                     fill="none"
-                                    stroke="currentColor"
                                     viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    stroke-width="2"
                                 >
+
                                     <path
-                                        stroke-width="2"
                                         stroke-linecap="round"
                                         stroke-linejoin="round"
                                         d="M5 13l4 4L19 7"
                                     />
+
                                 </svg>
+
+
+                                Attendance Confirmed
+
 
                             </div>
 
-                            <p class="mt-3 text-sm font-medium text-gray-500">
-                                Waiting for first scan
-                            </p>
+
+
+
 
                         </div>
 
+
+
+                    </div>
+
+
+
+
+
+                    @else
+
+
+                    <div
+                        class="
+                        text-gray-400
+                        text-lg
+                        "
+                    >
+
+                        Waiting for first attendee...
+
+
+                    </div>
+
+
                     @endif
 
+
+
                 </div>
+
+
 
             </div>
 
@@ -426,113 +701,312 @@
 
 
 
-            <!-- ================================================= -->
-            <!-- LIVE ATTENDANCE -->
-            <!-- ================================================= -->
-
-            <div class="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-
-                <div class="flex items-center justify-between">
-
-                    <div>
-
-                        <h2 class="text-lg font-semibold text-[#101064]">
-                            Live Attendance
-                        </h2>
-
-                        <p class="mt-1 text-xs text-gray-400">
-                            Latest 20 scans
-                        </p>
-
-                    </div>
 
 
-                    <button
-                        type="button"
-                        id="refresh_feed"
-                        class="text-sm font-semibold text-[#101064] hover:text-[#D4A017]"
-                    >
-                        Refresh
-                    </button>
 
+
+
+
+            <!-- RECENT ARRIVALS -->
+
+
+            <aside
+                class="
+                col-span-4
+                "
+            >
+
+
+
+                <div
+                    class="
+                    text-xs
+                    uppercase
+                    tracking-[0.35em]
+                    text-[#D4A017]
+                    "
+                >
+                    Recent Arrivals
                 </div>
+
+
+
+
+                <h2
+                    class="
+                    serif
+                    text-4xl
+                    text-[#101064]
+                    mt-2
+                    mb-8
+                    "
+                >
+                    Today
+                </h2>
+
+
+
+
 
 
 
                 <div
                     id="attendance_feed"
-                    class="mt-5 max-h-[520px] space-y-3 overflow-y-auto pr-1"
+                    class="
+                    bg-white
+                    rounded-[2rem]
+                    border
+                    border-gray-200
+                    px-7
+                    divide-y
+                    divide-gray-100
+                    "
                 >
 
-                    @forelse($attendanceRecords as $record)
-
-                        <div class="rounded-xl border border-gray-100 p-4">
-
-                            <div class="flex items-start justify-between gap-3">
-
-                                <div class="min-w-0">
-
-                                    <p class="truncate font-semibold text-gray-800">
-
-                                        {{ $record->student->first_name }}
-
-                                        {{ $record->student->last_name }}
-
-                                    </p>
 
 
-                                    <p class="mt-1 text-sm text-gray-500">
-                                        {{ $record->student->student_number }}
-                                    </p>
 
 
-                                    @if($record->student->program_code)
-
-                                        <p class="mt-1 text-xs text-gray-400">
-                                            {{ $record->student->program_code }}
-                                        </p>
-
-                                    @endif
-
-                                </div>
+                    @foreach($attendanceRecords as $record)
 
 
-                                <div class="shrink-0 text-right">
+                    <div
+                        class="
+                        py-6
+                        "
+                    >
 
-                                    <p class="text-sm font-medium text-gray-700">
-                                        {{ $record->time_in->format('h:i A') }}
-                                    </p>
+
+                        <div
+                            class="
+                            flex
+                            justify-between
+                            gap-4
+                            "
+                        >
 
 
-                                    <p class="mt-1 text-xs text-green-600">
-                                        {{ $record->status }}
-                                    </p>
 
-                                </div>
+                            <div>
+
+
+                                <p
+                                    class="
+                                    font-semibold
+                                    text-[#101064]
+                                    "
+                                >
+
+                                    {{ $record->student->first_name }}
+
+                                    {{ $record->student->last_name }}
+
+                                </p>
+
+
+
+                                <p
+                                    class="
+                                    text-sm
+                                    text-gray-500
+                                    mt-1
+                                    "
+                                >
+
+                                    {{ $record->student->program_code }}
+
+                                </p>
+
+
 
                             </div>
 
+
+
+
+
+
+                            <div
+                                class="
+                                text-right
+                                "
+                            >
+
+
+                                <p
+                                    class="
+                                    text-sm
+                                    text-gray-500
+                                    "
+                                >
+
+                                    {{ $record->time_in->format('h:i A') }}
+
+                                </p>
+
+
+
+                                <p
+                                    class="
+                                    text-xs
+                                    text-green-600
+                                    font-semibold
+                                    mt-1
+                                    "
+                                >
+                                    Confirmed
+                                </p>
+
+
+
+                            </div>
+
+
+
                         </div>
 
-                    @empty
 
-                        <div
-                            id="empty_feed"
-                            class="rounded-xl bg-gray-50 px-4 py-8 text-center text-sm text-gray-400"
-                        >
-                            No attendance records yet.
-                        </div>
 
-                    @endforelse
+                    </div>
+
+
+
+                    @endforeach
+
+
+
 
                 </div>
+
+
+
+
+            </aside>
+
+
+
+
+
+        </section>
+
+
+                <!-- FOOTER ANNOUNCEMENT -->
+
+        <footer
+            class="
+            mt-8
+            -mx-0
+            h-16
+            bg-[#101064]
+            text-white
+            flex
+            items-center
+            overflow-hidden
+            "
+        >
+
+
+            <!-- LABEL -->
+
+            <div
+                class="
+                h-full
+                bg-[#D4A017]
+                text-[#101064]
+                px-8
+                flex
+                items-center
+                gap-3
+                font-bold
+                tracking-wide
+                flex-shrink-0
+                "
+            >
+
+
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="w-5 h-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M11 5L6 9H3v6h3l5 4V5z"
+                    />
+
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M19 9a5 5 0 010 6"
+                    />
+
+                </svg>
+
+
+                ANNOUNCEMENTS
+
 
             </div>
 
 
-        </div>
 
-    </div>
+
+
+            <!-- TICKER -->
+
+
+            <div
+                class="
+                flex-1
+                overflow-hidden
+                "
+            >
+
+                <div
+                    class="
+                    ticker
+                    text-lg
+                    "
+                >
+
+                    Welcome to {{ $event->event_name }}
+
+                    &nbsp; • &nbsp;
+
+                    Attendance successfully confirmed
+
+                    &nbsp; • &nbsp;
+
+                    Please enjoy the program
+
+                    &nbsp; • &nbsp;
+
+                    Dr. Yanga's Colleges Inc.
+
+                    &nbsp; • &nbsp;
+
+                    Powered by DySign Digital Identity System
+
+
+                </div>
+
+
+            </div>
+
+
+        </footer>
+
+
+
+
+
+    </main>
+
 
 </div>
 
@@ -540,779 +1014,679 @@
 
 
 
-<!-- ============================================================= -->
-<!-- SCANNER SCRIPT -->
-<!-- ============================================================= -->
 
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-
-    const input = document.getElementById('rfid_input');
-    const result = document.getElementById('result');
-
-    const latest = document.getElementById('latest_scan');
-    const feed = document.getElementById('attendance_feed');
-
-    const counter = document.getElementById('attendance_count');
-
-    const scannerTitle = document.getElementById('scanner_title');
-    const scannerDescription = document.getElementById('scanner_description');
-    const scannerIcon = document.getElementById('scanner_icon');
-
-    const syncDot = document.getElementById('sync_dot');
-    const syncText = document.getElementById('sync_text');
-
-    const refreshButton = document.getElementById('refresh_feed');
-
-
-    const scanUrl =
-        @json(route('attendance.scan', $event->event_id));
-
-    const feedUrl =
-        @json(route('attendance.feed', $event->event_id));
-
-    const csrfToken =
-        @json(csrf_token());
-
-
-    let processing = false;
-
-    let scannerAvailable = true;
-
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Escape HTML
-    |--------------------------------------------------------------------------
-    */
-
-    function escapeHtml(value) {
-
-        if (value === null || value === undefined) {
-            return '';
-        }
-
-        return String(value)
-            .replaceAll('&', '&amp;')
-            .replaceAll('<', '&lt;')
-            .replaceAll('>', '&gt;')
-            .replaceAll('"', '&quot;')
-            .replaceAll("'", '&#039;');
-
-    }
-
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Scanner State
-    |--------------------------------------------------------------------------
-    */
-
-    function setReadyState() {
-
-        if (!scannerAvailable) {
-            return;
-        }
-
-        scannerTitle.textContent = 'Ready to Scan';
-
-        scannerDescription.textContent =
-            "Tap the student's RFID card on the reader.";
-
-        scannerIcon.className =
-            'mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-50 text-green-600';
-
-        input.disabled = false;
-
-    }
-
 
 
-    function setProcessingState() {
 
-        scannerTitle.textContent = 'Processing RFID...';
-
-        scannerDescription.textContent =
-            'Please wait while attendance is being recorded.';
-
-        scannerIcon.className =
-            'mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-yellow-50 text-yellow-600';
-
-    }
-
-
-
-    function setClosedState(status) {
-
-        scannerAvailable = false;
-
-        processing = false;
-
-        input.disabled = true;
-
-        input.value = '';
-
-        scannerTitle.textContent = 'Attendance Closed';
-
-        scannerDescription.textContent =
-            `This event is ${status}. Attendance scanning is unavailable.`;
-
-        scannerIcon.className =
-            'mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 text-gray-400';
-
-        result.innerHTML =
-            '<span class="text-gray-500">Scanning has been disabled for this event.</span>';
-
-    }
-
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Result Message
-    |--------------------------------------------------------------------------
-    */
-
-    function showSuccess(message) {
-
-        result.innerHTML =
-            `<span class="text-green-600">${escapeHtml(message)}</span>`;
-
-    }
-
-
-
-    function showError(message) {
-
-        result.innerHTML =
-            `<span class="text-red-600">${escapeHtml(message)}</span>`;
-
-    }
-
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Latest Scan Card
-    |--------------------------------------------------------------------------
-    */
-
-    function renderLatest(record) {
-
-        if (!record) {
+<script>
 
-            latest.innerHTML = `
-                <div class="rounded-2xl bg-gray-50 px-5 py-10 text-center">
 
-                    <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-white text-gray-400">
+document.addEventListener(
+'DOMContentLoaded',
+function(){
 
-                        <svg
-                            class="h-6 w-6"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                stroke-width="2"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M5 13l4 4L19 7"
-                            />
-                        </svg>
 
-                    </div>
 
-                    <p class="mt-3 text-sm font-medium text-gray-500">
-                        Waiting for first scan
-                    </p>
 
-                </div>
-            `;
 
-            return;
-        }
+/*
+|--------------------------------------------------------------------------
+| CLOCK
+|--------------------------------------------------------------------------
+*/
 
 
-        const firstName = record.first_name ?? '';
-        const lastName = record.last_name ?? '';
+function updateClock(){
 
-        const initial =
-            firstName.length > 0
-                ? firstName.charAt(0).toUpperCase()
-                : 'S';
 
+    const now = new Date();
 
-        let programText = '';
 
-        if (record.program_code) {
 
-            programText += escapeHtml(record.program_code);
+    document.getElementById(
+        'live_clock'
+    ).innerHTML =
+        now.toLocaleTimeString();
 
-        }
 
-        if (record.program_name) {
 
-            if (programText !== '') {
-                programText += ' • ';
+    document.getElementById(
+        'live_date'
+    ).innerHTML =
+        now.toLocaleDateString(
+            undefined,
+            {
+                weekday:'long',
+                month:'long',
+                day:'numeric',
+                year:'numeric'
             }
-
-            programText += escapeHtml(record.program_name);
-
-        }
+        );
 
 
-        latest.innerHTML = `
-            <div class="rounded-2xl border border-green-100 bg-green-50 p-6 text-center">
+}
 
-                <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-white font-bold text-[#101064] shadow-sm">
-                    ${escapeHtml(initial)}
-                </div>
 
-                <h3 class="mt-4 text-xl font-bold text-[#101064]">
-                    ${escapeHtml(firstName)}
-                    ${escapeHtml(lastName)}
-                </h3>
 
-                <p class="mt-1 text-sm text-gray-600">
-                    ${escapeHtml(record.student_number)}
-                </p>
+updateClock();
 
-                ${
-                    programText !== ''
-                        ? `
-                            <p class="mt-1 text-sm text-gray-500">
-                                ${programText}
-                            </p>
-                        `
-                        : ''
-                }
 
-                <div class="mt-4 flex items-center justify-center gap-2">
+setInterval(
+    updateClock,
+    1000
+);
 
-                    <span class="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
-                        ${escapeHtml(record.status)}
-                    </span>
 
-                    <span class="text-xs text-gray-500">
-                        ${escapeHtml(record.time_display)}
-                    </span>
 
-                </div>
 
-            </div>
-        `;
+
+
+
+
+
+/*
+|--------------------------------------------------------------------------
+| RFID READER
+|--------------------------------------------------------------------------
+*/
+
+
+const input =
+document.createElement('input');
+
+
+
+input.type="text";
+
+
+input.style.position="fixed";
+
+input.style.opacity="0";
+
+input.style.pointerEvents="none";
+
+
+
+document.body.appendChild(input);
+
+
+
+input.focus();
+
+
+
+
+
+
+
+const scanUrl =
+"{{ route('attendance.scan',$event->event_id) }}";
+
+
+
+const feedUrl =
+"{{ route('attendance.feed',$event->event_id) }}";
+
+
+
+const csrf =
+"{{ csrf_token() }}";
+
+
+
+
+
+let processing=false;
+
+
+
+
+
+
+
+
+
+
+input.addEventListener(
+'input',
+function(){
+
+
+
+    let value =
+    this.value.replace(
+        /\D/g,
+        ''
+    );
+
+
+
+    this.value=value;
+
+
+
+    if(value.length===10){
+
+
+        scanStudent(value);
+
+
+        this.value="";
+
 
     }
 
 
+}
 
-    /*
-    |--------------------------------------------------------------------------
-    | Live Feed
-    |--------------------------------------------------------------------------
-    */
-
-    function renderFeed(records) {
-
-        if (!Array.isArray(records) || records.length === 0) {
-
-            feed.innerHTML = `
-                <div class="rounded-xl bg-gray-50 px-4 py-8 text-center text-sm text-gray-400">
-                    No attendance records yet.
-                </div>
-            `;
-
-            return;
-        }
-
-
-        feed.innerHTML = records.map(record => {
-
-            const firstName =
-                escapeHtml(record.first_name ?? '');
-
-            const lastName =
-                escapeHtml(record.last_name ?? '');
-
-            const studentNumber =
-                escapeHtml(record.student_number ?? '');
-
-            const programCode =
-                escapeHtml(record.program_code ?? '');
-
-            const time =
-                escapeHtml(record.time_display ?? '');
-
-            const status =
-                escapeHtml(record.status ?? 'Present');
-
-
-            return `
-                <div class="rounded-xl border border-gray-100 p-4">
-
-                    <div class="flex items-start justify-between gap-3">
-
-                        <div class="min-w-0">
-
-                            <p class="truncate font-semibold text-gray-800">
-                                ${firstName} ${lastName}
-                            </p>
-
-                            <p class="mt-1 text-sm text-gray-500">
-                                ${studentNumber}
-                            </p>
-
-                            ${
-                                programCode
-                                    ? `
-                                        <p class="mt-1 text-xs text-gray-400">
-                                            ${programCode}
-                                        </p>
-                                    `
-                                    : ''
-                            }
-
-                        </div>
-
-                        <div class="shrink-0 text-right">
-
-                            <p class="text-sm font-medium text-gray-700">
-                                ${time}
-                            </p>
-
-                            <p class="mt-1 text-xs text-green-600">
-                                ${status}
-                            </p>
-
-                        </div>
-
-                    </div>
-
-                </div>
-            `;
-
-        }).join('');
-
-    }
+);
 
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | Refresh Live Attendance
-    |--------------------------------------------------------------------------
-    */
-
-    async function refreshFeed() {
-
-        if (processing) {
-            return;
-        }
 
 
-        try {
 
-            const response = await fetch(
-                feedUrl,
+
+
+
+async function scanStudent(rfid){
+
+
+
+    if(processing)
+    return;
+
+
+
+    processing=true;
+
+
+
+
+    try{
+
+
+        const response =
+        await fetch(
+            scanUrl,
+            {
+
+
+                method:"POST",
+
+
+                headers:
                 {
-                    method: 'GET',
-
-                    headers: {
-                        'Accept': 'application/json'
-                    },
-
-                    cache: 'no-store'
-                }
-            );
 
 
-            if (!response.ok) {
-
-                throw new Error(
-                    'Unable to refresh attendance.'
-                );
-
-            }
+                    "Content-Type":
+                    "application/json",
 
 
-            const data = await response.json();
+                    "Accept":
+                    "application/json",
 
 
-            syncDot.className =
-                'h-2.5 w-2.5 rounded-full bg-green-500';
-
-            syncText.textContent =
-                'Live Sync';
+                    "X-CSRF-TOKEN":
+                    csrf
 
 
-            counter.textContent =
-                data.total_count ?? 0;
+                },
 
 
-            renderFeed(
-                data.records ?? []
-            );
+                body:
+                JSON.stringify(
+                    {
 
+                    rfid_identifier:rfid
 
-            if (
-                Array.isArray(data.records) &&
-                data.records.length > 0
-            ) {
-
-                renderLatest(
-                    data.records[0]
-                );
-
-            } else {
-
-                renderLatest(null);
+                    }
+                )
 
             }
+        );
 
 
-            if (!data.scannable) {
 
-                setClosedState(
-                    data.event_status ?? 'closed'
-                );
+        const data =
+        await response.json();
 
-            }
 
-        } catch (error) {
 
-            syncDot.className =
-                'h-2.5 w-2.5 rounded-full bg-red-500';
 
-            syncText.textContent =
-                'Sync Offline';
+
+        if(data.success){
+
+
+            refreshAttendance();
+
 
         }
+
+
+
 
     }
 
 
+    catch(error){
 
-    /*
-    |--------------------------------------------------------------------------
-    | Process RFID
-    |--------------------------------------------------------------------------
-    */
 
-    async function processRFID(rfid) {
+        console.error(error);
 
-        if (
-            processing ||
-            !scannerAvailable
-        ) {
-            return;
-        }
-
-
-        if (!/^\d{10}$/.test(rfid)) {
-
-            showError(
-                'RFID must contain exactly 10 digits.'
-            );
-
-            input.value = '';
-            input.focus();
-
-            return;
-        }
-
-
-        processing = true;
-
-        setProcessingState();
-
-
-        try {
-
-            const response = await fetch(
-                scanUrl,
-                {
-                    method: 'POST',
-
-                    headers: {
-
-                        'Content-Type':
-                            'application/json',
-
-                        'Accept':
-                            'application/json',
-
-                        'X-CSRF-TOKEN':
-                            csrfToken
-
-                    },
-
-                    body: JSON.stringify({
-                        rfid_identifier: rfid
-                    })
-                }
-            );
-
-
-            let data;
-
-
-            try {
-
-                data = await response.json();
-
-            } catch (error) {
-
-                throw new Error(
-                    'The server returned an invalid response.'
-                );
-
-            }
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Successful Scan
-            |--------------------------------------------------------------------------
-            */
-
-            if (
-                response.ok &&
-                data.success
-            ) {
-
-                showSuccess(
-                    data.message ?? 'Attendance recorded.'
-                );
-
-
-                counter.textContent =
-                    data.total_count ?? counter.textContent;
-
-
-                if (data.record) {
-
-                    renderLatest(
-                        data.record
-                    );
-
-                }
-
-
-                await refreshFeed();
-
-            }
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Failed Scan
-            |--------------------------------------------------------------------------
-            */
-
-            else {
-
-                showError(
-                    data.message ??
-                    'Attendance could not be recorded.'
-                );
-
-
-                /*
-                 * If duplicate, show the student's
-                 * existing attendance information.
-                 */
-
-                if (
-                    data.code === 'already_recorded' &&
-                    data.record
-                ) {
-
-                    renderLatest(
-                        data.record
-                    );
-
-                }
-
-
-                if (
-                    data.code === 'event_closed'
-                ) {
-
-                    setClosedState(
-                        'closed'
-                    );
-
-                }
-
-            }
-
-        } catch (error) {
-
-            showError(
-                'Unable to connect to the server. Please try again.'
-            );
-
-
-            syncDot.className =
-                'h-2.5 w-2.5 rounded-full bg-red-500';
-
-            syncText.textContent =
-                'Sync Offline';
-
-        } finally {
-
-            processing = false;
-
-            input.value = '';
-
-
-            if (scannerAvailable) {
-
-                setReadyState();
-
-                setTimeout(function () {
-                    input.focus();
-                }, 50);
-
-            }
-
-        }
 
     }
 
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | RFID Input Listener
-    |--------------------------------------------------------------------------
-    */
-
-    input.addEventListener(
-        'input',
-        function () {
-
-            /*
-             * Keep numbers only.
-             */
-
-            this.value =
-                this.value.replace(/\D/g, '');
+    finally{
 
 
-            const rfid =
-                this.value.trim();
+        processing=false;
 
-
-            /*
-             * Physical reader sends 10 digits.
-             * Process only when exactly 10 are present.
-             */
-
-            if (rfid.length === 10) {
-
-                processRFID(rfid);
-
-            }
-
-        }
-    );
-
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Enter Key Fallback
-    |--------------------------------------------------------------------------
-    |
-    | Some keyboard-emulation readers may send Enter after the RFID.
-    |
-    */
-
-    input.addEventListener(
-        'keydown',
-        function (event) {
-
-            if (event.key !== 'Enter') {
-                return;
-            }
-
-
-            event.preventDefault();
-
-
-            const rfid =
-                this.value.trim();
-
-
-            if (rfid.length === 10) {
-
-                processRFID(rfid);
-
-            }
-
-        }
-    );
-
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Manual Refresh
-    |--------------------------------------------------------------------------
-    */
-
-    refreshButton.addEventListener(
-        'click',
-        function () {
-
-            refreshFeed();
-
-        }
-    );
-
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Automatic Multi-Device Refresh
-    |--------------------------------------------------------------------------
-    |
-    | Every 4 seconds, the page checks for new attendance records.
-    | This allows scans from another computer to appear automatically.
-    |
-    */
-
-    setInterval(function () {
-
-        if (
-            document.visibilityState === 'visible' &&
-            !processing
-        ) {
-
-            refreshFeed();
-
-        }
-
-    }, 4000);
-
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Initial Focus
-    |--------------------------------------------------------------------------
-    */
-
-    setTimeout(function () {
 
         input.focus();
 
-    }, 100);
+
+    }
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
+async function refreshAttendance(){
+
+
+
+    try{
+
+
+        const response =
+        await fetch(
+            feedUrl
+        );
+
+
+
+        const data =
+        await response.json();
+
+
+
+
+        if(
+            data.records &&
+            data.records.length
+        ){
+
+
+            updateLatest(
+                data.records[0]
+            );
+
+
+            updateRecent(
+                data.records
+            );
+
+
+        }
+
+
+
+    }
+
+
+    catch(error){
+
+
+        console.error(error);
+
+
+    }
+
+
+
+}
+
+
+
+
+
+
+
+
+
+function updateLatest(student){
+
+
+
+const container =
+document.getElementById(
+'latest_scan'
+);
+
+
+
+container.innerHTML = `
+
+
+<div
+class="
+fade-enter
+flex
+items-center
+gap-14
+w-full
+"
+>
+
+
+<div
+class="
+w-52
+h-52
+rounded-full
+bg-[#F1F2FA]
+flex
+items-center
+justify-center
+"
+>
+
+
+<span
+class="
+serif
+text-8xl
+text-[#101064]
+"
+>
+
+${student.first_name.charAt(0)}
+
+</span>
+
+
+</div>
+
+
+
+
+
+<div>
+
+
+<p
+class="
+text-xs
+uppercase
+tracking-[0.25em]
+text-gray-400
+"
+>
+
+Checked In Student
+
+</p>
+
+
+
+<h1
+class="
+serif
+text-6xl
+text-[#101064]
+mt-3
+"
+>
+
+${student.first_name}
+
+${student.last_name}
+
+</h1>
+
+
+
+<p
+class="
+text-2xl
+text-gray-500
+mt-4
+"
+>
+
+${student.program_code}
+
+</p>
+
+
+
+<div
+class="
+mt-6
+text-green-700
+font-semibold
+"
+>
+
+✓ Attendance Confirmed
+
+</div>
+
+
+
+</div>
+
+
+</div>
+
+
+
+`;
+
+
+
+}
+
+
+
+
+
+
+
+
+
+function updateRecent(records){
+
+
+
+const feed =
+document.getElementById(
+'attendance_feed'
+);
+
+
+
+feed.innerHTML="";
+
+
+
+records.forEach(
+record=>{
+
+
+feed.innerHTML += `
+
+
+<div
+class="
+py-6
+border-b
+border-gray-100
+"
+>
+
+
+<div
+class="
+flex
+justify-between
+"
+>
+
+
+<div>
+
+
+<p
+class="
+font-semibold
+text-[#101064]
+"
+>
+
+${record.first_name}
+
+${record.last_name}
+
+</p>
+
+
+
+<p
+class="
+text-sm
+text-gray-500
+"
+>
+
+${record.program_code}
+
+</p>
+
+
+</div>
+
+
+
+
+<div
+class="
+text-sm
+text-gray-500
+"
+>
+
+${record.time_display}
+
+</div>
+
+
+
+</div>
+
+
+</div>
+
+
+
+`;
+
+
 
 });
+
+
+
+}
+
+
+
+
+
+
+setInterval(
+refreshAttendance,
+5000
+);
+
+
+
+
+
+
+document.addEventListener(
+'click',
+function(){
+
+    input.focus();
+
+});
+
+
+
+});
+
+
+
 </script>
 
-</x-admin-layout>
+
+
+
+
+
+
+<style>
+
+
+.ticker{
+
+animation:
+moveTicker 30s linear infinite;
+
+}
+
+
+
+@keyframes moveTicker{
+
+
+from{
+
+transform:
+translateX(100%);
+
+}
+
+
+to{
+
+transform:
+translateX(-100%);
+
+}
+
+
+}
+
+
+
+</style>
+
+
+
+
+</body>
+
+</html>

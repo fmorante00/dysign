@@ -1,368 +1,635 @@
 <x-admin-layout>
 
-<div class="space-y-8">
+<div class="space-y-10">
 
-    <!-- HEADER -->
 
-    <div>
+<!-- PAGE HEADER -->
 
-        <h1 class="text-3xl font-bold text-[#101064]">
-            My Assigned Events
-        </h1>
+<section>
 
-        <p class="mt-2 text-gray-500">
-            View your assigned events and manage attendance operations.
-        </p>
+<div class="flex items-start justify-between">
 
-    </div>
 
+<div>
 
+<p class="text-xs uppercase tracking-[0.35em] text-[#D4A017]">
+Attendance Operations
+</p>
 
-    <!-- SUMMARY -->
 
-    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+<h1 class="mt-3 text-4xl font-bold text-[#101064]">
+My Assigned Events
+</h1>
 
-        <!-- ONGOING -->
 
-        <div class="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+<p class="mt-2 text-gray-500">
+Manage assigned events and monitor attendance activities.
+</p>
 
-            <p class="text-sm text-gray-500">
-                Ongoing
-            </p>
 
-            <h2 class="mt-2 text-3xl font-bold text-green-600">
-                {{ $events->where('status', 'Ongoing')->count() }}
-            </h2>
+</div>
 
-        </div>
 
+</div>
 
-        <!-- UPCOMING -->
+</section>
 
-        <div class="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
 
-            <p class="text-sm text-gray-500">
-                Upcoming
-            </p>
 
-            <h2 class="mt-2 text-3xl font-bold text-[#101064]">
-                {{ $events->where('status', 'Upcoming')->count() }}
-            </h2>
 
-        </div>
 
 
-        <!-- COMPLETED -->
 
-        <div class="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
 
-            <p class="text-sm text-gray-500">
-                Completed
-            </p>
+<!-- SUMMARY -->
 
-            <h2 class="mt-2 text-3xl font-bold text-gray-600">
-                {{ $events->where('status', 'Completed')->count() }}
-            </h2>
+<section
+class="
+grid
+grid-cols-1
+md:grid-cols-3
+gap-6
+"
+>
 
-        </div>
 
+<!-- ONGOING -->
 
-        <!-- CANCELLED -->
+<div
+class="
+bg-[#101064]
+rounded-3xl
+p-7
+text-white
+relative
+overflow-hidden
+"
+>
 
-        <div class="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
 
-            <p class="text-sm text-gray-500">
-                Cancelled
-            </p>
+<div
+class="
+absolute
+right-5
+top-5
+w-20
+h-20
+rounded-full
+bg-white/10
+"
+></div>
 
-            <h2 class="mt-2 text-3xl font-bold text-red-600">
-                {{ $events->where('status', 'Cancelled')->count() }}
-            </h2>
 
-        </div>
+<p
+class="
+text-sm
+uppercase
+tracking-wider
+text-blue-200
+"
+>
+Ongoing
+</p>
 
-    </div>
 
+<h2
+class="
+mt-4
+text-5xl
+font-bold
+"
+>
+{{ $events->where('status','Ongoing')->count() }}
+</h2>
 
 
-    <!-- EVENT LIST -->
+<p
+class="
+mt-2
+text-blue-100
+"
+>
+Active attendance sessions
+</p>
 
-    <div class="rounded-3xl border border-gray-100 bg-white p-8 shadow-sm">
 
-        <div class="mb-6 flex items-center justify-between">
+</div>
 
-            <div>
 
-                <h2 class="text-xl font-semibold text-[#101064]">
-                    Assigned Event List
-                </h2>
 
-                <p class="mt-1 text-sm text-gray-500">
-                    Events currently assigned to your account.
-                </p>
 
-            </div>
 
 
-            <span class="rounded-full bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-600">
 
-                {{ $events->count() }}
-                {{ $events->count() === 1 ? 'Event' : 'Events' }}
+<!-- UPCOMING -->
 
-            </span>
 
-        </div>
+<div
+class="
+bg-white
+rounded-3xl
+border
+border-gray-200
+p-7
+"
+>
 
 
+<p
+class="
+text-sm
+uppercase
+tracking-wider
+text-gray-400
+"
+>
+Upcoming
+</p>
 
-        @if($events->count() > 0)
 
-            <div class="space-y-5">
+<h2
+class="
+mt-4
+text-5xl
+font-bold
+text-[#101064]
+"
+>
+{{ $events->where('status','Upcoming')->count() }}
+</h2>
 
-                @foreach($events as $event)
 
-                    <div
-                        class="rounded-2xl border border-gray-200 p-6 transition hover:border-gray-300 hover:shadow-md"
-                    >
+<p
+class="
+mt-2
+text-gray-500
+"
+>
+Scheduled events
+</p>
 
-                        <!-- TOP -->
 
-                        <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+</div>
 
 
-                            <div>
 
-                                <h3 class="text-xl font-semibold text-[#101064]">
-                                    {{ $event->event_name }}
-                                </h3>
 
 
-                                <p class="mt-1 text-sm text-gray-500">
 
-                                    {{ $event->department->department_name ?? 'University-wide Event' }}
 
-                                </p>
+<!-- COMPLETED -->
 
-                            </div>
 
+<div
+class="
+bg-white
+rounded-3xl
+border
+border-gray-200
+p-7
+"
+>
 
 
-                            <!-- STATUS -->
+<p
+class="
+text-sm
+uppercase
+tracking-wider
+text-gray-400
+"
+>
+Completed
+</p>
 
-                            <div>
 
-                                @if($event->status === 'Ongoing')
+<h2
+class="
+mt-4
+text-5xl
+font-bold
+text-[#101064]
+"
+>
+{{ $events->where('status','Completed')->count() }}
+</h2>
 
-                                    <span class="inline-flex rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
-                                        Ongoing
-                                    </span>
 
-                                @elseif($event->status === 'Upcoming')
+<p
+class="
+mt-2
+text-gray-500
+"
+>
+Finished attendance records
+</p>
 
-                                    <span class="inline-flex rounded-full bg-yellow-100 px-3 py-1 text-xs font-semibold text-yellow-700">
-                                        Upcoming
-                                    </span>
 
-                                @elseif($event->status === 'Completed')
+</div>
 
-                                    <span class="inline-flex rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
-                                        Completed
-                                    </span>
 
-                                @elseif($event->status === 'Cancelled')
 
-                                    <span class="inline-flex rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700">
-                                        Cancelled
-                                    </span>
+</section>
 
-                                @else
 
-                                    <span class="inline-flex rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
-                                        {{ $event->status }}
-                                    </span>
 
-                                @endif
 
-                            </div>
 
-                        </div>
 
 
 
-                        <!-- INFORMATION -->
 
-                        <div class="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+<!-- EVENTS -->
 
+<section>
 
-                            <!-- DATE -->
 
-                            <div>
+<div
+class="
+flex
+items-center
+justify-between
+mb-6
+"
+>
 
-                                <p class="text-xs font-medium uppercase tracking-wide text-gray-400">
-                                    Date
-                                </p>
 
-                                <p class="mt-1 font-semibold text-gray-700">
+<h2
+class="
+text-2xl
+font-bold
+text-[#101064]
+"
+>
+Assigned Events
+</h2>
 
-                                    {{ \Carbon\Carbon::parse($event->event_date)->format('F d, Y') }}
 
-                                </p>
+<span
+class="
+text-sm
+text-gray-400
+"
+>
+{{ $events->count() }} Events
+</span>
 
-                            </div>
 
+</div>
 
 
-                            <!-- TIME -->
 
-                            <div>
 
-                                <p class="text-xs font-medium uppercase tracking-wide text-gray-400">
-                                    Time
-                                </p>
 
-                                <p class="mt-1 font-semibold text-gray-700">
 
-                                    {{ \Carbon\Carbon::parse($event->start_time)->format('h:i A') }}
 
-                                    -
+<div
+class="
+bg-white
+rounded-3xl
+border
+border-gray-200
+divide-y
+divide-gray-100
+overflow-hidden
+"
+>
 
-                                    {{ \Carbon\Carbon::parse($event->end_time)->format('h:i A') }}
 
-                                </p>
 
-                            </div>
 
+@forelse($events as $event)
 
 
-                            <!-- VENUE -->
 
-                            <div>
+<div
+class="
+p-7
+hover:bg-gray-50
+transition
+"
+>
 
-                                <p class="text-xs font-medium uppercase tracking-wide text-gray-400">
-                                    Venue
-                                </p>
 
-                                <p class="mt-1 font-semibold text-gray-700">
-                                    {{ $event->location }}
-                                </p>
 
-                            </div>
+<div
+class="
+flex
+flex-col
+lg:flex-row
+lg:items-center
+lg:justify-between
+gap-6
+"
+>
 
 
 
-                            <!-- ATTENDANCE -->
+<!-- EVENT DETAILS -->
 
-                            <div>
+<div>
 
-                                <p class="text-xs font-medium uppercase tracking-wide text-gray-400">
-                                    Attendance Recorded
-                                </p>
 
-                                <p class="mt-1 font-semibold text-[#101064]">
+<div
+class="
+flex
+items-center
+gap-3
+"
+>
 
-                                    {{ $event->attendance_count }}
 
-                                    {{ $event->attendance_count === 1 ? 'Student' : 'Students' }}
 
-                                </p>
+<h3
+class="
+text-2xl
+font-bold
+text-[#101064]
+"
+>
+{{ $event->event_name }}
+</h3>
 
-                            </div>
 
-                        </div>
 
+@if($event->status === 'Ongoing')
 
 
-                        <!-- ACTIONS -->
+<span
+class="
+rounded-full
+bg-green-100
+px-3
+py-1
+text-xs
+font-semibold
+text-green-700
+"
+>
+Ongoing
+</span>
 
-                        <div class="mt-6 flex flex-col gap-3 border-t border-gray-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
 
+@elseif($event->status === 'Upcoming')
 
-                            <!-- SCANNER AVAILABILITY -->
 
-                            <div>
+<span
+class="
+rounded-full
+bg-yellow-100
+px-3
+py-1
+text-xs
+font-semibold
+text-yellow-700
+"
+>
+Upcoming
+</span>
 
-                                @if($event->can_scan)
 
-                                    <p class="text-sm text-green-600">
-                                        Attendance scanning available
-                                    </p>
+@elseif($event->status === 'Completed')
 
-                                @elseif($event->status === 'Completed')
 
-                                    <p class="text-sm text-gray-500">
-                                        Attendance scanning has ended
-                                    </p>
+<span
+class="
+rounded-full
+bg-gray-100
+px-3
+py-1
+text-xs
+font-semibold
+text-gray-700
+"
+>
+Completed
+</span>
 
-                                @elseif($event->status === 'Cancelled')
 
-                                    <p class="text-sm text-red-500">
-                                        This event was cancelled
-                                    </p>
+@else
 
-                                @endif
 
-                            </div>
+<span
+class="
+rounded-full
+bg-red-100
+px-3
+py-1
+text-xs
+font-semibold
+text-red-700
+"
+>
+Cancelled
+</span>
 
 
+@endif
 
-                            <div class="flex items-center gap-3">
 
-                                <a
-                                    href="{{ route('my-events.show', $event->event_id) }}"
-                                    class="inline-flex items-center justify-center rounded-xl bg-[#101064] px-6 py-3 font-semibold text-white transition hover:bg-[#D4A017]"
-                                >
-                                    Open Event
-                                </a>
 
-                            </div>
+</div>
 
-                        </div>
 
-                    </div>
 
-                @endforeach
 
-            </div>
 
-        @else
 
-            <!-- EMPTY STATE -->
 
-            <div class="py-16 text-center">
+<p
+class="
+mt-3
+text-gray-500
+"
+>
+{{ $event->department->department_name ?? 'University-wide Event' }}
+</p>
 
-                <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-gray-100 text-gray-400">
 
-                    <svg
-                        class="h-7 w-7"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            d="M8 7V3m8 4V3M5 11h14M5 7h14v14H5z"
-                        />
-                    </svg>
 
-                </div>
 
 
-                <h3 class="mt-4 font-semibold text-gray-700">
-                    No assigned events
-                </h3>
 
+<div
+class="
+mt-4
+flex
+flex-wrap
+gap-5
+text-sm
+text-gray-500
+"
+>
 
-                <p class="mt-2 text-sm text-gray-500">
-                    Events assigned to you will appear here.
-                </p>
 
-            </div>
+<span>
+{{ \Carbon\Carbon::parse($event->event_date)->format('F d, Y') }}
+</span>
 
-        @endif
 
-    </div>
+<span>
+{{ \Carbon\Carbon::parse($event->start_time)->format('h:i A') }}
+-
+{{ \Carbon\Carbon::parse($event->end_time)->format('h:i A') }}
+</span>
+
+
+<span>
+{{ $event->location }}
+</span>
+
+
+</div>
+
+
+
+
+</div>
+
+
+
+
+
+
+
+
+<!-- ACTION -->
+
+
+<div
+class="
+flex
+items-center
+gap-5
+"
+>
+
+
+
+<div
+class="
+text-right
+hidden
+md:block
+"
+>
+
+
+<p
+class="
+text-sm
+text-gray-400
+"
+>
+Attendance
+</p>
+
+
+<p
+class="
+text-xl
+font-bold
+text-[#101064]
+"
+>
+{{ $event->attendance_count ?? 0 }}
+</p>
+
+
+</div>
+
+
+
+
+
+
+
+<a
+href="{{ route('my-events.show',$event->event_id) }}"
+class="
+inline-flex
+items-center
+gap-2
+rounded-xl
+bg-[#101064]
+px-6
+py-3
+font-semibold
+text-white
+transition
+hover:bg-[#D4A017]
+"
+>
+
+Open Event
+
+<svg
+class="h-4 w-4"
+fill="none"
+stroke="currentColor"
+viewBox="0 0 24 24"
+>
+
+<path
+stroke-width="2"
+stroke-linecap="round"
+stroke-linejoin="round"
+d="M9 5l7 7-7 7"
+/>
+
+</svg>
+
+
+</a>
+
+
+
+</div>
+
+
+
+
+
+
+</div>
+
+
+</div>
+
+
+
+
+
+@empty
+
+
+<div
+class="
+p-10
+text-center
+text-gray-400
+"
+>
+No assigned events found.
+</div>
+
+
+@endforelse
+
+
+
+
+
+</div>
+
+
+</section>
+
+
+
+
+
+
 
 </div>
 

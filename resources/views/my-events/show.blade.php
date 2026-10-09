@@ -1,469 +1,551 @@
 <x-admin-layout>
 
-<div class="space-y-8">
-
-    <!-- ========================================================= -->
-    <!-- FLASH MESSAGE -->
-    <!-- ========================================================= -->
-
-    @if(session('error'))
-
-        <div class="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-medium text-red-700">
-            {{ session('error') }}
-        </div>
-
-    @endif
+<div class="space-y-10">
 
 
 
-    <!-- ========================================================= -->
-    <!-- HEADER -->
-    <!-- ========================================================= -->
+<!-- EVENT HEADER -->
 
-    <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-
-        <div>
-
-            <h1 class="text-3xl font-bold text-[#101064]">
-                {{ $event->event_name }}
-            </h1>
-
-            <p class="mt-2 text-gray-500">
-                Event details and attendance operations.
-            </p>
-
-        </div>
+<section
+class="
+bg-[#101064]
+rounded-3xl
+p-10
+text-white
+relative
+overflow-hidden
+"
+>
 
 
-        <a
-            href="{{ route('my-events.index') }}"
-            class="inline-flex w-fit items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white px-5 py-3 font-semibold text-gray-600 transition hover:bg-gray-50"
-        >
+<div
+class="
+absolute
+right-0
+top-0
+h-64
+w-64
+rounded-full
+bg-white/10
+translate-x-20
+-translate-y-20
+"
+></div>
 
-            <svg
-                class="h-4 w-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-            >
-                <path
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M15 19l-7-7 7-7"
-                />
-            </svg>
 
-            Back to My Events
 
-        </a>
+<div
+class="
+relative
+z-10
+flex
+flex-col
+lg:flex-row
+lg:items-center
+lg:justify-between
+gap-8
+"
+>
+
+
+
+<div>
+
+
+<p
+class="
+uppercase
+tracking-[0.35em]
+text-sm
+text-blue-200
+"
+>
+Event Details
+</p>
+
+
+
+<h1
+class="
+mt-3
+text-5xl
+font-bold
+"
+>
+{{ $event->event_name }}
+</h1>
+
+
+
+
+
+<div
+class="
+mt-5
+flex
+items-center
+gap-3
+"
+>
+
+
+@if($event->status === 'Ongoing')
+
+<span
+class="
+bg-green-400/20
+text-green-200
+px-4
+py-2
+rounded-full
+font-semibold
+"
+>
+Ongoing
+</span>
+
+
+@elseif($event->status === 'Upcoming')
+
+
+<span
+class="
+bg-yellow-400/20
+text-yellow-200
+px-4
+py-2
+rounded-full
+font-semibold
+"
+>
+Upcoming
+</span>
+
+
+@elseif($event->status === 'Completed')
+
+
+<span
+class="
+bg-white/20
+text-white
+px-4
+py-2
+rounded-full
+font-semibold
+"
+>
+Completed
+</span>
+
+
+@else
+
+
+<span
+class="
+bg-red-400/20
+text-red-200
+px-4
+py-2
+rounded-full
+font-semibold
+"
+>
+Cancelled
+</span>
+
+
+@endif
+
+
+</div>
+
+
+
+
+</div>
+
+
+
+
+
+
+
+
+<!-- START BUTTON -->
+
+
+@if($canScan)
+
+
+<a
+href="{{ route('attendance.index',$event->event_id) }}"
+class="
+inline-flex
+items-center
+justify-center
+gap-3
+bg-[#D4A017]
+text-[#101064]
+px-8
+py-4
+rounded-2xl
+font-bold
+text-lg
+transition
+hover:bg-white
+"
+>
+
+
+
+
+
+<path
+stroke-width="2"
+stroke-linecap="round"
+stroke-linejoin="round"
+d="M13 10V3L4 14h7v7l9-11h-7z"
+/>
+
+</svg>
+
+
+Start Attendance
+
+
+</a>
+
+
+@endif
+
+
+
+
+
+</div>
+
+
+</section>
+
+<!-- SUMMARY -->
+
+<section class="grid grid-cols-1 gap-6 md:grid-cols-3">
+
+    <!-- ATTENDANCE RECORDED -->
+    <div class="border-l-4 border-[#D4A017] bg-white px-6 py-5">
+
+        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">
+            Attendance Recorded
+        </p>
+
+        <h2 class="mt-2 text-4xl font-bold text-[#101064]">
+            {{ $attendanceCount }}
+        </h2>
+
+        <p class="mt-1 text-sm text-gray-500">
+            {{ $attendanceCount === 1 ? 'Student recorded' : 'Students recorded' }}
+        </p>
 
     </div>
 
 
+    <!-- SCANNER STATUS -->
+    <div class="border-l-4 border-[#101064] bg-white px-6 py-5">
 
-    <!-- ========================================================= -->
-    <!-- STATUS CARD -->
-    <!-- ========================================================= -->
+        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">
+            Scanner
+        </p>
 
-    <div class="rounded-3xl bg-[#101064] p-8 text-white shadow-sm">
+        <h2 class="mt-2 text-xl font-bold {{ $canScan ? 'text-green-600' : 'text-gray-500' }}">
+            {{ $canScan ? 'Available' : 'Closed' }}
+        </h2>
 
-        <div class="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
-
-            <div>
-
-                <p class="text-sm uppercase tracking-wide text-blue-200">
-                    Attendance Status
-                </p>
-
-
-                <h2 class="mt-2 text-3xl font-bold">
-                    {{ $event->status }}
-                </h2>
-
-
-                <p class="mt-4 max-w-2xl text-blue-100">
-
-                    @if($event->status === 'Ongoing')
-
-                        This event is currently ongoing. Attendance scanning is available.
-
-                    @elseif($event->status === 'Upcoming')
-
-                        This event is upcoming. Attendance scanning is available for preparation and testing.
-
-                    @elseif($event->status === 'Completed')
-
-                        This event has been completed. Attendance records are now view-only.
-
-                    @elseif($event->status === 'Cancelled')
-
-                        This event has been cancelled. Attendance scanning is unavailable.
-
-                    @else
-
-                        You are assigned as Attendance Personnel for this event.
-
-                    @endif
-
-                </p>
-
-            </div>
-
-
-
-            <!-- STATUS BADGE -->
-
-            <div>
-
-                @if($event->status === 'Ongoing')
-
-                    <span class="inline-flex rounded-full bg-green-100 px-4 py-2 text-sm font-semibold text-green-700">
-                        Ongoing
-                    </span>
-
-                @elseif($event->status === 'Upcoming')
-
-                    <span class="inline-flex rounded-full bg-yellow-100 px-4 py-2 text-sm font-semibold text-yellow-700">
-                        Upcoming
-                    </span>
-
-                @elseif($event->status === 'Completed')
-
-                    <span class="inline-flex rounded-full bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-700">
-                        Completed
-                    </span>
-
-                @elseif($event->status === 'Cancelled')
-
-                    <span class="inline-flex rounded-full bg-red-100 px-4 py-2 text-sm font-semibold text-red-700">
-                        Cancelled
-                    </span>
-
-                @else
-
-                    <span class="inline-flex rounded-full bg-white/20 px-4 py-2 text-sm font-semibold text-white">
-                        {{ $event->status }}
-                    </span>
-
-                @endif
-
-            </div>
-
-        </div>
+        <p class="mt-1 text-sm text-gray-500">
+            {{ $canScan ? 'RFID attendance may be recorded' : 'Scanning is unavailable' }}
+        </p>
 
     </div>
 
 
+    <!-- DEPARTMENT -->
+    <div class="border-l-4 border-gray-300 bg-white px-6 py-5">
 
-    <!-- ========================================================= -->
-    <!-- SUMMARY -->
-    <!-- ========================================================= -->
+        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">
+            Department
+        </p>
 
-    <div class="grid grid-cols-1 gap-5 md:grid-cols-3">
+        <h2 class="mt-2 text-lg font-bold text-[#101064]">
+            {{ $event->department->department_name ?? 'University-wide Event' }}
+        </h2>
 
-        <!-- ASSIGNMENT -->
-
-        <div class="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-
-            <p class="text-sm text-gray-500">
-                Assignment
-            </p>
-
-            <h3 class="mt-2 text-lg font-bold text-[#101064]">
-                Attendance Personnel
-            </h3>
-
-            <p class="mt-1 text-sm text-gray-400">
-                Assigned to your account
-            </p>
-
-        </div>
-
-
-        <!-- ATTENDANCE COUNT -->
-
-        <div class="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-
-            <p class="text-sm text-gray-500">
-                Attendance Recorded
-            </p>
-
-            <h3 class="mt-2 text-3xl font-bold text-[#101064]">
-                {{ $attendanceCount }}
-            </h3>
-
-            <p class="mt-1 text-sm text-gray-400">
-
-                {{ $attendanceCount === 1 ? 'Student recorded' : 'Students recorded' }}
-
-            </p>
-
-        </div>
-
-
-        <!-- SCANNER -->
-
-        <div class="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-
-            <p class="text-sm text-gray-500">
-                Scanner
-            </p>
-
-
-            @if($canScan)
-
-                <h3 class="mt-2 text-lg font-bold text-green-600">
-                    Available
-                </h3>
-
-                <p class="mt-1 text-sm text-gray-400">
-                    RFID attendance can be recorded
-                </p>
-
-            @else
-
-                <h3 class="mt-2 text-lg font-bold text-gray-600">
-                    Closed
-                </h3>
-
-                <p class="mt-1 text-sm text-gray-400">
-                    Attendance scanning is disabled
-                </p>
-
-            @endif
-
-        </div>
+        <p class="mt-1 text-sm text-gray-500">
+            Assigned event
+        </p>
 
     </div>
 
+</section>
 
 
-    <!-- ========================================================= -->
-    <!-- EVENT INFORMATION -->
-    <!-- ========================================================= -->
 
-    <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+<!-- INFORMATION -->
 
+<section
+class="
+grid
+grid-cols-1
+lg:grid-cols-2
+gap-8
+"
+>
 
-        <!-- EVENT DETAILS -->
 
-        <div class="rounded-3xl border border-gray-100 bg-white p-8 shadow-sm">
 
-            <h2 class="text-xl font-semibold text-[#101064]">
-                Event Information
-            </h2>
 
 
-            <div class="mt-6 space-y-6">
 
+<!-- EVENT INFORMATION -->
 
-                <!-- DEPARTMENT -->
 
-                <div>
+<div
+class="
+bg-white
+rounded-3xl
+border
+border-gray-200
+p-8
+"
+>
 
-                    <p class="text-xs font-medium uppercase tracking-wide text-gray-400">
-                        Department
-                    </p>
 
-                    <p class="mt-1 font-semibold text-gray-700">
-                        {{ $event->department->department_name ?? 'University-wide Event' }}
-                    </p>
+<h2
+class="
+text-2xl
+font-bold
+text-[#101064]
+mb-6
+"
+>
+Event Information
+</h2>
 
-                </div>
 
 
 
-                <!-- VENUE -->
+<div class="space-y-6">
 
-                <div>
 
-                    <p class="text-xs font-medium uppercase tracking-wide text-gray-400">
-                        Venue
-                    </p>
 
-                    <p class="mt-1 font-semibold text-gray-700">
-                        {{ $event->location }}
-                    </p>
+<div>
 
-                </div>
+<p class="text-sm text-gray-400 uppercase">
+Department
+</p>
 
 
+<p class="mt-1 font-semibold">
+{{ $event->department->department_name ?? 'University Event' }}
+</p>
 
-                <!-- DESCRIPTION -->
 
-                <div>
+</div>
 
-                    <p class="text-xs font-medium uppercase tracking-wide text-gray-400">
-                        Description
-                    </p>
 
-                    <p class="mt-1 leading-relaxed text-gray-700">
-                        {{ $event->description ?? 'No description provided.' }}
-                    </p>
 
-                </div>
 
-            </div>
+<div>
 
-        </div>
+<p class="text-sm text-gray-400 uppercase">
+Venue
+</p>
 
 
+<p class="mt-1 font-semibold">
+{{ $event->location }}
+</p>
 
-        <!-- SCHEDULE -->
 
-        <div class="rounded-3xl border border-gray-100 bg-white p-8 shadow-sm">
+</div>
 
-            <h2 class="text-xl font-semibold text-[#101064]">
-                Schedule
-            </h2>
 
 
-            <div class="mt-6 space-y-6">
 
 
-                <!-- DATE -->
+<div>
 
-                <div>
+<p class="text-sm text-gray-400 uppercase">
+Date
+</p>
 
-                    <p class="text-xs font-medium uppercase tracking-wide text-gray-400">
-                        Date
-                    </p>
 
-                    <p class="mt-1 font-semibold text-gray-700">
-                        {{ \Carbon\Carbon::parse($event->event_date)->format('F d, Y') }}
-                    </p>
+<p class="mt-1 font-semibold">
 
-                </div>
+{{ \Carbon\Carbon::parse($event->event_date)->format('F d, Y') }}
 
+</p>
 
 
-                <!-- START -->
+</div>
 
-                <div>
 
-                    <p class="text-xs font-medium uppercase tracking-wide text-gray-400">
-                        Start Time
-                    </p>
 
-                    <p class="mt-1 font-semibold text-gray-700">
-                        {{ \Carbon\Carbon::parse($event->start_time)->format('h:i A') }}
-                    </p>
+</div>
 
-                </div>
 
 
+</div>
 
-                <!-- END -->
 
-                <div>
 
-                    <p class="text-xs font-medium uppercase tracking-wide text-gray-400">
-                        End Time
-                    </p>
 
-                    <p class="mt-1 font-semibold text-gray-700">
-                        {{ \Carbon\Carbon::parse($event->end_time)->format('h:i A') }}
-                    </p>
 
-                </div>
 
-            </div>
 
-        </div>
 
-    </div>
+<!-- SCHEDULE -->
 
 
+<div
+class="
+bg-white
+rounded-3xl
+border
+border-gray-200
+p-8
+"
+>
 
-    <!-- ========================================================= -->
-    <!-- ATTENDANCE OPERATIONS -->
-    <!-- ========================================================= -->
 
-    <div class="rounded-3xl border border-gray-100 bg-white p-8 shadow-sm">
+<h2
+class="
+text-2xl
+font-bold
+text-[#101064]
+mb-6
+"
+>
+Schedule
+</h2>
 
-        <div class="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
 
 
-            <div>
 
-                <h2 class="text-xl font-semibold text-[#101064]">
-                    Attendance Operations
-                </h2>
+<div
+class="
+border-l-4
+border-[#D4A017]
+pl-6
+space-y-5
+"
+>
 
 
-                @if($canScan)
+<div>
 
-                    <p class="mt-2 text-gray-500">
-                        Open the RFID scanner to record student attendance for this event.
-                    </p>
+<p
+class="
+text-sm
+text-gray-400
+"
+>
+Starts
+</p>
 
-                @elseif($event->status === 'Completed')
 
-                    <p class="mt-2 text-gray-500">
-                        This event has been completed. Existing attendance records are preserved.
-                    </p>
+<p
+class="
+text-2xl
+font-bold
+text-[#101064]
+"
+>
 
-                @elseif($event->status === 'Cancelled')
+{{ \Carbon\Carbon::parse($event->start_time)->format('g:i A') }}
 
-                    <p class="mt-2 text-gray-500">
-                        This event was cancelled. Attendance scanning is disabled.
-                    </p>
+</p>
 
-                @else
 
-                    <p class="mt-2 text-gray-500">
-                        Attendance scanning is currently unavailable.
-                    </p>
+</div>
 
-                @endif
 
-            </div>
 
 
 
-            <!-- ACTION -->
+<div>
 
-            @if($canScan)
+<p
+class="
+text-sm
+text-gray-400
+"
+>
+Ends
+</p>
 
-                <a
-                    href="{{ route('attendance.index', $event->event_id) }}"
-                    class="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#101064] px-8 py-3 font-semibold text-white transition hover:bg-[#D4A017]"
-                >
 
-                    <svg
-                        class="h-5 w-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            d="M13 10V3L4 14h7v7l9-11h-7z"
-                        />
-                    </svg>
+<p
+class="
+text-2xl
+font-bold
+text-[#101064]
+"
+>
 
-                    Start Attendance
+{{ \Carbon\Carbon::parse($event->end_time)->format('g:i A') }}
 
-                </a>
+</p>
 
-            @else
 
-                <button
-                    type="button"
-                    disabled
-                    class="inline-flex shrink-0 cursor-not-allowed items-center justify-center rounded-xl bg-gray-200 px-8 py-3 font-semibold text-gray-500"
-                >
-                    Attendance Closed
-                </button>
+</div>
 
-            @endif
 
-        </div>
 
-    </div>
+</div>
+
+
+
+
+</div>
+
+
+
+
+
+</section>
+
+
+
+
+
+
+
+
+
+<!-- BACK -->
+
+<div>
+
+
+<a
+href="{{ route('my-events.index') }}"
+class="
+text-[#101064]
+font-semibold
+hover:text-[#D4A017]
+"
+>
+
+← Back to Assigned Events
+
+</a>
+
+
+</div>
+
+
+
 
 </div>
 
