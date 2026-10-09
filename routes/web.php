@@ -11,6 +11,9 @@ use App\Http\Controllers\EventController;
 use App\Http\Controllers\MyAssignedEventsController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AnnouncementController;
+use App\Http\Controllers\AttendanceMonitoringController;
+use App\Http\Controllers\ParticipationRecordsController;
+use App\Http\Controllers\ParticipationEvaluationController;
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
@@ -233,18 +236,25 @@ Route::middleware([
 ])
 ->group(function () {
 
-
     Route::get(
         '/attendance/monitor',
-        function () {
-
-            return view(
-                'attendance.monitor'
-            );
-
-        }
+        [
+            AttendanceMonitoringController::class,
+            'index'
+        ]
     )
     ->name('attendance.monitor');
+
+
+    Route::get(
+        '/attendance/monitor/{event}/feed',
+        [
+            AttendanceMonitoringController::class,
+            'feed'
+        ]
+    )
+    ->whereNumber('event')
+    ->name('attendance.monitor.feed');
 
 });
 
@@ -388,28 +398,32 @@ Route::get(
 
 Route::get(
     '/participation/records',
-    function () {
-
-        return view(
-            'participation.records'
-        );
-
-    }
+    [
+        ParticipationRecordsController::class,
+        'index'
+    ]
 )
 ->name('participation.records');
 
 
 Route::get(
     '/participation/evaluation',
-    function () {
-
-        return view(
-            'participation.evaluation'
-        );
-
-    }
+    [
+        ParticipationEvaluationController::class,
+        'index'
+    ]
 )
 ->name('participation.evaluation');
+
+
+Route::post(
+    '/participation/evaluation/re-evaluate',
+    [
+        ParticipationEvaluationController::class,
+        'reevaluate'
+    ]
+)
+->name('participation.evaluation.reevaluate');
 
 
 /*

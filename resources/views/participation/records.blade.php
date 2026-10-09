@@ -9,6 +9,7 @@
     */
 
     .participation-hero {
+
         background:
             linear-gradient(
                 100deg,
@@ -20,9 +21,11 @@
 
         background-size: cover;
         background-position: center;
+
     }
 
 </style>
+
 
 
 <div class="min-w-0 space-y-8">
@@ -110,7 +113,7 @@
                     "
                 >
                     Review consolidated student participation information
-                    generated from finalized attendance records across school events.
+                    generated from RFID attendance records across school events.
                 </p>
 
             </div>
@@ -144,7 +147,7 @@
                             text-[#E7C75B]
                         "
                     >
-                        Record Type
+                        Record Source
                     </p>
 
 
@@ -156,7 +159,7 @@
                             text-white
                         "
                     >
-                        Student Event Participation
+                        RFID Attendance Database
                     </p>
 
                 </div>
@@ -209,7 +212,8 @@
                     text-gray-500
                 "
             >
-                Consolidated statistics from student participation records.
+                Consolidated statistics calculated from the current
+                DySign student and attendance database.
             </p>
 
         </div>
@@ -275,7 +279,18 @@
                                 text-[#101064]
                             "
                         >
-                            1,542
+                            {{ number_format($totalStudents ?? 0) }}
+                        </p>
+
+
+                        <p
+                            class="
+                                mt-2
+                                text-xs
+                                text-gray-400
+                            "
+                        >
+                            Active student records
                         </p>
 
                     </div>
@@ -317,7 +332,7 @@
 
 
 
-            {{-- EVENTS RECORDED --}}
+            {{-- PARTICIPATING STUDENTS --}}
 
             <div
                 class="
@@ -350,95 +365,7 @@
                                 text-gray-400
                             "
                         >
-                            Events Recorded
-                        </p>
-
-
-                        <p
-                            class="
-                                mt-2
-                                text-3xl
-                                font-bold
-                                tracking-tight
-                                text-[#101064]
-                            "
-                        >
-                            24
-                        </p>
-
-                    </div>
-
-
-                    <div
-                        class="
-                            flex
-                            h-10
-                            w-10
-                            shrink-0
-                            items-center
-                            justify-center
-                            rounded-xl
-                            bg-[#FFF8E1]
-                            text-[#B8880A]
-                        "
-                    >
-
-                        <svg
-                            class="h-5 w-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                stroke-width="1.8"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M8 7V3m8 4V3M5 11h14M5 5h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z"
-                            />
-                        </svg>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-
-            {{-- COMPLETED ATTENDANCE --}}
-
-            <div
-                class="
-                    border-b
-                    border-gray-100
-                    px-6
-                    py-6
-                    sm:border-r
-                    sm:border-b-0
-                "
-            >
-
-                <div
-                    class="
-                        flex
-                        items-start
-                        justify-between
-                        gap-4
-                    "
-                >
-
-                    <div>
-
-                        <p
-                            class="
-                                text-[10px]
-                                font-bold
-                                uppercase
-                                tracking-[0.16em]
-                                text-gray-400
-                            "
-                        >
-                            Completed Attendance
+                            Participating Students
                         </p>
 
 
@@ -451,7 +378,18 @@
                                 text-green-600
                             "
                         >
-                            1,320
+                            {{ number_format($participatingStudents ?? 0) }}
+                        </p>
+
+
+                        <p
+                            class="
+                                mt-2
+                                text-xs
+                                text-gray-400
+                            "
+                        >
+                            Students with attendance records
                         </p>
 
                     </div>
@@ -493,9 +431,18 @@
 
 
 
-            {{-- INCOMPLETE --}}
+            {{-- EVENTS RECORDED --}}
 
-            <div class="px-6 py-6">
+            <div
+                class="
+                    border-b
+                    border-gray-100
+                    px-6
+                    py-6
+                    sm:border-r
+                    sm:border-b-0
+                "
+            >
 
                 <div
                     class="
@@ -517,7 +464,7 @@
                                 text-gray-400
                             "
                         >
-                            Incomplete Records
+                            Events Recorded
                         </p>
 
 
@@ -530,7 +477,18 @@
                                 text-[#D4A017]
                             "
                         >
-                            45
+                            {{ number_format($eventsRecorded ?? 0) }}
+                        </p>
+
+
+                        <p
+                            class="
+                                mt-2
+                                text-xs
+                                text-gray-400
+                            "
+                        >
+                            Events with attendance records
                         </p>
 
                     </div>
@@ -560,7 +518,97 @@
                                 stroke-width="1.8"
                                 stroke-linecap="round"
                                 stroke-linejoin="round"
-                                d="M12 9v4m0 4h.01M10.3 3.6L2.7 17a2 2 0 001.7 3h15.2a2 2 0 001.7-3L13.7 3.6a2 2 0 00-3.4 0z"
+                                d="M8 7V3m8 4V3M5 11h14M5 5h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z"
+                            />
+                        </svg>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+
+            {{-- ATTENDANCE ENTRIES --}}
+
+            <div class="px-6 py-6">
+
+                <div
+                    class="
+                        flex
+                        items-start
+                        justify-between
+                        gap-4
+                    "
+                >
+
+                    <div>
+
+                        <p
+                            class="
+                                text-[10px]
+                                font-bold
+                                uppercase
+                                tracking-[0.16em]
+                                text-gray-400
+                            "
+                        >
+                            Attendance Entries
+                        </p>
+
+
+                        <p
+                            class="
+                                mt-2
+                                text-3xl
+                                font-bold
+                                tracking-tight
+                                text-[#101064]
+                            "
+                        >
+                            {{ number_format($attendanceEntries ?? 0) }}
+                        </p>
+
+
+                        <p
+                            class="
+                                mt-2
+                                text-xs
+                                text-gray-400
+                            "
+                        >
+                            Total RFID attendance records
+                        </p>
+
+                    </div>
+
+
+                    <div
+                        class="
+                            flex
+                            h-10
+                            w-10
+                            shrink-0
+                            items-center
+                            justify-center
+                            rounded-xl
+                            bg-[#F1F2FA]
+                            text-[#101064]
+                        "
+                    >
+
+                        <svg
+                            class="h-5 w-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-width="1.8"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="M9 12h6m-6 4h6M9 8h6M5 4h14a2 2 0 012 2v14H3V6a2 2 0 012-2z"
                             />
                         </svg>
 
@@ -628,7 +676,8 @@
                         text-gray-500
                     "
                 >
-                    Review student attendance performance across recorded events.
+                    Review attendance activity calculated from
+                    each student's recorded event participation.
                 </p>
 
             </div>
@@ -659,7 +708,7 @@
                     "
                 ></span>
 
-                Consolidated Records
+                Database Records
 
             </div>
 
@@ -681,7 +730,7 @@
                 <table
                     class="
                         w-full
-                        min-w-[900px]
+                        min-w-[1100px]
                         text-left
                     "
                 >
@@ -731,6 +780,21 @@
                                     text-gray-400
                                 "
                             >
+                                Program
+                            </th>
+
+
+                            <th
+                                class="
+                                    px-6
+                                    py-4
+                                    text-[10px]
+                                    font-bold
+                                    uppercase
+                                    tracking-[0.16em]
+                                    text-gray-400
+                                "
+                            >
                                 Events Attended
                             </th>
 
@@ -746,7 +810,7 @@
                                     text-gray-400
                                 "
                             >
-                                Late Attendance
+                                Present
                             </th>
 
 
@@ -761,7 +825,7 @@
                                     text-gray-400
                                 "
                             >
-                                Missed Events
+                                Late
                             </th>
 
 
@@ -776,7 +840,7 @@
                                     text-gray-400
                                 "
                             >
-                                Status
+                                Student Status
                             </th>
 
                         </tr>
@@ -787,313 +851,397 @@
 
                     <tbody class="divide-y divide-gray-100">
 
+                        @forelse($records as $record)
 
-                        {{-- STUDENT 1 --}}
+                            @php
 
-                        <tr
-                            class="
-                                transition
-                                hover:bg-gray-50/70
-                            "
-                        >
+                                $studentName = trim(
+                                    $record->first_name
+                                    . ' '
+                                    . (
+                                        $record->middle_name
+                                            ? $record->middle_name . ' '
+                                            : ''
+                                    )
+                                    . $record->last_name
+                                );
 
-                            <td
+                            @endphp
+
+
+                            <tr
                                 class="
-                                    whitespace-nowrap
-                                    px-6
-                                    py-5
-                                    text-sm
-                                    font-medium
-                                    text-gray-500
+                                    transition
+                                    hover:bg-gray-50/70
                                 "
                             >
-                                2026-001
-                            </td>
 
+                                {{-- STUDENT NUMBER --}}
 
-                            <td class="px-6 py-5">
-
-                                <div
+                                <td
                                     class="
-                                        flex
-                                        items-center
-                                        gap-3
+                                        whitespace-nowrap
+                                        px-6
+                                        py-5
+                                        text-sm
+                                        font-medium
+                                        text-gray-500
+                                    "
+                                >
+                                    {{ $record->student_number }}
+                                </td>
+
+
+
+                                {{-- STUDENT --}}
+
+                                <td class="px-6 py-5">
+
+                                    <div
+                                        class="
+                                            flex
+                                            items-center
+                                            gap-3
+                                        "
+                                    >
+
+                                        {{-- PHOTO --}}
+
+                                        <div
+                                            class="
+                                                flex
+                                                h-11
+                                                w-11
+                                                shrink-0
+                                                items-center
+                                                justify-center
+                                                overflow-hidden
+                                                rounded-xl
+                                                bg-[#F1F2FA]
+                                                text-sm
+                                                font-bold
+                                                text-[#101064]
+                                            "
+                                        >
+
+                                            @if(!empty($record->photo_path))
+
+                                                <img
+                                                    src="{{ asset(
+                                                        'student_photos/'
+                                                        . basename(
+                                                            $record->photo_path
+                                                        )
+                                                    ) }}"
+                                                    alt="{{ $studentName }}"
+                                                    class="
+                                                        h-full
+                                                        w-full
+                                                        object-cover
+                                                    "
+                                                >
+
+                                            @else
+
+                                                {{ strtoupper(
+                                                    substr(
+                                                        $record->first_name,
+                                                        0,
+                                                        1
+                                                    )
+                                                ) }}
+
+                                            @endif
+
+                                        </div>
+
+
+
+                                        {{-- STUDENT INFO --}}
+
+                                        <div class="min-w-0">
+
+                                            <p
+                                                class="
+                                                    font-semibold
+                                                    text-[#101064]
+                                                "
+                                            >
+                                                {{ $studentName }}
+                                            </p>
+
+
+                                            <p
+                                                class="
+                                                    mt-0.5
+                                                    text-xs
+                                                    text-gray-400
+                                                "
+                                            >
+                                                {{ $record->college }}
+                                            </p>
+
+                                        </div>
+
+                                    </div>
+
+                                </td>
+
+
+
+                                {{-- PROGRAM --}}
+
+                                <td class="px-6 py-5">
+
+                                    <p
+                                        class="
+                                            text-sm
+                                            font-semibold
+                                            text-gray-700
+                                        "
+                                    >
+                                        {{ $record->program_code }}
+                                    </p>
+
+
+                                    <p
+                                        class="
+                                            mt-1
+                                            text-xs
+                                            text-gray-400
+                                        "
+                                    >
+                                        Year {{ $record->year_level }}
+                                    </p>
+
+                                </td>
+
+
+
+                                {{-- EVENTS ATTENDED --}}
+
+                                <td
+                                    class="
+                                        px-6
+                                        py-5
+                                        text-sm
+                                        font-semibold
+                                        text-gray-700
+                                    "
+                                >
+
+                                    {{ number_format(
+                                        $record->events_attended ?? 0
+                                    ) }}
+
+                                    {{ ($record->events_attended ?? 0) == 1
+                                        ? 'Event'
+                                        : 'Events'
+                                    }}
+
+                                </td>
+
+
+
+                                {{-- PRESENT --}}
+
+                                <td class="px-6 py-5">
+
+                                    <span
+                                        class="
+                                            inline-flex
+                                            min-w-[42px]
+                                            items-center
+                                            justify-center
+                                            rounded-full
+                                            bg-green-50
+                                            px-3
+                                            py-1
+                                            text-xs
+                                            font-semibold
+                                            text-green-700
+                                        "
+                                    >
+                                        {{ number_format(
+                                            $record->present_count ?? 0
+                                        ) }}
+                                    </span>
+
+                                </td>
+
+
+
+                                {{-- LATE --}}
+
+                                <td class="px-6 py-5">
+
+                                    <span
+                                        class="
+                                            inline-flex
+                                            min-w-[42px]
+                                            items-center
+                                            justify-center
+                                            rounded-full
+                                            bg-[#FFF8E1]
+                                            px-3
+                                            py-1
+                                            text-xs
+                                            font-semibold
+                                            text-[#9A7000]
+                                        "
+                                    >
+                                        {{ number_format(
+                                            $record->late_count ?? 0
+                                        ) }}
+                                    </span>
+
+                                </td>
+
+
+
+                                {{-- STATUS --}}
+
+                                <td class="px-6 py-5">
+
+                                    @if($record->status === 'Active')
+
+                                        <span
+                                            class="
+                                                inline-flex
+                                                items-center
+                                                gap-2
+                                                rounded-full
+                                                bg-green-50
+                                                px-3
+                                                py-1
+                                                text-xs
+                                                font-semibold
+                                                text-green-700
+                                            "
+                                        >
+
+                                            <span
+                                                class="
+                                                    h-1.5
+                                                    w-1.5
+                                                    rounded-full
+                                                    bg-green-500
+                                                "
+                                            ></span>
+
+                                            Active
+
+                                        </span>
+
+                                    @else
+
+                                        <span
+                                            class="
+                                                inline-flex
+                                                items-center
+                                                gap-2
+                                                rounded-full
+                                                bg-gray-100
+                                                px-3
+                                                py-1
+                                                text-xs
+                                                font-semibold
+                                                text-gray-600
+                                            "
+                                        >
+
+                                            <span
+                                                class="
+                                                    h-1.5
+                                                    w-1.5
+                                                    rounded-full
+                                                    bg-gray-400
+                                                "
+                                            ></span>
+
+                                            {{ $record->status }}
+
+                                        </span>
+
+                                    @endif
+
+                                </td>
+
+                            </tr>
+
+
+                        @empty
+
+                            <tr>
+
+                                <td
+                                    colspan="7"
+                                    class="
+                                        px-6
+                                        py-16
+                                        text-center
                                     "
                                 >
 
                                     <div
                                         class="
+                                            mx-auto
                                             flex
-                                            h-10
-                                            w-10
-                                            shrink-0
+                                            h-12
+                                            w-12
                                             items-center
                                             justify-center
                                             rounded-xl
                                             bg-[#F1F2FA]
-                                            text-sm
-                                            font-bold
                                             text-[#101064]
                                         "
                                     >
-                                        J
+
+                                        <svg
+                                            class="h-6 w-6"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                stroke-width="1.8"
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                d="M17 20h5v-2a4 4 0 00-4-4h-1M9 20H2v-2a4 4 0 014-4h1m5-2a4 4 0 100-8 4 4 0 000 8"
+                                            />
+                                        </svg>
+
                                     </div>
 
 
-                                    <div>
-
-                                        <p
-                                            class="
-                                                font-semibold
-                                                text-[#101064]
-                                            "
-                                        >
-                                            Juan Dela Cruz
-                                        </p>
-
-
-                                        <p
-                                            class="
-                                                mt-0.5
-                                                text-xs
-                                                text-gray-400
-                                            "
-                                        >
-                                            Student participant
-                                        </p>
-
-                                    </div>
-
-                                </div>
-
-                            </td>
-
-
-                            <td
-                                class="
-                                    px-6
-                                    py-5
-                                    text-sm
-                                    font-semibold
-                                    text-gray-700
-                                "
-                            >
-                                8 Events
-                            </td>
-
-
-                            <td
-                                class="
-                                    px-6
-                                    py-5
-                                    text-sm
-                                    text-gray-600
-                                "
-                            >
-                                1
-                            </td>
-
-
-                            <td
-                                class="
-                                    px-6
-                                    py-5
-                                    text-sm
-                                    text-gray-600
-                                "
-                            >
-                                0
-                            </td>
-
-
-                            <td class="px-6 py-5">
-
-                                <span
-                                    class="
-                                        inline-flex
-                                        items-center
-                                        gap-2
-                                        rounded-full
-                                        bg-green-50
-                                        px-3
-                                        py-1
-                                        text-xs
-                                        font-semibold
-                                        text-green-700
-                                    "
-                                >
-
-                                    <span
+                                    <p
                                         class="
-                                            h-1.5
-                                            w-1.5
-                                            rounded-full
-                                            bg-green-500
-                                        "
-                                    ></span>
-
-                                    Active
-
-                                </span>
-
-                            </td>
-
-                        </tr>
-
-
-
-                        {{-- STUDENT 2 --}}
-
-                        <tr
-                            class="
-                                transition
-                                hover:bg-gray-50/70
-                            "
-                        >
-
-                            <td
-                                class="
-                                    whitespace-nowrap
-                                    px-6
-                                    py-5
-                                    text-sm
-                                    font-medium
-                                    text-gray-500
-                                "
-                            >
-                                2026-002
-                            </td>
-
-
-                            <td class="px-6 py-5">
-
-                                <div
-                                    class="
-                                        flex
-                                        items-center
-                                        gap-3
-                                    "
-                                >
-
-                                    <div
-                                        class="
-                                            flex
-                                            h-10
-                                            w-10
-                                            shrink-0
-                                            items-center
-                                            justify-center
-                                            rounded-xl
-                                            bg-[#FFF8E1]
+                                            mt-4
                                             text-sm
-                                            font-bold
-                                            text-[#A87900]
+                                            font-semibold
+                                            text-[#101064]
                                         "
                                     >
-                                        M
-                                    </div>
+                                        No Student Records Found
+                                    </p>
 
 
-                                    <div>
-
-                                        <p
-                                            class="
-                                                font-semibold
-                                                text-[#101064]
-                                            "
-                                        >
-                                            Maria Santos
-                                        </p>
-
-
-                                        <p
-                                            class="
-                                                mt-0.5
-                                                text-xs
-                                                text-gray-400
-                                            "
-                                        >
-                                            Student participant
-                                        </p>
-
-                                    </div>
-
-                                </div>
-
-                            </td>
-
-
-                            <td
-                                class="
-                                    px-6
-                                    py-5
-                                    text-sm
-                                    font-semibold
-                                    text-gray-700
-                                "
-                            >
-                                5 Events
-                            </td>
-
-
-                            <td
-                                class="
-                                    px-6
-                                    py-5
-                                    text-sm
-                                    text-gray-600
-                                "
-                            >
-                                2
-                            </td>
-
-
-                            <td
-                                class="
-                                    px-6
-                                    py-5
-                                    text-sm
-                                    text-gray-600
-                                "
-                            >
-                                1
-                            </td>
-
-
-                            <td class="px-6 py-5">
-
-                                <span
-                                    class="
-                                        inline-flex
-                                        items-center
-                                        gap-2
-                                        rounded-full
-                                        bg-[#FFF8E1]
-                                        px-3
-                                        py-1
-                                        text-xs
-                                        font-semibold
-                                        text-[#9A7000]
-                                    "
-                                >
-
-                                    <span
+                                    <p
                                         class="
-                                            h-1.5
-                                            w-1.5
-                                            rounded-full
-                                            bg-[#D4A017]
+                                            mt-1
+                                            text-xs
+                                            text-gray-400
                                         "
-                                    ></span>
+                                    >
+                                        There are currently no active students
+                                        available in the database.
+                                    </p>
 
-                                    Needs Review
+                                </td>
 
-                                </span>
+                            </tr>
 
-                            </td>
-
-                        </tr>
-
+                        @endforelse
 
                     </tbody>
 
@@ -1102,34 +1250,50 @@
             </div>
 
 
+
             {{-- TABLE FOOTER --}}
 
             <div
                 class="
-                    flex
-                    flex-col
-                    gap-2
                     border-t
                     border-gray-100
                     bg-gray-50/50
                     px-6
                     py-4
-                    text-xs
-                    text-gray-400
-                    sm:flex-row
-                    sm:items-center
-                    sm:justify-between
                 "
             >
 
-                <span>
-                    Showing participation records
-                </span>
+                <div
+                    class="
+                        flex
+                        flex-col
+                        gap-4
+                        lg:flex-row
+                        lg:items-center
+                        lg:justify-between
+                    "
+                >
+
+                    <p
+                        class="
+                            text-xs
+                            text-gray-400
+                        "
+                    >
+                        Showing student participation records
+                        from the current DySign database.
+                    </p>
 
 
-                <span>
-                    DySign • Student Event Participation
-                </span>
+                    @if(isset($records) && $records->hasPages())
+
+                        <div class="text-sm">
+                            {{ $records->links() }}
+                        </div>
+
+                    @endif
+
+                </div>
 
             </div>
 
@@ -1139,6 +1303,5 @@
 
 
 </div>
-
 
 </x-admin-layout>

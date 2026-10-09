@@ -62,4 +62,14 @@ class Announcement extends Model
             'announcement_id'
         );
     }
+
+
+    public function attachments()
+    {
+        return $this->hasMany(
+            AnnouncementAttachment::class,
+            'announcement_id',
+            'announcement_id'
+        );
+    }
 }

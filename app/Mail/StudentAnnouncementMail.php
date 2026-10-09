@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Models\Announcement;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -9,46 +10,71 @@ use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Storage;
 
-class StudentAnnouncementMail extends Mailable
+class StudentAnnouncementMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
-    /**
-     * Create a new message instance.
-     */
-    public function __construct()
-    {
+    public function __construct(
+        public Announcement $announcement,
+        public string $recipientName,
+        public array $files = []
+    ) {
         //
     }
 
-    /**
-     * Get the message envelope.
-     */
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Student Announcement Mail',
+            subject: $this->announcement->subject,
         );
     }
 
-    /**
-     * Get the message content definition.
-     */
     public function content(): Content
     {
         return new Content(
-            view: 'view.name',
+            view: 'emails.student-announcement',
+            with: [
+                'announcement' => $this->announcement,
+                'recipientName' => $this->recipientName,
+            ],
         );
     }
 
-    /**
-     * Get the attachments for the message.
-     *
-     * @return array<int, Attachment>
-     */
     public function attachments(): array
     {
-        return [];
+        $attachments = [];
+
+        foreach ($this->files as $file) {
+
+            if (empty($file['path'])) {
+                continue;
+            }
+
+            if (!Storage::disk('local')->exists($file['path'])) {
+                continue;
+            }
+
+            $attachment = Attachment::fromPath(
+                Storage::disk('local')->path($file['path'])
+            );
+
+            if (!empty($file['name'])) {
+                $attachment = $attachment->as(
+                    $file['name']
+                );
+            }
+
+            if (!empty($file['mime'])) {
+                $attachment = $attachment->withMime(
+                    $file['mime']
+                );
+            }
+
+            $attachments[] = $attachment;
+        }
+
+        return $attachments;
     }
 }
