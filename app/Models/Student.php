@@ -6,31 +6,34 @@ use Illuminate\Database\Eloquent\Model;
 
 class Student extends Model
 {
-
     protected $primaryKey = 'student_id';
 
+    protected $fillable = [
+        'student_number',
+        'first_name',
+        'middle_name',
+        'last_name',
+        'college',
+        'program_name',
+        'program_code',
+        'year_level',
+        'student_status',
+        'rfid_identifier',
 
-   protected $fillable = [
-    'student_number',
-    'first_name',
-    'middle_name',
-    'last_name',
-    'college',
-    'program_name',
-    'program_code',
-    'year_level',
-    'student_status',
-    'rfid_identifier',
-    'status',
-];
+        // NEW
+        'email',
+        'photo_path',
+
+        'status',
+    ];
 
 
-public function attendanceRecords()
-{
-    return $this->hasMany(
-        AttendanceRecord::class,
-        'student_id',
-        'student_id'
-    );
-}
+    public function attendanceRecords()
+    {
+        return $this->hasMany(
+            AttendanceRecord::class,
+            'student_id',
+            'student_id'
+        );
+    }
 }

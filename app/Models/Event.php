@@ -51,12 +51,30 @@ class Event extends Model
     }
 
 
+    public function assignedPersonnel()
+    {
+        return $this->belongsToMany(
+            Personnel::class,
+            'event_assignments',
+            'event_id',
+            'personnel_id',
+            'event_id',
+            'personnel_id'
+        )
+        ->withPivot([
+            'assignment_id',
+            'assigned_by',
+        ])
+        ->withTimestamps();
+    }
+
+
     public function attendanceRecords()
-{
-    return $this->hasMany(
-        AttendanceRecord::class,
-        'event_id',
-        'event_id'
-    );
-}
+    {
+        return $this->hasMany(
+            AttendanceRecord::class,
+            'event_id',
+            'event_id'
+        );
+    }
 }

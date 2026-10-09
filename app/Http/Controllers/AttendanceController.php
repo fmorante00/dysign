@@ -20,7 +20,10 @@ class AttendanceController extends Controller
 
     public function index($event)
     {
-        $event = $this->assignedEvent($event);
+        $event =
+            $this->assignedEvent(
+                $event
+            );
 
 
         /*
@@ -32,7 +35,10 @@ class AttendanceController extends Controller
         if (!$this->canScan($event)) {
 
             return redirect()
-                ->route('my-events.show', $event->event_id)
+                ->route(
+                    'my-events.show',
+                    $event->event_id
+                )
                 ->with(
                     'error',
                     'Attendance scanning is no longer available for this event.'
@@ -50,24 +56,31 @@ class AttendanceController extends Controller
         |
         */
 
-        $attendanceCount = AttendanceRecord::where(
-            'event_id',
-            $event->event_id
-        )
-        ->count();
+        $attendanceCount =
+            AttendanceRecord::where(
+                'event_id',
+                $event->event_id
+            )
+            ->count();
 
 
-        $attendanceRecords = AttendanceRecord::with('student')
+        $attendanceRecords =
+            AttendanceRecord::with(
+                'student'
+            )
             ->where(
                 'event_id',
                 $event->event_id
             )
-            ->orderByDesc('time_in')
+            ->orderByDesc(
+                'time_in'
+            )
             ->take(20)
             ->get();
 
 
-        $latestAttendance = $attendanceRecords->first();
+        $latestAttendance =
+            $attendanceRecords->first();
 
 
         return view(
@@ -82,18 +95,21 @@ class AttendanceController extends Controller
     }
 
 
-
-
-
     /*
     |--------------------------------------------------------------------------
     | Scan RFID
     |--------------------------------------------------------------------------
     */
 
-    public function scan(Request $request, $event)
-    {
-        $event = $this->assignedEvent($event);
+    public function scan(
+        Request $request,
+        $event
+    ) {
+
+        $event =
+            $this->assignedEvent(
+                $event
+            );
 
 
         /*
@@ -105,9 +121,16 @@ class AttendanceController extends Controller
         if (!$this->canScan($event)) {
 
             return response()->json([
-                'success' => false,
-                'code' => 'event_closed',
-                'message' => 'Attendance scanning is not available for this event.',
+
+                'success' =>
+                    false,
+
+                'code' =>
+                    'event_closed',
+
+                'message' =>
+                    'Attendance scanning is not available for this event.',
+
             ], 409);
         }
 
@@ -123,39 +146,56 @@ class AttendanceController extends Controller
         */
 
         $rfid = trim(
+
             (string) $request->input(
                 'rfid_identifier',
                 ''
             )
+
         );
 
 
-        $validator = Validator::make(
-            [
-                'rfid_identifier' => $rfid,
-            ],
-            [
-                'rfid_identifier' => [
-                    'required',
-                    'string',
-                    'regex:/^\d{10}$/',
+        $validator =
+            Validator::make(
+
+                [
+                    'rfid_identifier' =>
+                        $rfid,
                 ],
-            ],
-            [
-                'rfid_identifier.regex' =>
-                    'The RFID must contain exactly 10 digits.',
-            ]
-        );
+
+                [
+                    'rfid_identifier' => [
+                        'required',
+                        'string',
+                        'regex:/^\d{10}$/',
+                    ],
+                ],
+
+                [
+                    'rfid_identifier.regex' =>
+                        'The RFID must contain exactly 10 digits.',
+                ]
+
+            );
 
 
         if ($validator->fails()) {
 
             return response()->json([
-                'success' => false,
-                'code' => 'invalid_rfid',
-                'message' => $validator
-                    ->errors()
-                    ->first('rfid_identifier'),
+
+                'success' =>
+                    false,
+
+                'code' =>
+                    'invalid_rfid',
+
+                'message' =>
+                    $validator
+                        ->errors()
+                        ->first(
+                            'rfid_identifier'
+                        ),
+
             ], 422);
         }
 
@@ -166,163 +206,231 @@ class AttendanceController extends Controller
         |--------------------------------------------------------------------------
         |
         | The student row is locked while checking/creating attendance.
-        | This helps prevent two scanner requests for the same student from
-        | creating duplicate records at the same time.
+        | This helps prevent two scanner requests for the same student
+        | from creating duplicate records at the same time.
         |
         */
 
-        return DB::transaction(function () use ($event, $rfid) {
-
-            $student = Student::where(
-                'rfid_identifier',
+        return DB::transaction(
+            function () use (
+                $event,
                 $rfid
-            )
-            ->lockForUpdate()
-            ->first();
+            ) {
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | RFID Not Registered
-            |--------------------------------------------------------------------------
-            */
+                $student =
+                    Student::where(
+                        'rfid_identifier',
+                        $rfid
+                    )
+                    ->lockForUpdate()
+                    ->first();
 
-            if (!$student) {
-
-                return response()->json([
-                    'success' => false,
-                    'code' => 'student_not_found',
-                    'message' => 'Student not found.',
-                ], 404);
-            }
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Inactive Student
-            |--------------------------------------------------------------------------
-            */
-
-            if ($student->status !== 'Active') {
-
-                return response()->json([
-                    'success' => false,
-                    'code' => 'student_inactive',
-                    'message' => 'This student account is inactive.',
-                ], 422);
-            }
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Duplicate Attendance Check
-            |--------------------------------------------------------------------------
-            */
-
-            $existing = AttendanceRecord::with('student')
-                ->where(
-                    'event_id',
-                    $event->event_id
-                )
-                ->where(
-                    'student_id',
-                    $student->student_id
-                )
-                ->first();
-
-
-            if ($existing) {
-
-                return response()->json([
-                    'success' => false,
-                    'code' => 'already_recorded',
-                    'message' => 'Student already recorded.',
-                    'student' => $this->studentPayload($student),
-                    'attendance' => $this->attendancePayload($existing),
-                    'record' => $this->recordPayload($existing),
-                ], 409);
-            }
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Create Attendance Record
-            |--------------------------------------------------------------------------
-            */
-
-            $attendance = AttendanceRecord::create([
-
-                'event_id' => $event->event_id,
-
-                'student_id' => $student->student_id,
-
-                'rfid_identifier' => $rfid,
-
-                'time_in' => now(),
-
-                'status' => 'Present',
-
-                'scanned_by' => auth()->user()->user_id,
-
-            ]);
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Attach Student For Response
-            |--------------------------------------------------------------------------
-            */
-
-            $attendance->setRelation(
-                'student',
-                $student
-            );
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Updated Attendance Count
-            |--------------------------------------------------------------------------
-            */
-
-            $attendanceCount = AttendanceRecord::where(
-                'event_id',
-                $event->event_id
-            )
-            ->count();
-
-
-            return response()->json([
-
-                'success' => true,
-
-                'code' => 'attendance_recorded',
-
-                'message' => 'Attendance recorded.',
 
                 /*
-                 * Kept for compatibility with the current scanner page.
-                 */
+                |--------------------------------------------------------------------------
+                | RFID Not Registered
+                |--------------------------------------------------------------------------
+                */
 
-                'student' => $this->studentPayload($student),
+                if (!$student) {
 
-                'attendance' => $this->attendancePayload($attendance),
+                    return response()->json([
+
+                        'success' =>
+                            false,
+
+                        'code' =>
+                            'student_not_found',
+
+                        'message' =>
+                            'Student not found.',
+
+                    ], 404);
+                }
+
 
                 /*
-                 * New normalized response used by the improved live feed.
-                 */
+                |--------------------------------------------------------------------------
+                | Inactive Student
+                |--------------------------------------------------------------------------
+                */
 
-                'record' => $this->recordPayload($attendance),
+                if (
+                    $student->status
+                    !== 'Active'
+                ) {
 
-                'total_count' => $attendanceCount,
+                    return response()->json([
 
-            ], 201);
+                        'success' =>
+                            false,
 
-        });
+                        'code' =>
+                            'student_inactive',
+
+                        'message' =>
+                            'This student account is inactive.',
+
+                    ], 422);
+                }
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Duplicate Attendance Check
+                |--------------------------------------------------------------------------
+                */
+
+                $existing =
+                    AttendanceRecord::with(
+                        'student'
+                    )
+                    ->where(
+                        'event_id',
+                        $event->event_id
+                    )
+                    ->where(
+                        'student_id',
+                        $student->student_id
+                    )
+                    ->first();
+
+
+                if ($existing) {
+
+                    return response()->json([
+
+                        'success' =>
+                            false,
+
+                        'code' =>
+                            'already_recorded',
+
+                        'message' =>
+                            'Student already recorded.',
+
+                        'student' =>
+                            $this->studentPayload(
+                                $student
+                            ),
+
+                        'attendance' =>
+                            $this->attendancePayload(
+                                $existing
+                            ),
+
+                        'record' =>
+                            $this->recordPayload(
+                                $existing
+                            ),
+
+                    ], 409);
+                }
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Create Attendance Record
+                |--------------------------------------------------------------------------
+                */
+
+                $attendance =
+                    AttendanceRecord::create([
+
+                        'event_id' =>
+                            $event->event_id,
+
+                        'student_id' =>
+                            $student->student_id,
+
+                        'rfid_identifier' =>
+                            $rfid,
+
+                        'time_in' =>
+                            now(),
+
+                        'status' =>
+                            'Present',
+
+                        'scanned_by' =>
+                            auth()
+                                ->user()
+                                ->user_id,
+
+                    ]);
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Attach Student For Response
+                |--------------------------------------------------------------------------
+                */
+
+                $attendance->setRelation(
+                    'student',
+                    $student
+                );
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Updated Attendance Count
+                |--------------------------------------------------------------------------
+                */
+
+                $attendanceCount =
+                    AttendanceRecord::where(
+                        'event_id',
+                        $event->event_id
+                    )
+                    ->count();
+
+
+                return response()->json([
+
+                    'success' =>
+                        true,
+
+                    'code' =>
+                        'attendance_recorded',
+
+                    'message' =>
+                        'Attendance recorded.',
+
+
+                    /*
+                     * Kept for compatibility with the current scanner page.
+                     */
+
+                    'student' =>
+                        $this->studentPayload(
+                            $student
+                        ),
+
+                    'attendance' =>
+                        $this->attendancePayload(
+                            $attendance
+                        ),
+
+
+                    /*
+                     * Normalized response used by the live feed.
+                     */
+
+                    'record' =>
+                        $this->recordPayload(
+                            $attendance
+                        ),
+
+                    'total_count' =>
+                        $attendanceCount,
+
+                ], 201);
+
+            }
+        );
     }
-
-
-
 
 
     /*
@@ -330,58 +438,77 @@ class AttendanceController extends Controller
     | Live Attendance Feed
     |--------------------------------------------------------------------------
     |
-    | This endpoint will be used by the scanner page to refresh the live feed
-    | when another computer records attendance for the same event.
+    | This endpoint is used by the scanner page to refresh
+    | the live feed.
     |
     */
 
     public function feed($event)
     {
-        $event = $this->assignedEvent($event);
+        $event =
+            $this->assignedEvent(
+                $event
+            );
 
 
-        $attendanceCount = AttendanceRecord::where(
-            'event_id',
-            $event->event_id
-        )
-        ->count();
+        $attendanceCount =
+            AttendanceRecord::where(
+                'event_id',
+                $event->event_id
+            )
+            ->count();
 
 
-        $attendanceRecords = AttendanceRecord::with('student')
+        $attendanceRecords =
+            AttendanceRecord::with(
+                'student'
+            )
             ->where(
                 'event_id',
                 $event->event_id
             )
-            ->orderByDesc('time_in')
+            ->orderByDesc(
+                'time_in'
+            )
             ->take(20)
             ->get();
 
 
         return response()->json([
 
-            'success' => true,
+            'success' =>
+                true,
 
-            'event_id' => $event->event_id,
+            'event_id' =>
+                $event->event_id,
 
-            'event_status' => $event->status,
+            'event_status' =>
+                $event->status,
 
-            'scannable' => $this->canScan($event),
+            'scannable' =>
+                $this->canScan(
+                    $event
+                ),
 
-            'total_count' => $attendanceCount,
+            'total_count' =>
+                $attendanceCount,
 
-            'records' => $attendanceRecords
-                ->map(function ($record) {
+            'records' =>
+                $attendanceRecords
+                    ->map(
+                        function ($record) {
 
-                    return $this->recordPayload($record);
+                            return
+                                $this->recordPayload(
+                                    $record
+                                );
 
-                })
-                ->values(),
+                        }
+                    )
+                    ->values(),
 
         ]);
     }
-
-
-
 
 
     /*
@@ -389,17 +516,21 @@ class AttendanceController extends Controller
     | Assigned Event Authorization
     |--------------------------------------------------------------------------
     |
-    | Attendance Personnel may only access events assigned to their own
-    | personnel record.
+    | Attendance Personnel may only access events assigned
+    | to their own personnel record.
     |
     */
 
-    private function assignedEvent($event): Event
-    {
-        $user = auth()->user();
+    private function assignedEvent(
+        $event
+    ): Event {
+
+        $user =
+            auth()->user();
 
 
-        $personnel = $user->personnel;
+        $personnel =
+            $user->personnel;
 
 
         if (!$personnel) {
@@ -411,27 +542,29 @@ class AttendanceController extends Controller
         }
 
 
-        return Event::with('department')
-            ->where(
-                'event_id',
-                $event
-            )
-            ->whereHas(
-                'assignments',
-                function ($query) use ($personnel) {
+        return Event::with(
+            'department'
+        )
+        ->where(
+            'event_id',
+            $event
+        )
+        ->whereHas(
+            'assignments',
+            function ($query) use (
+                $personnel
+            ) {
 
-                    $query->where(
-                        'personnel_id',
-                        $personnel->personnel_id
-                    );
+                $query->where(
+                    'personnel_id',
+                    $personnel
+                        ->personnel_id
+                );
 
-                }
-            )
-            ->firstOrFail();
+            }
+        )
+        ->firstOrFail();
     }
-
-
-
 
 
     /*
@@ -440,20 +573,23 @@ class AttendanceController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    private function canScan(Event $event): bool
-    {
+    private function canScan(
+        Event $event
+    ): bool {
+
         return in_array(
+
             $event->status,
+
             [
                 'Upcoming',
                 'Ongoing',
             ],
+
             true
+
         );
     }
-
-
-
 
 
     /*
@@ -461,12 +597,14 @@ class AttendanceController extends Controller
     | Student Response
     |--------------------------------------------------------------------------
     |
-    | Only send information that the attendance screen actually needs.
+    | Only send information that the attendance screen needs.
     |
     */
 
-    private function studentPayload(Student $student): array
-    {
+    private function studentPayload(
+        Student $student
+    ): array {
+
         return [
 
             'student_id' =>
@@ -491,9 +629,6 @@ class AttendanceController extends Controller
     }
 
 
-
-
-
     /*
     |--------------------------------------------------------------------------
     | Attendance Response
@@ -504,33 +639,39 @@ class AttendanceController extends Controller
         AttendanceRecord $attendance
     ): array {
 
-        $timeIn = Carbon::parse(
-            $attendance->time_in
-        );
+        $timeIn =
+            Carbon::parse(
+                $attendance->time_in
+            );
 
 
         return [
 
             'attendance_id' =>
-                $attendance->attendance_id,
+                $attendance
+                    ->attendance_id,
 
             'time_in' =>
-                $timeIn->toIso8601String(),
+                $timeIn
+                    ->toIso8601String(),
 
             'time_display' =>
-                $timeIn->format('h:i A'),
+                $timeIn
+                    ->format(
+                        'h:i A'
+                    ),
 
             'date_display' =>
-                $timeIn->format('M d, Y'),
+                $timeIn
+                    ->format(
+                        'M d, Y'
+                    ),
 
             'status' =>
                 $attendance->status,
 
         ];
     }
-
-
-
 
 
     /*
@@ -543,42 +684,57 @@ class AttendanceController extends Controller
         AttendanceRecord $record
     ): array {
 
-        $student = $record->student;
+        $student =
+            $record->student;
 
 
-        $timeIn = Carbon::parse(
-            $record->time_in
-        );
+        $timeIn =
+            Carbon::parse(
+                $record->time_in
+            );
 
 
         return [
 
             'attendance_id' =>
-                $record->attendance_id,
+                $record
+                    ->attendance_id,
 
             'student_number' =>
-                $student?->student_number,
+                $student
+                    ?->student_number,
 
             'first_name' =>
-                $student?->first_name,
+                $student
+                    ?->first_name,
 
             'last_name' =>
-                $student?->last_name,
+                $student
+                    ?->last_name,
 
             'program_code' =>
-                $student?->program_code,
+                $student
+                    ?->program_code,
 
             'program_name' =>
-                $student?->program_name,
+                $student
+                    ?->program_name,
 
             'time_in' =>
-                $timeIn->toIso8601String(),
+                $timeIn
+                    ->toIso8601String(),
 
             'time_display' =>
-                $timeIn->format('h:i A'),
+                $timeIn
+                    ->format(
+                        'h:i A'
+                    ),
 
             'date_display' =>
-                $timeIn->format('M d, Y'),
+                $timeIn
+                    ->format(
+                        'M d, Y'
+                    ),
 
             'status' =>
                 $record->status,
