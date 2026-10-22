@@ -8,7 +8,6 @@ use App\Models\Personnel;
 
 class MyAssignedEventsController extends Controller
 {
-
     /*
     |--------------------------------------------------------------------------
     | My Assigned Events
@@ -17,7 +16,27 @@ class MyAssignedEventsController extends Controller
 
     public function index()
     {
-        $personnel = $this->attendancePersonnel();
+        /*
+        |--------------------------------------------------------------------------
+        | Synchronize Event Statuses
+        |--------------------------------------------------------------------------
+        |
+        | Before loading assigned events, automatically update event statuses
+        | based on their scheduled date, start time, and end time.
+        |
+        */
+
+        Event::syncScheduledStatuses();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Validate Attendance Personnel
+        |--------------------------------------------------------------------------
+        */
+
+        $personnel =
+            $this->attendancePersonnel();
 
 
         /*
@@ -26,6 +45,7 @@ class MyAssignedEventsController extends Controller
         |--------------------------------------------------------------------------
         |
         | Priority:
+        |
         | 1. Ongoing
         | 2. Upcoming
         | 3. Completed
@@ -33,30 +53,37 @@ class MyAssignedEventsController extends Controller
         |
         */
 
-        $events = Event::whereHas(
-            'assignments',
-            function ($query) use ($personnel) {
+        $events =
+            Event::whereHas(
+                'assignments',
+                function ($query) use ($personnel) {
 
-                $query->where(
-                    'personnel_id',
-                    $personnel->personnel_id
-                );
+                    $query->where(
+                        'personnel_id',
+                        $personnel->personnel_id
+                    );
 
-            }
-        )
-        ->with('department')
-        ->orderByRaw("
-            CASE status
-                WHEN 'Ongoing' THEN 1
-                WHEN 'Upcoming' THEN 2
-                WHEN 'Completed' THEN 3
-                WHEN 'Cancelled' THEN 4
-                ELSE 5
-            END
-        ")
-        ->orderBy('event_date')
-        ->orderBy('start_time')
-        ->get();
+                }
+            )
+            ->with(
+                'department'
+            )
+            ->orderByRaw("
+                CASE status
+                    WHEN 'Ongoing' THEN 1
+                    WHEN 'Upcoming' THEN 2
+                    WHEN 'Completed' THEN 3
+                    WHEN 'Cancelled' THEN 4
+                    ELSE 5
+                END
+            ")
+            ->orderBy(
+                'event_date'
+            )
+            ->orderBy(
+                'start_time'
+            )
+            ->get();
 
 
         /*
@@ -64,33 +91,41 @@ class MyAssignedEventsController extends Controller
         | Attendance Counts
         |--------------------------------------------------------------------------
         |
-        | We calculate attendance counts directly from attendance_records so
-        | this does not depend on an Event attendance relationship.
+        | Attendance counts are calculated directly from attendance_records.
         |
         */
 
-        $eventIds = $events
-            ->pluck('event_id')
-            ->values();
+        $eventIds =
+            $events
+                ->pluck(
+                    'event_id'
+                )
+                ->values();
 
 
-        $attendanceCounts = collect();
+        $attendanceCounts =
+            collect();
 
 
-        if ($eventIds->isNotEmpty()) {
+        if (
+            $eventIds->isNotEmpty()
+        ) {
 
-            $attendanceCounts = AttendanceRecord::selectRaw(
-                'event_id, COUNT(*) as total'
-            )
-            ->whereIn(
-                'event_id',
-                $eventIds
-            )
-            ->groupBy('event_id')
-            ->pluck(
-                'total',
-                'event_id'
-            );
+            $attendanceCounts =
+                AttendanceRecord::selectRaw(
+                    'event_id, COUNT(*) as total'
+                )
+                ->whereIn(
+                    'event_id',
+                    $eventIds
+                )
+                ->groupBy(
+                    'event_id'
+                )
+                ->pluck(
+                    'total',
+                    'event_id'
+                );
 
         }
 
@@ -101,34 +136,56 @@ class MyAssignedEventsController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $events->each(function ($event) use ($attendanceCounts) {
+        $events->each(
+            function ($event) use ($attendanceCounts) {
 
-            $event->setAttribute(
-                'attendance_count',
-                (int) (
-                    $attendanceCounts[
-                        $event->event_id
-                    ] ?? 0
-                )
-            );
+                /*
+                |--------------------------------------------------------------------------
+                | Attendance Count
+                |--------------------------------------------------------------------------
+                */
+
+                $event->setAttribute(
+                    'attendance_count',
+                    (int) (
+                        $attendanceCounts[
+                            $event->event_id
+                        ]
+                        ?? 0
+                    )
+                );
 
 
-            $event->setAttribute(
-                'can_scan',
-                $this->canScan($event)
-            );
+                /*
+                |--------------------------------------------------------------------------
+                | Scanner Availability
+                |--------------------------------------------------------------------------
+                */
 
-        });
+                $event->setAttribute(
+                    'can_scan',
+                    $this->canScan(
+                        $event
+                    )
+                );
 
+            }
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Display Assigned Events
+        |--------------------------------------------------------------------------
+        */
 
         return view(
             'my-events.index',
-            compact('events')
+            compact(
+                'events'
+            )
         );
     }
-
-
-
 
 
     /*
@@ -139,7 +196,23 @@ class MyAssignedEventsController extends Controller
 
     public function show($event)
     {
-        $personnel = $this->attendancePersonnel();
+        /*
+        |--------------------------------------------------------------------------
+        | Synchronize Event Statuses
+        |--------------------------------------------------------------------------
+        */
+
+        Event::syncScheduledStatuses();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Validate Attendance Personnel
+        |--------------------------------------------------------------------------
+        */
+
+        $personnel =
+            $this->attendancePersonnel();
 
 
         /*
@@ -148,9 +221,36 @@ class MyAssignedEventsController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $event = $this->assignedEvent(
-            $event,
-            $personnel
+        $event =
+            $this->assignedEvent(
+                $event,
+                $personnel
+            );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Synchronize Selected Event
+        |--------------------------------------------------------------------------
+        |
+        | This provides an additional check in case the event schedule changed
+        | immediately before this page was opened.
+        |
+        */
+
+        $event->syncScheduledStatus();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Refresh Event Data
+        |--------------------------------------------------------------------------
+        */
+
+        $event->refresh();
+
+        $event->load(
+            'department'
         );
 
 
@@ -160,11 +260,12 @@ class MyAssignedEventsController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $attendanceCount = AttendanceRecord::where(
-            'event_id',
-            $event->event_id
-        )
-        ->count();
+        $attendanceCount =
+            AttendanceRecord::where(
+                'event_id',
+                $event->event_id
+            )
+            ->count();
 
 
         /*
@@ -173,8 +274,17 @@ class MyAssignedEventsController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $canScan = $this->canScan($event);
+        $canScan =
+            $this->canScan(
+                $event
+            );
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Display Event
+        |--------------------------------------------------------------------------
+        */
 
         return view(
             'my-events.show',
@@ -187,43 +297,67 @@ class MyAssignedEventsController extends Controller
     }
 
 
-
-
-
     /*
     |--------------------------------------------------------------------------
     | Validate Attendance Personnel Account
     |--------------------------------------------------------------------------
     |
-    | This protects the controller even before route-level middleware is
-    | cleaned up.
+    | Ensures that only an authenticated Attendance Personnel account with
+    | a linked personnel profile can access this module.
     |
     */
 
     private function attendancePersonnel(): Personnel
     {
-        $user = auth()->user();
+        $user =
+            auth()->user();
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Authentication Check
+        |--------------------------------------------------------------------------
+        */
 
         if (!$user) {
 
-            abort(403);
+            abort(
+                403
+            );
 
         }
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | Role Check
+        |--------------------------------------------------------------------------
+        */
+
         if (
-            ($user->role->role_name ?? null)
+            (
+                $user->role->role_name
+                ?? null
+            )
             !==
             'Attendance Personnel'
         ) {
 
-            abort(403);
+            abort(
+                403
+            );
 
         }
 
 
-        $personnel = $user->personnel;
+        /*
+        |--------------------------------------------------------------------------
+        | Personnel Profile
+        |--------------------------------------------------------------------------
+        */
+
+        $personnel =
+            $user->personnel;
 
 
         if (!$personnel) {
@@ -238,9 +372,6 @@ class MyAssignedEventsController extends Controller
 
         return $personnel;
     }
-
-
-
 
 
     /*
@@ -269,22 +400,27 @@ class MyAssignedEventsController extends Controller
 
             }
         )
-        ->with('department')
+        ->with(
+            'department'
+        )
         ->firstOrFail();
     }
-
-
-
 
 
     /*
     |--------------------------------------------------------------------------
     | Scanner Availability
     |--------------------------------------------------------------------------
+    |
+    | Scanner access is available for upcoming and ongoing assignments.
+    | Completed and cancelled events cannot open an active scanner session.
+    |
     */
 
-    private function canScan(Event $event): bool
-    {
+    private function canScan(
+        Event $event
+    ): bool {
+
         return in_array(
             $event->status,
             [

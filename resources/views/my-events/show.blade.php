@@ -4,59 +4,178 @@
 
     $timezone = 'Asia/Manila';
 
-    $startsAt = \Carbon\Carbon::parse(
-        $event->event_date . ' ' . $event->start_time,
-        $timezone
-    );
 
-    $endsAt = \Carbon\Carbon::parse(
-        $event->event_date . ' ' . $event->end_time,
-        $timezone
-    );
+    /*
+    |--------------------------------------------------------------------------
+    | Safe Event Date/Time Parsing
+    |--------------------------------------------------------------------------
+    |
+    | event_date is cast as a date in the Event model, so Laravel may return:
+    |
+    | 2026-10-05 00:00:00
+    |
+    | We normalize the date and time separately before combining them.
+    |
+    */
 
-    $now = \Carbon\Carbon::now($timezone);
+    $eventDate =
+        \Carbon\Carbon::parse(
+            $event->event_date
+        )->format('Y-m-d');
 
-    $effectiveStatus = match (true) {
-        $event->status === 'Cancelled' => 'Cancelled',
-        $now->lt($startsAt) => 'Upcoming',
-        $now->lte($endsAt) => 'Ongoing',
-        default => 'Completed',
-    };
 
-    $canScan = $effectiveStatus === 'Ongoing';
+    $startTime =
+        \Carbon\Carbon::parse(
+            $event->start_time
+        )->format('H:i:s');
 
-    $attendanceCount = $attendanceCount
+
+    $endTime =
+        \Carbon\Carbon::parse(
+            $event->end_time
+        )->format('H:i:s');
+
+
+    $startsAt =
+        \Carbon\Carbon::createFromFormat(
+            'Y-m-d H:i:s',
+            $eventDate
+            . ' '
+            . $startTime,
+            $timezone
+        );
+
+
+    $endsAt =
+        \Carbon\Carbon::createFromFormat(
+            'Y-m-d H:i:s',
+            $eventDate
+            . ' '
+            . $endTime,
+            $timezone
+        );
+
+
+    $now =
+        \Carbon\Carbon::now(
+            $timezone
+        );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Effective Event Status
+    |--------------------------------------------------------------------------
+    */
+
+    $effectiveStatus =
+        match (true) {
+
+            $event->status === 'Cancelled'
+                => 'Cancelled',
+
+            $now->lt($startsAt)
+                => 'Upcoming',
+
+            $now->lte($endsAt)
+                => 'Ongoing',
+
+            default
+                => 'Completed',
+
+        };
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Scanner Availability
+    |--------------------------------------------------------------------------
+    */
+
+    $canScan =
+        $effectiveStatus
+        === 'Ongoing';
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Attendance Count
+    |--------------------------------------------------------------------------
+    */
+
+    $attendanceCount =
+        $attendanceCount
         ?? \App\Models\AttendanceRecord::where(
             'event_id',
             $event->event_id
         )->count();
 
-    $statusConfig = match ($effectiveStatus) {
-        'Ongoing' => [
-            'label' => 'Ongoing',
-            'class' => 'bg-green-400/20 text-green-100',
-            'dot' => 'bg-green-400',
-        ],
-        'Upcoming' => [
-            'label' => 'Upcoming',
-            'class' => 'bg-[#D4A017]/20 text-[#F7E6A7]',
-            'dot' => 'bg-[#D4A017]',
-        ],
-        'Completed' => [
-            'label' => 'Completed',
-            'class' => 'bg-white/15 text-white',
-            'dot' => 'bg-white/70',
-        ],
-        default => [
-            'label' => 'Cancelled',
-            'class' => 'bg-red-400/20 text-red-100',
-            'dot' => 'bg-red-400',
-        ],
-    };
+
+    /*
+    |--------------------------------------------------------------------------
+    | Status Style
+    |--------------------------------------------------------------------------
+    */
+
+    $statusConfig =
+        match ($effectiveStatus) {
+
+            'Ongoing' => [
+                'label' =>
+                    'Ongoing',
+
+                'class' =>
+                    'bg-green-400/20 text-green-100',
+
+                'dot' =>
+                    'bg-green-400',
+            ],
+
+
+            'Upcoming' => [
+                'label' =>
+                    'Upcoming',
+
+                'class' =>
+                    'bg-[#D4A017]/20 text-[#F7E6A7]',
+
+                'dot' =>
+                    'bg-[#D4A017]',
+            ],
+
+
+            'Completed' => [
+                'label' =>
+                    'Completed',
+
+                'class' =>
+                    'bg-white/15 text-white',
+
+                'dot' =>
+                    'bg-white/70',
+            ],
+
+
+            default => [
+                'label' =>
+                    'Cancelled',
+
+                'class' =>
+                    'bg-red-400/20 text-red-100',
+
+                'dot' =>
+                    'bg-red-400',
+            ],
+
+        };
+
 @endphp
 
+
 <style>
+
     .assigned-event-hero {
+
         background:
             linear-gradient(
                 100deg,
@@ -67,13 +186,21 @@
             url('{{ asset('images/school.jpg') }}');
 
         background-size: cover;
+
         background-position: center;
+
     }
+
 </style>
+
 
 <div class="min-w-0 space-y-8">
 
+
+    {{-- ====================================================== --}}
     {{-- HERO --}}
+    {{-- ====================================================== --}}
+
     <section
         class="
             assigned-event-hero
@@ -88,7 +215,18 @@
             lg:py-10
         "
     >
-        <div class="absolute bottom-0 left-0 h-1 w-full bg-[#D4A017]"></div>
+
+        <div
+            class="
+                absolute
+                bottom-0
+                left-0
+                h-1
+                w-full
+                bg-[#D4A017]
+            "
+        ></div>
+
 
         <div
             class="
@@ -102,7 +240,9 @@
                 lg:justify-between
             "
         >
+
             <div class="min-w-0 max-w-3xl">
+
 
                 <p
                     class="
@@ -115,6 +255,7 @@
                 >
                     Attendance Operations
                 </p>
+
 
                 <h1
                     class="
@@ -129,6 +270,7 @@
                     {{ $event->event_name }}
                 </h1>
 
+
                 <div
                     class="
                         mt-5
@@ -140,24 +282,40 @@
                         text-white/75
                     "
                 >
+
                     <span>
-                        {{ \Carbon\Carbon::parse($event->event_date)->format('F d, Y') }}
+                        {{ $startsAt->format('F d, Y') }}
                     </span>
 
-                    <span class="text-white/30">•</span>
+
+                    <span class="text-white/30">
+                        •
+                    </span>
+
 
                     <span>
-                        {{ \Carbon\Carbon::parse($event->start_time)->format('g:i A') }}
+                        {{ $startsAt->format('g:i A') }}
+
                         –
-                        {{ \Carbon\Carbon::parse($event->end_time)->format('g:i A') }}
+
+                        {{ $endsAt->format('g:i A') }}
                     </span>
 
-                    <span class="text-white/30">•</span>
 
-                    <span>{{ $event->location }}</span>
+                    <span class="text-white/30">
+                        •
+                    </span>
+
+
+                    <span>
+                        {{ $event->location }}
+                    </span>
+
                 </div>
 
+
                 <div class="mt-5">
+
                     <span
                         class="
                             inline-flex
@@ -171,6 +329,7 @@
                             {{ $statusConfig['class'] }}
                         "
                     >
+
                         <span
                             class="
                                 h-1.5
@@ -180,18 +339,30 @@
                             "
                         ></span>
 
+
                         {{ $statusConfig['label'] }}
+
                     </span>
+
                 </div>
 
             </div>
 
+
+
             <div class="shrink-0">
+
 
                 @if($canScan)
 
+
                     <a
-                        href="{{ route('attendance.index', $event->event_id) }}"
+                        href="{{
+                            route(
+                                'attendance.index',
+                                $event->event_id
+                            )
+                        }}"
                         class="
                             inline-flex
                             items-center
@@ -208,24 +379,34 @@
                             hover:bg-white
                         "
                     >
+
                         <svg
-                            class="h-5 w-5"
+                            class="
+                                h-5
+                                w-5
+                            "
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
                         >
+
                             <path
                                 stroke-width="2"
                                 stroke-linecap="round"
                                 stroke-linejoin="round"
                                 d="M13 10V3L4 14h7v7l9-11h-7z"
                             />
+
                         </svg>
 
+
                         Open RFID Scanner
+
                     </a>
 
+
                 @elseif($effectiveStatus === 'Upcoming')
+
 
                     <div
                         class="
@@ -238,6 +419,7 @@
                             backdrop-blur-sm
                         "
                     >
+
                         <p
                             class="
                                 text-[10px]
@@ -250,12 +432,26 @@
                             Attendance Opens
                         </p>
 
-                        <p class="mt-1 font-semibold text-white">
-                            {{ $startsAt->format('M d, Y • g:i A') }}
+
+                        <p
+                            class="
+                                mt-1
+                                font-semibold
+                                text-white
+                            "
+                        >
+                            {{
+                                $startsAt->format(
+                                    'M d, Y • g:i A'
+                                )
+                            }}
                         </p>
+
                     </div>
 
+
                 @else
+
 
                     <div
                         class="
@@ -268,6 +464,7 @@
                             backdrop-blur-sm
                         "
                     >
+
                         <p
                             class="
                                 text-[10px]
@@ -280,22 +477,43 @@
                             Attendance Session
                         </p>
 
-                        <p class="mt-1 font-semibold text-white">
-                            {{ $effectiveStatus === 'Cancelled' ? 'Cancelled' : 'Closed' }}
+
+                        <p
+                            class="
+                                mt-1
+                                font-semibold
+                                text-white
+                            "
+                        >
+                            {{
+                                $effectiveStatus === 'Cancelled'
+                                    ? 'Cancelled'
+                                    : 'Closed'
+                            }}
                         </p>
+
                     </div>
+
 
                 @endif
 
             </div>
+
         </div>
+
     </section>
 
 
+
+    {{-- ====================================================== --}}
     {{-- SUMMARY --}}
+    {{-- ====================================================== --}}
+
     <section>
 
+
         <div class="mb-4">
+
             <p
                 class="
                     text-xs
@@ -308,14 +526,32 @@
                 Event Overview
             </p>
 
-            <h2 class="mt-2 text-xl font-bold text-[#101064]">
+
+            <h2
+                class="
+                    mt-2
+                    text-xl
+                    font-bold
+                    text-[#101064]
+                "
+            >
                 Attendance Session
             </h2>
 
-            <p class="mt-1 text-sm text-gray-500">
+
+            <p
+                class="
+                    mt-1
+                    text-sm
+                    text-gray-500
+                "
+            >
                 Review the assigned event and current attendance availability.
             </p>
+
         </div>
+
+
 
         <div
             class="
@@ -329,6 +565,9 @@
             "
         >
 
+
+            {{-- ATTENDANCE RECORDED --}}
+
             <div
                 class="
                     border-b
@@ -339,6 +578,7 @@
                     md:border-r
                 "
             >
+
                 <p
                     class="
                         text-[10px]
@@ -351,14 +591,42 @@
                     Attendance Recorded
                 </p>
 
-                <p class="mt-2 text-3xl font-bold text-[#101064]">
-                    {{ number_format($attendanceCount) }}
+
+                <p
+                    class="
+                        mt-2
+                        text-3xl
+                        font-bold
+                        text-[#101064]
+                    "
+                >
+                    {{
+                        number_format(
+                            $attendanceCount
+                        )
+                    }}
                 </p>
 
-                <p class="mt-1 text-xs text-gray-400">
-                    {{ $attendanceCount === 1 ? 'Student record' : 'Student records' }}
+
+                <p
+                    class="
+                        mt-1
+                        text-xs
+                        text-gray-400
+                    "
+                >
+                    {{
+                        $attendanceCount === 1
+                            ? 'Student record'
+                            : 'Student records'
+                    }}
                 </p>
+
             </div>
+
+
+
+            {{-- SCANNER STATUS --}}
 
             <div
                 class="
@@ -370,6 +638,7 @@
                     md:border-r
                 "
             >
+
                 <p
                     class="
                         text-[10px]
@@ -382,29 +651,67 @@
                     Scanner Status
                 </p>
 
+
                 <p
                     class="
                         mt-2
                         text-xl
                         font-bold
-                        {{ $canScan ? 'text-green-600' : 'text-gray-500' }}
+                        {{
+                            $canScan
+                                ? 'text-green-600'
+                                : 'text-gray-500'
+                        }}
                     "
                 >
-                    {{ $canScan ? 'Available' : 'Closed' }}
+                    {{
+                        $canScan
+                            ? 'Available'
+                            : 'Closed'
+                    }}
                 </p>
 
-                <p class="mt-1 text-xs text-gray-400">
+
+                <p
+                    class="
+                        mt-1
+                        text-xs
+                        text-gray-400
+                    "
+                >
+
                     @if($canScan)
+
                         RFID attendance may be recorded now.
-                    @elseif($effectiveStatus === 'Upcoming')
+
+                    @elseif(
+                        $effectiveStatus
+                        === 'Upcoming'
+                    )
+
                         Scanner opens automatically at the event start time.
+
                     @else
+
                         RFID attendance is no longer available.
+
                     @endif
+
                 </p>
+
             </div>
 
-            <div class="px-6 py-6">
+
+
+            {{-- DEPARTMENT --}}
+
+            <div
+                class="
+                    px-6
+                    py-6
+                "
+            >
+
                 <p
                     class="
                         text-[10px]
@@ -417,20 +724,47 @@
                     Department
                 </p>
 
-                <p class="mt-2 text-lg font-bold text-[#101064]">
-                    {{ $event->department->department_name ?? 'University-wide Event' }}
+
+                <p
+                    class="
+                        mt-2
+                        text-lg
+                        font-bold
+                        text-[#101064]
+                    "
+                >
+                    {{
+                        $event
+                            ->department
+                            ->department_name
+                        ?? 'University-wide Event'
+                    }}
                 </p>
 
-                <p class="mt-1 text-xs text-gray-400">
+
+                <p
+                    class="
+                        mt-1
+                        text-xs
+                        text-gray-400
+                    "
+                >
                     Assigned event
                 </p>
+
             </div>
 
+
         </div>
+
     </section>
 
 
+
+    {{-- ====================================================== --}}
     {{-- DETAILS --}}
+    {{-- ====================================================== --}}
+
     <section
         class="
             grid
@@ -440,6 +774,9 @@
         "
     >
 
+
+        {{-- EVENT INFORMATION --}}
+
         <div
             class="
                 overflow-hidden
@@ -448,7 +785,16 @@
                 bg-white
             "
         >
-            <div class="border-b border-gray-100 px-6 py-5">
+
+            <div
+                class="
+                    border-b
+                    border-gray-100
+                    px-6
+                    py-5
+                "
+            >
+
                 <p
                     class="
                         text-xs
@@ -461,46 +807,142 @@
                     Event Information
                 </p>
 
-                <h2 class="mt-2 text-xl font-bold text-[#101064]">
+
+                <h2
+                    class="
+                        mt-2
+                        text-xl
+                        font-bold
+                        text-[#101064]
+                    "
+                >
                     Assignment Details
                 </h2>
+
             </div>
+
+
 
             <div class="divide-y divide-gray-100">
 
-                <div class="px-6 py-5">
-                    <p class="text-xs font-semibold uppercase tracking-wider text-gray-400">
+
+                <div
+                    class="
+                        px-6
+                        py-5
+                    "
+                >
+
+                    <p
+                        class="
+                            text-xs
+                            font-semibold
+                            uppercase
+                            tracking-wider
+                            text-gray-400
+                        "
+                    >
                         Department
                     </p>
 
-                    <p class="mt-1 font-semibold text-gray-700">
-                        {{ $event->department->department_name ?? 'University-wide Event' }}
+
+                    <p
+                        class="
+                            mt-1
+                            font-semibold
+                            text-gray-700
+                        "
+                    >
+                        {{
+                            $event
+                                ->department
+                                ->department_name
+                            ?? 'University-wide Event'
+                        }}
                     </p>
+
                 </div>
 
-                <div class="px-6 py-5">
-                    <p class="text-xs font-semibold uppercase tracking-wider text-gray-400">
+
+
+                <div
+                    class="
+                        px-6
+                        py-5
+                    "
+                >
+
+                    <p
+                        class="
+                            text-xs
+                            font-semibold
+                            uppercase
+                            tracking-wider
+                            text-gray-400
+                        "
+                    >
                         Venue
                     </p>
 
-                    <p class="mt-1 font-semibold text-gray-700">
+
+                    <p
+                        class="
+                            mt-1
+                            font-semibold
+                            text-gray-700
+                        "
+                    >
                         {{ $event->location }}
                     </p>
+
                 </div>
 
-                <div class="px-6 py-5">
-                    <p class="text-xs font-semibold uppercase tracking-wider text-gray-400">
+
+
+                <div
+                    class="
+                        px-6
+                        py-5
+                    "
+                >
+
+                    <p
+                        class="
+                            text-xs
+                            font-semibold
+                            uppercase
+                            tracking-wider
+                            text-gray-400
+                        "
+                    >
                         Date
                     </p>
 
-                    <p class="mt-1 font-semibold text-gray-700">
-                        {{ \Carbon\Carbon::parse($event->event_date)->format('F d, Y') }}
+
+                    <p
+                        class="
+                            mt-1
+                            font-semibold
+                            text-gray-700
+                        "
+                    >
+                        {{
+                            $startsAt->format(
+                                'F d, Y'
+                            )
+                        }}
                     </p>
+
                 </div>
 
+
             </div>
+
         </div>
 
+
+
+        {{-- EVENT SCHEDULE --}}
 
         <div
             class="
@@ -510,7 +952,16 @@
                 bg-white
             "
         >
-            <div class="border-b border-gray-100 px-6 py-5">
+
+            <div
+                class="
+                    border-b
+                    border-gray-100
+                    px-6
+                    py-5
+                "
+            >
+
                 <p
                     class="
                         text-xs
@@ -523,12 +974,32 @@
                     Event Schedule
                 </p>
 
-                <h2 class="mt-2 text-xl font-bold text-[#101064]">
+
+                <h2
+                    class="
+                        mt-2
+                        text-xl
+                        font-bold
+                        text-[#101064]
+                    "
+                >
                     Attendance Window
                 </h2>
+
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2">
+
+
+            <div
+                class="
+                    grid
+                    grid-cols-1
+                    sm:grid-cols-2
+                "
+            >
+
+
+                {{-- START --}}
 
                 <div
                     class="
@@ -540,28 +1011,87 @@
                         sm:border-r
                     "
                 >
-                    <p class="text-xs font-semibold uppercase tracking-wider text-gray-400">
+
+                    <p
+                        class="
+                            text-xs
+                            font-semibold
+                            uppercase
+                            tracking-wider
+                            text-gray-400
+                        "
+                    >
                         Starts
                     </p>
 
-                    <p class="mt-2 text-2xl font-bold text-[#101064]">
-                        {{ $startsAt->format('g:i A') }}
+
+                    <p
+                        class="
+                            mt-2
+                            text-2xl
+                            font-bold
+                            text-[#101064]
+                        "
+                    >
+                        {{
+                            $startsAt->format(
+                                'g:i A'
+                            )
+                        }}
                     </p>
+
                 </div>
 
-                <div class="px-6 py-6">
-                    <p class="text-xs font-semibold uppercase tracking-wider text-gray-400">
+
+
+                {{-- END --}}
+
+                <div
+                    class="
+                        px-6
+                        py-6
+                    "
+                >
+
+                    <p
+                        class="
+                            text-xs
+                            font-semibold
+                            uppercase
+                            tracking-wider
+                            text-gray-400
+                        "
+                    >
                         Ends
                     </p>
 
-                    <p class="mt-2 text-2xl font-bold text-[#101064]">
-                        {{ $endsAt->format('g:i A') }}
+
+                    <p
+                        class="
+                            mt-2
+                            text-2xl
+                            font-bold
+                            text-[#101064]
+                        "
+                    >
+                        {{
+                            $endsAt->format(
+                                'g:i A'
+                            )
+                        }}
                     </p>
+
                 </div>
 
             </div>
 
-            @if($effectiveStatus === 'Completed')
+
+
+            @if(
+                $effectiveStatus
+                === 'Completed'
+            )
+
                 <div
                     class="
                         border-t
@@ -575,15 +1105,27 @@
                 >
                     This attendance session closed automatically when the scheduled end time was reached.
                 </div>
+
             @endif
+
         </div>
 
     </section>
 
 
+
+    {{-- ====================================================== --}}
+    {{-- BACK --}}
+    {{-- ====================================================== --}}
+
     <div>
+
         <a
-            href="{{ route('my-events.index') }}"
+            href="{{
+                route(
+                    'my-events.index'
+                )
+            }}"
             class="
                 inline-flex
                 items-center
@@ -597,7 +1139,9 @@
         >
             ← Back to Assigned Events
         </a>
+
     </div>
+
 
 </div>
 

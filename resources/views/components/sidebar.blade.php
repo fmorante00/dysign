@@ -3,7 +3,9 @@
     <div class="flex h-full flex-col">
 
 
+        <!-- ================================================= -->
         <!-- LOGO -->
+        <!-- ================================================= -->
 
         <div class="border-b border-white/10 px-6 py-5">
 
@@ -12,6 +14,7 @@
                 <img
                     src="{{ asset('images/logo.png') }}"
                     class="h-12 w-12 object-contain"
+                    alt="DySign Logo"
                 >
 
                 <div>
@@ -32,33 +35,72 @@
 
 
 
+        <!-- ================================================= -->
         <!-- NAVIGATION -->
+        <!-- ================================================= -->
 
         <nav
             x-data="{
-                user: {{ request()->routeIs('personnel.*') || request()->routeIs('roles.*') ? 'true' : 'false' }},
-                student: {{ request()->routeIs('students.*') ? 'true' : 'false' }},
-                event: {{ request()->routeIs('events.*') || request()->routeIs('announcements.*') ? 'true' : 'false' }},
-                attendance: {{ request()->routeIs('attendance.*') || request()->routeIs('participation.*') ? 'true' : 'false' }},
-                reports: {{ request()->routeIs('reports.*') ? 'true' : 'false' }},
-                system: {{ request()->routeIs('logs.*') || request()->routeIs('backup.*') ? 'true' : 'false' }}
+                user: {{
+                    request()->routeIs('personnel.*')
+                    || request()->routeIs('roles.*')
+                        ? 'true'
+                        : 'false'
+                }},
+
+                student: {{
+                    request()->routeIs('students.*')
+                        ? 'true'
+                        : 'false'
+                }},
+
+                event: {{
+                    request()->routeIs('events.*')
+                    || request()->routeIs('announcements.*')
+                        ? 'true'
+                        : 'false'
+                }},
+
+                attendance: {{
+                    request()->routeIs('attendance.*')
+                    || request()->routeIs('participation.*')
+                        ? 'true'
+                        : 'false'
+                }},
+
+                reports: {{
+                    request()->routeIs('reports.*')
+                        ? 'true'
+                        : 'false'
+                }},
+
+                system: {{
+                    request()->routeIs('logs.*')
+                    || request()->routeIs('backup.*')
+                        ? 'true'
+                        : 'false'
+                }}
             }"
             class="flex-1 overflow-y-auto px-4 py-5"
         >
 
             @php
 
-                $role = auth()->user()->role->role_name;
+                $role =
+                    auth()->user()
+                        ->role
+                        ->role_name;
 
-                $link = 'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition hover:bg-white/10';
+                $link =
+                    'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition hover:bg-white/10';
 
-                $child = 'ml-5 flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition hover:bg-white/10';
+                $child =
+                    'ml-5 flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition hover:bg-white/10';
 
-                $active = 'bg-[#D4A017]/20 text-[#D4A017]';
+                $active =
+                    'bg-[#D4A017]/20 text-[#D4A017]';
 
             @endphp
-
-
 
 
 
@@ -73,7 +115,14 @@
 
                 <a
                     href="/dashboard"
-                    class="{{ $link }} {{ request()->is('dashboard') ? $active : '' }}"
+                    class="
+                        {{ $link }}
+                        {{
+                            request()->is('dashboard')
+                                ? $active
+                                : ''
+                        }}
+                    "
                 >
 
                     <svg
@@ -98,12 +147,12 @@
 
 
 
-
-
+                <!-- ================================================= -->
                 <!-- USER MANAGEMENT -->
+                <!-- ================================================= -->
 
                 <button
-                    @click="user=!user"
+                    @click="user = !user"
                     class="{{ $link }} mt-4 w-full"
                 >
 
@@ -136,11 +185,23 @@
                     class="mt-1"
                 >
 
-                    @if(auth()->user()->hasPermission('manage_personnel_accounts'))
+                    @if(
+                        auth()->user()
+                            ->hasPermission(
+                                'manage_personnel_accounts'
+                            )
+                    )
 
                         <a
                             href="{{ route('personnel.index') }}"
-                            class="{{ $child }} {{ request()->routeIs('personnel.*') ? $active : '' }}"
+                            class="
+                                {{ $child }}
+                                {{
+                                    request()->routeIs('personnel.*')
+                                        ? $active
+                                        : ''
+                                }}
+                            "
                         >
 
                             <span class="text-[#D4A017]">
@@ -154,12 +215,23 @@
                     @endif
 
 
-
-                    @if(auth()->user()->hasPermission('assign_roles'))
+                    @if(
+                        auth()->user()
+                            ->hasPermission(
+                                'assign_roles'
+                            )
+                    )
 
                         <a
                             href="{{ route('roles.index') }}"
-                            class="{{ $child }} {{ request()->routeIs('roles.*') ? $active : '' }}"
+                            class="
+                                {{ $child }}
+                                {{
+                                    request()->routeIs('roles.*')
+                                        ? $active
+                                        : ''
+                                }}
+                            "
                         >
 
                             <span class="text-[#D4A017]">
@@ -176,12 +248,18 @@
 
 
 
+<<<<<<< HEAD
 
 
                 <!-- STUDENT MANAGEMENT -->
+=======
+                <!-- ================================================= -->
+                <!-- STUDENT RECORDS -->
+                <!-- ================================================= -->
+>>>>>>> f87de32 (Implement personnel availability, assignment validation, duty monitoring, and attendance updates)
 
                 <button
-                    @click="student=!student"
+                    @click="student = !student"
                     class="{{ $link }} mt-3 w-full"
                 >
 
@@ -214,11 +292,24 @@
                     class="mt-1"
                 >
 
-                    @if(auth()->user()->hasPermission('import_student_data'))
+                    @if(
+                        auth()->user()
+                            ->hasPermission(
+                                'import_student_data'
+                            )
+                    )
 
                         <a
                             href="{{ route('students.index') }}"
                             class="{{ $child }} {{ request()->routeIs('students.*') && !request()->routeIs('students.accounts.*') ? $active : '' }}"
+                            class="
+                                {{ $child }}
+                                {{
+                                    request()->routeIs('students.*')
+                                        ? $active
+                                        : ''
+                                }}
+                            "
                         >
 
                             <span class="text-[#D4A017]">
@@ -248,12 +339,12 @@
 
 
 
-
-
+                <!-- ================================================= -->
                 <!-- EVENT MANAGEMENT -->
+                <!-- ================================================= -->
 
                 <button
-                    @click="event=!event"
+                    @click="event = !event"
                     class="{{ $link }} mt-3 w-full"
                 >
 
@@ -288,7 +379,14 @@
 
                     <a
                         href="{{ route('events.index') }}"
-                        class="{{ $child }} {{ request()->routeIs('events.*') ? $active : '' }}"
+                        class="
+                            {{ $child }}
+                            {{
+                                request()->routeIs('events.*')
+                                    ? $active
+                                    : ''
+                            }}
+                        "
                     >
 
                         <span class="text-[#D4A017]">
@@ -302,7 +400,16 @@
 
                     <a
                         href="{{ route('announcements.index') }}"
-                        class="{{ $child }} {{ request()->routeIs('announcements.*') ? $active : '' }}"
+                        class="
+                            {{ $child }}
+                            {{
+                                request()->routeIs(
+                                    'announcements.*'
+                                )
+                                    ? $active
+                                    : ''
+                            }}
+                        "
                     >
 
                         <span class="text-[#D4A017]">
@@ -317,12 +424,12 @@
 
 
 
-
-
+                <!-- ================================================= -->
                 <!-- ATTENDANCE MANAGEMENT -->
+                <!-- ================================================= -->
 
                 <button
-                    @click="attendance=!attendance"
+                    @click="attendance = !attendance"
                     class="{{ $link }} mt-3 w-full"
                 >
 
@@ -344,7 +451,13 @@
                         Attendance Management
                     </span>
 
-                    <span x-text="attendance ? '⌄' : '›'"></span>
+                    <span
+                        x-text="
+                            attendance
+                                ? '⌄'
+                                : '›'
+                        "
+                    ></span>
 
                 </button>
 
@@ -355,11 +468,29 @@
                     class="mt-1"
                 >
 
-                    @if(auth()->user()->hasPermission('view_attendance'))
+                    @if(
+                        auth()->user()
+                            ->hasPermission(
+                                'view_attendance'
+                            )
+                    )
 
                         <a
-                            href="{{ route('attendance.monitor') }}"
-                            class="{{ $child }} {{ request()->routeIs('attendance.monitor') ? $active : '' }}"
+                            href="{{
+                                route(
+                                    'attendance.monitor'
+                                )
+                            }}"
+                            class="
+                                {{ $child }}
+                                {{
+                                    request()->routeIs(
+                                        'attendance.monitor'
+                                    )
+                                        ? $active
+                                        : ''
+                                }}
+                            "
                         >
 
                             <span class="text-[#D4A017]">
@@ -372,8 +503,21 @@
 
 
                         <a
-                            href="{{ route('attendance.alerts') }}"
-                            class="{{ $child }} {{ request()->routeIs('attendance.alerts') ? $active : '' }}"
+                            href="{{
+                                route(
+                                    'attendance.alerts'
+                                )
+                            }}"
+                            class="
+                                {{ $child }}
+                                {{
+                                    request()->routeIs(
+                                        'attendance.alerts'
+                                    )
+                                        ? $active
+                                        : ''
+                                }}
+                            "
                         >
 
                             <span class="text-[#D4A017]">
@@ -387,10 +531,22 @@
                     @endif
 
 
-
                     <a
-                        href="{{ route('participation.records') }}"
-                        class="{{ $child }} {{ request()->routeIs('participation.records') ? $active : '' }}"
+                        href="{{
+                            route(
+                                'participation.records'
+                            )
+                        }}"
+                        class="
+                            {{ $child }}
+                            {{
+                                request()->routeIs(
+                                    'participation.records'
+                                )
+                                    ? $active
+                                    : ''
+                            }}
+                        "
                     >
 
                         <span class="text-[#D4A017]">
@@ -403,8 +559,21 @@
 
 
                     <a
-                        href="{{ route('participation.evaluation') }}"
-                        class="{{ $child }} {{ request()->routeIs('participation.evaluation') ? $active : '' }}"
+                        href="{{
+                            route(
+                                'participation.evaluation'
+                            )
+                        }}"
+                        class="
+                            {{ $child }}
+                            {{
+                                request()->routeIs(
+                                    'participation.evaluation'
+                                )
+                                    ? $active
+                                    : ''
+                            }}
+                        "
                     >
 
                         <span class="text-[#D4A017]">
@@ -419,12 +588,12 @@
 
 
 
-
-
+                <!-- ================================================= -->
                 <!-- REPORTS -->
+                <!-- ================================================= -->
 
                 <button
-                    @click="reports=!reports"
+                    @click="reports = !reports"
                     class="{{ $link }} mt-3 w-full"
                 >
 
@@ -458,8 +627,21 @@
                 >
 
                     <a
-                        href="{{ route('reports.attendance') }}"
-                        class="{{ $child }} {{ request()->routeIs('reports.attendance') ? $active : '' }}"
+                        href="{{
+                            route(
+                                'reports.attendance'
+                            )
+                        }}"
+                        class="
+                            {{ $child }}
+                            {{
+                                request()->routeIs(
+                                    'reports.attendance'
+                                )
+                                    ? $active
+                                    : ''
+                            }}
+                        "
                     >
 
                         <span class="text-[#D4A017]">
@@ -472,8 +654,21 @@
 
 
                     <a
-                        href="{{ route('reports.participation') }}"
-                        class="{{ $child }} {{ request()->routeIs('reports.participation') ? $active : '' }}"
+                        href="{{
+                            route(
+                                'reports.participation'
+                            )
+                        }}"
+                        class="
+                            {{ $child }}
+                            {{
+                                request()->routeIs(
+                                    'reports.participation'
+                                )
+                                    ? $active
+                                    : ''
+                            }}
+                        "
                     >
 
                         <span class="text-[#D4A017]">
@@ -488,12 +683,12 @@
 
 
 
-
-
+                <!-- ================================================= -->
                 <!-- SYSTEM MANAGEMENT -->
+                <!-- ================================================= -->
 
                 <button
-                    @click="system=!system"
+                    @click="system = !system"
                     class="{{ $link }} mt-3 w-full"
                 >
 
@@ -528,7 +723,14 @@
 
                     <a
                         href="{{ route('logs.index') }}"
-                        class="{{ $child }} {{ request()->routeIs('logs.*') ? $active : '' }}"
+                        class="
+                            {{ $child }}
+                            {{
+                                request()->routeIs('logs.*')
+                                    ? $active
+                                    : ''
+                            }}
+                        "
                     >
 
                         <span class="text-[#D4A017]">
@@ -542,7 +744,14 @@
 
                     <a
                         href="{{ route('backup.index') }}"
-                        class="{{ $child }} {{ request()->routeIs('backup.*') ? $active : '' }}"
+                        class="
+                            {{ $child }}
+                            {{
+                                request()->routeIs('backup.*')
+                                    ? $active
+                                    : ''
+                            }}
+                        "
                     >
 
                         <span class="text-[#D4A017]">
@@ -560,8 +769,6 @@
 
 
 
-
-
             <!-- ================================================= -->
             <!-- DEPARTMENT STAFF -->
             <!-- ================================================= -->
@@ -573,7 +780,14 @@
 
                 <a
                     href="/dashboard"
-                    class="{{ $link }} {{ request()->is('dashboard') ? $active : '' }}"
+                    class="
+                        {{ $link }}
+                        {{
+                            request()->is('dashboard')
+                                ? $active
+                                : ''
+                        }}
+                    "
                 >
 
                     <svg
@@ -598,11 +812,12 @@
 
 
 
-
+                <!-- ================================================= -->
                 <!-- EVENT MANAGEMENT -->
+                <!-- ================================================= -->
 
                 <button
-                    @click="event=!event"
+                    @click="event = !event"
                     class="{{ $link }} mt-4 w-full"
                 >
 
@@ -635,20 +850,23 @@
                     class="mt-1"
                 >
 
-                    <!-- EVENTS -->
+                    {{-- EVENTS --}}
 
                     <a
                         href="{{ route('events.index') }}"
-                        class="{{ $child }} {{
-                            request()->routeIs(
-                                'events.index',
-                                'events.create',
-                                'events.show',
-                                'events.edit'
-                            )
-                                ? $active
-                                : ''
-                        }}"
+                        class="
+                            {{ $child }}
+                            {{
+                                request()->routeIs(
+                                    'events.index',
+                                    'events.create',
+                                    'events.show',
+                                    'events.edit'
+                                )
+                                    ? $active
+                                    : ''
+                            }}
+                        "
                     >
 
                         <span class="text-[#D4A017]">
@@ -660,15 +878,25 @@
                     </a>
 
 
-                    <!-- PARTICIPANT ELIGIBILITY -->
+
+                    {{-- PARTICIPANT ELIGIBILITY --}}
 
                     <a
-                        href="{{ route('events.eligibility.events') }}"
-                        class="{{ $child }} {{
-                            request()->routeIs('events.eligibility.*')
-                                ? $active
-                                : ''
+                        href="{{
+                            route(
+                                'events.eligibility.events'
+                            )
                         }}"
+                        class="
+                            {{ $child }}
+                            {{
+                                request()->routeIs(
+                                    'events.eligibility.*'
+                                )
+                                    ? $active
+                                    : ''
+                            }}
+                        "
                     >
 
                         <span class="text-[#D4A017]">
@@ -679,12 +907,119 @@
 
                     </a>
 
+
+
+                    {{-- PERSONNEL ASSIGNMENT --}}
+
+                    <a
+                        href="{{
+                            route(
+                                'events.personnel-assignment.events'
+                            )
+                        }}"
+                        class="
+                            {{ $child }}
+                            {{
+                                request()->routeIs(
+                                    'events.personnel-assignment.*'
+                                )
+                                    ? $active
+                                    : ''
+                            }}
+                        "
+                    >
+
+                        <span class="text-[#D4A017]">
+                            •
+                        </span>
+
+                        Personnel Assignment
+
+                    </a>
+
                 </div>
 
 
+
+                <!-- ================================================= -->
+                <!-- PERSONNEL AVAILABILITY -->
+                <!-- ================================================= -->
+
+                <a
+                    href="{{
+                        route(
+                            'personnel-availability.staff'
+                        )
+                    }}"
+                    class="
+                        {{ $link }}
+                        mt-3
+                        {{
+                            request()->routeIs(
+                                'personnel-availability.staff'
+                            )
+                                ? $active
+                                : ''
+                        }}
+                    "
+                >
+
+                    <svg
+                        class="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="
+                                M8 7V3
+                                m8 4V3
+                                M5 11h14
+                                M5 7h14v14H5z
+                                M9 15l2 2 4-4
+                            "
+                        />
+                    </svg>
+
+                    <span>
+                        Personnel Availability
+                    </span>
+
+                </a>
+
+        {{-- PERSONNEL DUTY MONITORING --}}
+
+            <a
+                href="{{ route('personnel-duties.staff') }}"
+                class="{{ $link }} mt-3 {{
+                    request()->routeIs('personnel-duties.staff')
+                        ? $active
+                        : ''
+                }}"
+            >
+                <svg
+                    class="h-5 w-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M9 12l2 2 4-4m5-4.5A11.95 11.95 0 0112 3a11.95 11.95 0 01-8 2.5V11c0 5.25 3.4 9.74 8 11 4.6-1.26 8-5.75 8-11V5.5z"
+                    />
+                </svg>
+
+                <span>
+                    Duty Monitoring
+                </span>
+            </a>
+
             @endif
-
-
 
 
 
@@ -699,7 +1034,14 @@
 
                 <a
                     href="/dashboard"
-                    class="{{ $link }} {{ request()->is('dashboard') ? $active : '' }}"
+                    class="
+                        {{ $link }}
+                        {{
+                            request()->is('dashboard')
+                                ? $active
+                                : ''
+                        }}
+                    "
                 >
 
                     <svg
@@ -724,17 +1066,27 @@
 
 
 
-
+                <!-- ================================================= -->
                 <!-- MY ASSIGNED EVENTS -->
+                <!-- ================================================= -->
 
                 <a
                     href="{{ route('my-events.index') }}"
-                    class="{{ $link }} mt-3 {{
-                        request()->routeIs('my-events.*') ||
-                        request()->routeIs('attendance.index')
-                            ? $active
-                            : ''
-                    }}"
+                    class="
+                        {{ $link }}
+                        mt-3
+                        {{
+                            request()->routeIs(
+                                'my-events.*'
+                            )
+                            ||
+                            request()->routeIs(
+                                'attendance.index'
+                            )
+                                ? $active
+                                : ''
+                        }}
+                    "
                 >
 
                     <svg
@@ -758,6 +1110,95 @@
                 </a>
 
 
+
+                <!-- ================================================= -->
+                <!-- MY AVAILABILITY -->
+                <!-- ================================================= -->
+
+                <a
+                    href="{{
+                        route(
+                            'personnel-availability.index'
+                        )
+                    }}"
+                    class="
+                        {{ $link }}
+                        mt-3
+                        {{
+                            request()->routeIs(
+                                'personnel-availability.index',
+                                'personnel-availability.store',
+                                'personnel-availability.update',
+                                'personnel-availability.destroy'
+                            )
+                                ? $active
+                                : ''
+                        }}
+                    "
+                >
+
+                    <svg
+                        class="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="
+                                M8 7V3
+                                m8 4V3
+                                M5 11h14
+                                M5 7h14v14H5z
+                                M12 14v3
+                                m0 0h.01
+                            "
+                        />
+                    </svg>
+
+                    <span>
+                        My Availability
+                    </span>
+
+                </a>
+
+
+                {{-- MY DUTIES --}}
+
+<a
+    href="{{ route('personnel-duties.index') }}"
+    class="{{ $link }} mt-3 {{
+        request()->routeIs(
+            'personnel-duties.index',
+            'personnel-duties.check-in',
+            'personnel-duties.check-out'
+        )
+            ? $active
+            : ''
+    }}"
+>
+    <svg
+        class="h-5 w-5"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+    >
+        <path
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"
+        />
+    </svg>
+
+    <span>
+        My Duties
+    </span>
+</a>
+
+
             @endif
 
 
@@ -768,11 +1209,19 @@
 
             @if($role === 'Student Account')
 
+
                 <!-- STUDENT DASHBOARD -->
 
                 <a
                     href="{{ route('dashboard') }}"
-                    class="{{ $link }} {{ request()->routeIs('dashboard') ? $active : '' }}"
+                    class="
+                        {{ $link }}
+                        {{
+                            request()->routeIs('dashboard')
+                                ? $active
+                                : ''
+                        }}
+                    "
                 >
 
                     <svg
@@ -795,11 +1244,11 @@
 
                 </a>
 
+
             @endif
 
 
         </nav>
-
 
     </div>
 

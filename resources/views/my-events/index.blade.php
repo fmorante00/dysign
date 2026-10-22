@@ -23,12 +23,58 @@
 
     /*
     |--------------------------------------------------------------------------
-    | Schedule-Based Event Status
+    | Safe Event Date/Time Builder
     |--------------------------------------------------------------------------
     |
-    | We calculate each status here using $item instead of $event so the
-    | Blade view never references $event before the @forelse loop begins.
+    | event_date is cast as a date in the Event model, so Laravel may return:
     |
+    | 2026-10-05 00:00:00
+    |
+    | We must first normalize the date to Y-m-d before combining it with
+    | start_time or end_time. This prevents Carbon's:
+    |
+    | "Double time specification"
+    |
+    */
+
+    $buildEventDateTime =
+        function ($event, $time) use ($timezone) {
+
+            if (
+                !$event->event_date
+                || !$time
+            ) {
+                return null;
+            }
+
+
+            $eventDate =
+                \Carbon\Carbon::parse(
+                    $event->event_date
+                )->format('Y-m-d');
+
+
+            $eventTime =
+                \Carbon\Carbon::parse(
+                    $time
+                )->format('H:i:s');
+
+
+            return \Carbon\Carbon::createFromFormat(
+                'Y-m-d H:i:s',
+                $eventDate
+                . ' '
+                . $eventTime,
+                $timezone
+            );
+
+        };
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Schedule-Based Event Status
+    |--------------------------------------------------------------------------
     */
 
     $computedStatuses = [];
@@ -41,6 +87,12 @@
 
 
     foreach ($events as $item) {
+
+        /*
+        |--------------------------------------------------------------------------
+        | Cancelled Events
+        |--------------------------------------------------------------------------
+        */
 
         if (
             $item->status
@@ -55,23 +107,52 @@
         }
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | Build Schedule
+        |--------------------------------------------------------------------------
+        */
+
         $startsAt =
-            \Carbon\Carbon::parse(
-                $item->event_date
-                . ' '
-                . $item->start_time,
-                $timezone
+            $buildEventDateTime(
+                $item,
+                $item->start_time
             );
 
 
         $endsAt =
-            \Carbon\Carbon::parse(
-                $item->event_date
-                . ' '
-                . $item->end_time,
-                $timezone
+            $buildEventDateTime(
+                $item,
+                $item->end_time
             );
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Missing Schedule Information
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            !$startsAt
+            || !$endsAt
+        ) {
+
+            $computedStatuses[
+                $item->event_id
+            ] =
+                $item->status
+                ?? 'Upcoming';
+
+            continue;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Determine Current Status
+        |--------------------------------------------------------------------------
+        */
 
         if (
             $now->lt(
@@ -108,12 +189,16 @@
         $computedStatuses[
             $item->event_id
         ] = $status;
+
     }
 
 @endphp
 
+
 <style>
+
     .assigned-events-hero {
+
         background:
             linear-gradient(
                 100deg,
@@ -124,13 +209,21 @@
             url('{{ asset('images/school.jpg') }}');
 
         background-size: cover;
+
         background-position: center;
+
     }
+
 </style>
+
 
 <div class="min-w-0 space-y-8">
 
+
+    {{-- ====================================================== --}}
     {{-- HERO --}}
+    {{-- ====================================================== --}}
+
     <section
         class="
             assigned-events-hero
@@ -145,7 +238,18 @@
             lg:py-10
         "
     >
-        <div class="absolute bottom-0 left-0 h-1 w-full bg-[#D4A017]"></div>
+
+        <div
+            class="
+                absolute
+                bottom-0
+                left-0
+                h-1
+                w-full
+                bg-[#D4A017]
+            "
+        ></div>
+
 
         <div
             class="
@@ -159,7 +263,9 @@
                 lg:justify-between
             "
         >
+
             <div class="max-w-3xl">
+
 
                 <p
                     class="
@@ -173,6 +279,7 @@
                     Attendance Operations
                 </p>
 
+
                 <h1
                     class="
                         mt-3
@@ -184,6 +291,7 @@
                 >
                     My Assigned Events
                 </h1>
+
 
                 <p
                     class="
@@ -198,6 +306,7 @@
                     and open the RFID scanner during active event schedules.
                 </p>
 
+
                 <div
                     class="
                         mt-6
@@ -209,31 +318,67 @@
                         text-white/70
                     "
                 >
-                    <div class="flex items-center gap-2">
+
+                    <div
+                        class="
+                            flex
+                            items-center
+                            gap-2
+                        "
+                    >
+
                         <svg
-                            class="h-4 w-4 text-[#E7C75B]"
+                            class="
+                                h-4
+                                w-4
+                                text-[#E7C75B]
+                            "
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
                         >
+
                             <path
                                 stroke-width="1.8"
                                 stroke-linecap="round"
                                 stroke-linejoin="round"
                                 d="M8 7V3m8 4V3M5 11h14M5 19h14M5 7h14v14H5z"
                             />
+
                         </svg>
 
+
                         {{ $now->format('F d, Y') }}
+
                     </div>
 
-                    <div class="flex items-center gap-2">
-                        <span class="h-2 w-2 rounded-full bg-green-400"></span>
+
+                    <div
+                        class="
+                            flex
+                            items-center
+                            gap-2
+                        "
+                    >
+
+                        <span
+                            class="
+                                h-2
+                                w-2
+                                rounded-full
+                                bg-green-400
+                            "
+                        ></span>
+
                         Attendance Personnel Workspace
+
                     </div>
+
                 </div>
 
             </div>
+
+
 
             <div
                 class="
@@ -251,6 +396,7 @@
                     lg:flex
                 "
             >
+
                 <div
                     class="
                         flex
@@ -263,22 +409,31 @@
                         text-[#E7C75B]
                     "
                 >
+
                     <svg
-                        class="h-6 w-6"
+                        class="
+                            h-6
+                            w-6
+                        "
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
                     >
+
                         <path
                             stroke-width="1.8"
                             stroke-linecap="round"
                             stroke-linejoin="round"
                             d="M13 10V3L4 14h7v7l9-11h-7z"
                         />
+
                     </svg>
+
                 </div>
 
+
                 <div>
+
                     <p
                         class="
                             text-[10px]
@@ -291,20 +446,36 @@
                         RFID Service
                     </p>
 
-                    <p class="mt-1 text-sm font-semibold text-white">
+
+                    <p
+                        class="
+                            mt-1
+                            text-sm
+                            font-semibold
+                            text-white
+                        "
+                    >
                         Automatic Event Window
                     </p>
+
                 </div>
+
             </div>
 
         </div>
+
     </section>
 
 
+
+    {{-- ====================================================== --}}
     {{-- SUMMARY --}}
+    {{-- ====================================================== --}}
+
     <section>
 
         <div class="mb-4">
+
             <p
                 class="
                     text-xs
@@ -317,14 +488,31 @@
                 Assignment Overview
             </p>
 
-            <h2 class="mt-2 text-xl font-bold text-[#101064]">
+
+            <h2
+                class="
+                    mt-2
+                    text-xl
+                    font-bold
+                    text-[#101064]
+                "
+            >
                 Event Status
             </h2>
 
-            <p class="mt-1 text-sm text-gray-500">
+
+            <p
+                class="
+                    mt-1
+                    text-sm
+                    text-gray-500
+                "
+            >
                 Event availability is calculated from the scheduled start and end time.
             </p>
+
         </div>
+
 
         <div
             class="
@@ -338,6 +526,9 @@
             "
         >
 
+
+            {{-- ONGOING --}}
+
             <div
                 class="
                     border-b
@@ -348,6 +539,7 @@
                     md:border-r
                 "
             >
+
                 <p
                     class="
                         text-[10px]
@@ -360,14 +552,34 @@
                     Ongoing
                 </p>
 
-                <p class="mt-2 text-3xl font-bold text-green-600">
+
+                <p
+                    class="
+                        mt-2
+                        text-3xl
+                        font-bold
+                        text-green-600
+                    "
+                >
                     {{ number_format($ongoingCount) }}
                 </p>
 
-                <p class="mt-1 text-xs text-gray-400">
+
+                <p
+                    class="
+                        mt-1
+                        text-xs
+                        text-gray-400
+                    "
+                >
                     Scanner available now
                 </p>
+
             </div>
+
+
+
+            {{-- UPCOMING --}}
 
             <div
                 class="
@@ -379,6 +591,7 @@
                     md:border-r
                 "
             >
+
                 <p
                     class="
                         text-[10px]
@@ -391,16 +604,42 @@
                     Upcoming
                 </p>
 
-                <p class="mt-2 text-3xl font-bold text-[#D4A017]">
+
+                <p
+                    class="
+                        mt-2
+                        text-3xl
+                        font-bold
+                        text-[#D4A017]
+                    "
+                >
                     {{ number_format($upcomingCount) }}
                 </p>
 
-                <p class="mt-1 text-xs text-gray-400">
+
+                <p
+                    class="
+                        mt-1
+                        text-xs
+                        text-gray-400
+                    "
+                >
                     Scheduled assignments
                 </p>
+
             </div>
 
-            <div class="px-6 py-6">
+
+
+            {{-- COMPLETED --}}
+
+            <div
+                class="
+                    px-6
+                    py-6
+                "
+            >
+
                 <p
                     class="
                         text-[10px]
@@ -413,21 +652,43 @@
                     Completed
                 </p>
 
-                <p class="mt-2 text-3xl font-bold text-gray-600">
+
+                <p
+                    class="
+                        mt-2
+                        text-3xl
+                        font-bold
+                        text-gray-600
+                    "
+                >
                     {{ number_format($completedCount) }}
                 </p>
 
-                <p class="mt-1 text-xs text-gray-400">
+
+                <p
+                    class="
+                        mt-1
+                        text-xs
+                        text-gray-400
+                    "
+                >
                     Attendance sessions closed
                 </p>
+
             </div>
 
         </div>
+
     </section>
 
 
+
+    {{-- ====================================================== --}}
     {{-- ASSIGNED EVENTS --}}
+    {{-- ====================================================== --}}
+
     <section>
+
 
         <div
             class="
@@ -440,7 +701,9 @@
                 sm:justify-between
             "
         >
+
             <div>
+
                 <p
                     class="
                         text-xs
@@ -453,14 +716,32 @@
                     Assigned Schedule
                 </p>
 
-                <h2 class="mt-2 text-xl font-bold text-[#101064]">
+
+                <h2
+                    class="
+                        mt-2
+                        text-xl
+                        font-bold
+                        text-[#101064]
+                    "
+                >
                     Assigned Events
                 </h2>
 
-                <p class="mt-1 text-sm text-gray-500">
+
+                <p
+                    class="
+                        mt-1
+                        text-sm
+                        text-gray-500
+                    "
+                >
                     Open an event to review its attendance session.
                 </p>
+
             </div>
+
+
 
             <div
                 class="
@@ -477,12 +758,29 @@
                     text-[#101064]
                 "
             >
-                <span class="h-1.5 w-1.5 rounded-full bg-[#D4A017]"></span>
+
+                <span
+                    class="
+                        h-1.5
+                        w-1.5
+                        rounded-full
+                        bg-[#D4A017]
+                    "
+                ></span>
+
 
                 {{ number_format($events->count()) }}
-                {{ $events->count() === 1 ? 'Event' : 'Events' }}
+
+                {{
+                    $events->count() === 1
+                        ? 'Event'
+                        : 'Events'
+                }}
+
             </div>
+
         </div>
+
 
 
         <div
@@ -496,7 +794,14 @@
 
             @forelse($events as $event)
 
+
                 @php
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Current Display Status
+                    |--------------------------------------------------------------------------
+                    */
 
                     $status =
                         $computedStatuses[
@@ -505,43 +810,75 @@
                         ?? $event->status;
 
 
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Safe Schedule Parsing
+                    |--------------------------------------------------------------------------
+                    */
+
                     $startsAt =
-                        \Carbon\Carbon::parse(
-                            $event->event_date
-                            . ' '
-                            . $event->start_time,
-                            $timezone
+                        $buildEventDateTime(
+                            $event,
+                            $event->start_time
                         );
 
 
                     $endsAt =
-                        \Carbon\Carbon::parse(
-                            $event->event_date
-                            . ' '
-                            . $event->end_time,
-                            $timezone
+                        $buildEventDateTime(
+                            $event,
+                            $event->end_time
                         );
 
-                    $statusStyle = match ($status) {
-                        'Ongoing' => [
-                            'class' => 'bg-green-50 text-green-700',
-                            'dot' => 'bg-green-500',
-                        ],
-                        'Upcoming' => [
-                            'class' => 'bg-[#FFF8E1] text-[#A87900]',
-                            'dot' => 'bg-[#D4A017]',
-                        ],
-                        'Completed' => [
-                            'class' => 'bg-gray-100 text-gray-600',
-                            'dot' => 'bg-gray-500',
-                        ],
-                        default => [
-                            'class' => 'bg-red-50 text-red-600',
-                            'dot' => 'bg-red-500',
-                        ],
-                    };
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Status Style
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $statusStyle =
+                        match ($status) {
+
+                            'Ongoing' => [
+                                'class' =>
+                                    'bg-green-50 text-green-700',
+
+                                'dot' =>
+                                    'bg-green-500',
+                            ],
+
+
+                            'Upcoming' => [
+                                'class' =>
+                                    'bg-[#FFF8E1] text-[#A87900]',
+
+                                'dot' =>
+                                    'bg-[#D4A017]',
+                            ],
+
+
+                            'Completed' => [
+                                'class' =>
+                                    'bg-gray-100 text-gray-600',
+
+                                'dot' =>
+                                    'bg-gray-500',
+                            ],
+
+
+                            default => [
+                                'class' =>
+                                    'bg-red-50 text-red-600',
+
+                                'dot' =>
+                                    'bg-red-500',
+                            ],
+
+                        };
 
                 @endphp
+
+
 
                 <div
                     class="
@@ -566,7 +903,11 @@
                         "
                     >
 
+
+                        {{-- EVENT DETAILS --}}
+
                         <div class="min-w-0">
+
 
                             <div
                                 class="
@@ -576,6 +917,7 @@
                                     gap-3
                                 "
                             >
+
                                 <h3
                                     class="
                                         break-words
@@ -586,6 +928,7 @@
                                 >
                                     {{ $event->event_name }}
                                 </h3>
+
 
                                 <span
                                     class="
@@ -600,6 +943,7 @@
                                         {{ $statusStyle['class'] }}
                                     "
                                 >
+
                                     <span
                                         class="
                                             h-1.5
@@ -609,14 +953,30 @@
                                         "
                                     ></span>
 
+
                                     {{ $status }}
+
                                 </span>
+
                             </div>
 
 
-                            <p class="mt-2 text-sm text-gray-500">
-                                {{ $event->department->department_name ?? 'University-wide Event' }}
+
+                            <p
+                                class="
+                                    mt-2
+                                    text-sm
+                                    text-gray-500
+                                "
+                            >
+                                {{
+                                    $event
+                                        ->department
+                                        ->department_name
+                                    ?? 'University-wide Event'
+                                }}
                             </p>
+
 
 
                             <div
@@ -630,23 +990,68 @@
                                     text-gray-500
                                 "
                             >
-                                <span>
-                                    {{ $startsAt->format('F d, Y') }}
-                                </span>
+
+
+                                {{-- DATE --}}
 
                                 <span>
-                                    {{ $startsAt->format('g:i A') }}
+
+                                    {{
+                                        $startsAt
+                                            ? $startsAt->format(
+                                                'F d, Y'
+                                            )
+                                            : 'Date unavailable'
+                                    }}
+
+                                </span>
+
+
+
+                                {{-- TIME --}}
+
+                                <span>
+
+                                    {{
+                                        $startsAt
+                                            ? $startsAt->format(
+                                                'g:i A'
+                                            )
+                                            : '—'
+                                    }}
+
                                     –
-                                    {{ $endsAt->format('g:i A') }}
+
+                                    {{
+                                        $endsAt
+                                            ? $endsAt->format(
+                                                'g:i A'
+                                            )
+                                            : '—'
+                                    }}
+
                                 </span>
 
+
+
+                                {{-- LOCATION --}}
+
                                 <span>
-                                    {{ $event->location }}
+
+                                    {{
+                                        $event->location
+                                        ?? 'Location unavailable'
+                                    }}
+
                                 </span>
+
                             </div>
 
                         </div>
 
+
+
+                        {{-- ACTION AREA --}}
 
                         <div
                             class="
@@ -658,19 +1063,57 @@
                                 lg:justify-end
                             "
                         >
-                            <div class="hidden min-w-[90px] text-right md:block">
-                                <p class="text-xs font-semibold uppercase tracking-wider text-gray-400">
+
+
+                            <div
+                                class="
+                                    hidden
+                                    min-w-[90px]
+                                    text-right
+                                    md:block
+                                "
+                            >
+
+                                <p
+                                    class="
+                                        text-xs
+                                        font-semibold
+                                        uppercase
+                                        tracking-wider
+                                        text-gray-400
+                                    "
+                                >
                                     Attendance
                                 </p>
 
-                                <p class="mt-1 text-2xl font-bold text-[#101064]">
-                                    {{ number_format($event->attendance_count ?? 0) }}
+
+                                <p
+                                    class="
+                                        mt-1
+                                        text-2xl
+                                        font-bold
+                                        text-[#101064]
+                                    "
+                                >
+                                    {{
+                                        number_format(
+                                            $event->attendance_count
+                                            ?? 0
+                                        )
+                                    }}
                                 </p>
+
                             </div>
 
 
+
                             <a
-                                href="{{ route('my-events.show', $event->event_id) }}"
+                                href="{{
+                                    route(
+                                        'my-events.show',
+                                        $event->event_id
+                                    )
+                                }}"
                                 class="
                                     inline-flex
                                     items-center
@@ -687,31 +1130,52 @@
                                     hover:text-[#101064]
                                 "
                             >
-                                {{ $status === 'Ongoing' ? 'Open Attendance' : 'View Event' }}
+
+                                {{
+                                    $status === 'Ongoing'
+                                        ? 'Open Attendance'
+                                        : 'View Event'
+                                }}
+
 
                                 <svg
-                                    class="h-4 w-4"
+                                    class="
+                                        h-4
+                                        w-4
+                                    "
                                     fill="none"
                                     stroke="currentColor"
                                     viewBox="0 0 24 24"
                                 >
+
                                     <path
                                         stroke-width="2"
                                         stroke-linecap="round"
                                         stroke-linejoin="round"
                                         d="M9 5l7 7-7 7"
                                     />
+
                                 </svg>
+
                             </a>
+
                         </div>
 
                     </div>
 
                 </div>
 
+
             @empty
 
-                <div class="px-6 py-16 text-center">
+
+                <div
+                    class="
+                        px-6
+                        py-16
+                        text-center
+                    "
+                >
 
                     <div
                         class="
@@ -726,31 +1190,58 @@
                             text-[#101064]
                         "
                     >
+
                         <svg
-                            class="h-6 w-6"
+                            class="
+                                h-6
+                                w-6
+                            "
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
                         >
+
                             <path
                                 stroke-width="1.8"
                                 stroke-linecap="round"
                                 stroke-linejoin="round"
                                 d="M8 7V3m8 4V3M5 11h14M5 19h14M5 7h14v14H5z"
                             />
+
                         </svg>
+
                     </div>
 
-                    <p class="mt-4 font-semibold text-[#101064]">
+
+                    <p
+                        class="
+                            mt-4
+                            font-semibold
+                            text-[#101064]
+                        "
+                    >
                         No assigned events found
                     </p>
 
-                    <p class="mt-1 text-sm text-gray-400">
+
+                    <p
+                        class="
+                            mt-1
+                            text-sm
+                            text-gray-400
+                        "
+                    >
                         Events assigned to your personnel account will appear here.
                     </p>
+
                 </div>
 
+
             @endforelse
+
+
+
+            {{-- FOOTER --}}
 
             <div
                 class="
@@ -769,8 +1260,15 @@
                     sm:justify-between
                 "
             >
-                <span>Assigned event monitoring</span>
-                <span>DySign • Attendance Personnel</span>
+
+                <span>
+                    Assigned event monitoring
+                </span>
+
+                <span>
+                    DySign • Attendance Personnel
+                </span>
+
             </div>
 
         </div>
