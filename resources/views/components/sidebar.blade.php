@@ -178,7 +178,7 @@
 
 
 
-                <!-- STUDENT RECORDS -->
+                <!-- STUDENT MANAGEMENT -->
 
                 <button
                     @click="student=!student"
@@ -200,7 +200,7 @@
                     </svg>
 
                     <span class="flex-1 text-left">
-                        Student Records
+                        Student Management
                     </span>
 
                     <span x-text="student ? '⌄' : '›'"></span>
@@ -218,7 +218,7 @@
 
                         <a
                             href="{{ route('students.index') }}"
-                            class="{{ $child }} {{ request()->routeIs('students.*') ? $active : '' }}"
+                            class="{{ $child }} {{ request()->routeIs('students.*') && !request()->routeIs('students.accounts.*') ? $active : '' }}"
                         >
 
                             <span class="text-[#D4A017]">
@@ -230,6 +230,19 @@
                         </a>
 
                     @endif
+
+                    <a
+                        href="{{ route('students.accounts.index') }}"
+                        class="{{ $child }} {{ request()->routeIs('students.accounts.*') ? $active : '' }}"
+                    >
+
+                        <span class="text-[#D4A017]">
+                            •
+                        </span>
+
+                        Account Provisioning
+
+                    </a>
 
                 </div>
 
