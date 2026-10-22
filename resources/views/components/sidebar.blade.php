@@ -622,9 +622,20 @@
                     class="mt-1"
                 >
 
+                    <!-- EVENTS -->
+
                     <a
                         href="{{ route('events.index') }}"
-                        class="{{ $child }} {{ request()->routeIs('events.*') ? $active : '' }}"
+                        class="{{ $child }} {{
+                            request()->routeIs(
+                                'events.index',
+                                'events.create',
+                                'events.show',
+                                'events.edit'
+                            )
+                                ? $active
+                                : ''
+                        }}"
                     >
 
                         <span class="text-[#D4A017]">
@@ -632,6 +643,26 @@
                         </span>
 
                         Events
+
+                    </a>
+
+
+                    <!-- PARTICIPANT ELIGIBILITY -->
+
+                    <a
+                        href="{{ route('events.eligibility.events') }}"
+                        class="{{ $child }} {{
+                            request()->routeIs('events.eligibility.*')
+                                ? $active
+                                : ''
+                        }}"
+                    >
+
+                        <span class="text-[#D4A017]">
+                            •
+                        </span>
+
+                        Participant Eligibility
 
                     </a>
 
