@@ -634,11 +634,8 @@ class AttendanceController extends Controller
     | Automatic Event Status
     |--------------------------------------------------------------------------
     |
-    | Before start time  = Upcoming
-    | Start to end time  = Ongoing
-    | After end time     = Completed
-    |
-    | Cancelled events remain Cancelled.
+    | Event status calculation is centralized in the Event model.
+    | This avoids duplicating date/time parsing logic in this controller.
     |
     */
 
@@ -646,86 +643,30 @@ class AttendanceController extends Controller
         Event $event
     ): Event {
 
-        if (
-            $event->status
-            === 'Cancelled'
-        ) {
+        /*
+        |--------------------------------------------------------------------------
+        | Synchronize Using Event Model
+        |--------------------------------------------------------------------------
+        |
+        | Event::syncScheduledStatus() safely normalizes event_date,
+        | start_time, and end_time before comparing them.
+        |
+        */
 
-            return $event;
-        }
+        $event->syncScheduledStatus();
 
 
         /*
         |--------------------------------------------------------------------------
-        | Campus Timezone
+        | Refresh Current Event Data
         |--------------------------------------------------------------------------
         */
 
-        $timezone =
-            'Asia/Manila';
+        $event->refresh();
 
-
-        $startsAt =
-            Carbon::parse(
-                $event->event_date
-                . ' '
-                . $event->start_time,
-                $timezone
-            );
-
-
-        $endsAt =
-            Carbon::parse(
-                $event->event_date
-                . ' '
-                . $event->end_time,
-                $timezone
-            );
-
-
-        $now =
-            Carbon::now(
-                $timezone
-            );
-
-
-        $newStatus =
-            match (true) {
-
-                $now->lt(
-                    $startsAt
-                ) =>
-                    'Upcoming',
-
-                $now->lte(
-                    $endsAt
-                ) =>
-                    'Ongoing',
-
-                default =>
-                    'Completed',
-
-            };
-
-
-        if (
-            $event->status
-            !== $newStatus
-        ) {
-
-            $event->status =
-                $newStatus;
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Save Status To Database
-            |--------------------------------------------------------------------------
-            */
-
-            $event->save();
-
-        }
+        $event->load(
+            'department'
+        );
 
 
         return $event;

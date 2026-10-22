@@ -37,4 +37,13 @@ class Personnel extends Model
             'personnel_id'
         );
     }
+
+    public function availabilities()
+    {
+        return $this->hasMany(
+            PersonnelAvailability::class,
+            'personnel_id',
+            'personnel_id'
+        );
+    }
 }

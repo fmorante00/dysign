@@ -19,6 +19,9 @@ use App\Http\Controllers\ParticipationReportController;
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\EventEligibilityController;
+use App\Http\Controllers\EventPersonnelAssignmentController;
+use App\Http\Controllers\PersonnelAvailabilityController;
+use App\Http\Controllers\PersonnelDutyController;
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
@@ -225,6 +228,7 @@ Route::middleware([
 ])
 ->group(function () {
 
+
     /*
     |--------------------------------------------------------------------------
     | Student Account Provisioning Overview
@@ -238,7 +242,9 @@ Route::middleware([
             'index'
         ]
     )
-    ->name('students.accounts.index');
+    ->name(
+        'students.accounts.index'
+    );
 
 
     /*
@@ -254,7 +260,9 @@ Route::middleware([
             'provision'
         ]
     )
-    ->name('students.accounts.provision');
+    ->name(
+        'students.accounts.provision'
+    );
 
 });
 
@@ -276,9 +284,8 @@ Route::middleware([
     |--------------------------------------------------------------------------
     | Event Participant Eligibility Management
     |--------------------------------------------------------------------------
-    |
-    |
     */
+
 
     /*
     |--------------------------------------------------------------------------
@@ -297,6 +304,7 @@ Route::middleware([
         'events.eligibility.events'
     );
 
+
     Route::get(
         '/events/{event}/eligibility',
         [
@@ -304,7 +312,9 @@ Route::middleware([
             'index'
         ]
     )
-    ->whereNumber('event')
+    ->whereNumber(
+        'event'
+    )
     ->name(
         'events.eligibility.index'
     );
@@ -317,7 +327,9 @@ Route::middleware([
             'store'
         ]
     )
-    ->whereNumber('event')
+    ->whereNumber(
+        'event'
+    )
     ->name(
         'events.eligibility.store'
     );
@@ -330,8 +342,12 @@ Route::middleware([
             'destroy'
         ]
     )
-    ->whereNumber('event')
-    ->whereNumber('rule')
+    ->whereNumber(
+        'event'
+    )
+    ->whereNumber(
+        'rule'
+    )
     ->name(
         'events.eligibility.destroy'
     );
@@ -344,9 +360,59 @@ Route::middleware([
             'refresh'
         ]
     )
-    ->whereNumber('event')
+    ->whereNumber(
+        'event'
+    )
     ->name(
         'events.eligibility.refresh'
+    );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Event Personnel Assignment Management
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/event-personnel-assignment',
+        [
+            EventPersonnelAssignmentController::class,
+            'events'
+        ]
+    )
+    ->name(
+        'events.personnel-assignment.events'
+    );
+
+
+    Route::get(
+        '/event-personnel-assignment/{event}',
+        [
+            EventPersonnelAssignmentController::class,
+            'index'
+        ]
+    )
+    ->whereNumber(
+        'event'
+    )
+    ->name(
+        'events.personnel-assignment.index'
+    );
+
+
+    Route::put(
+        '/event-personnel-assignment/{event}',
+        [
+            EventPersonnelAssignmentController::class,
+            'update'
+        ]
+    )
+    ->whereNumber(
+        'event'
+    )
+    ->name(
+        'events.personnel-assignment.update'
     );
 
 
@@ -399,7 +465,9 @@ Route::middleware([
             'feed'
         ]
     )
-    ->whereNumber('event')
+    ->whereNumber(
+        'event'
+    )
     ->name(
         'attendance.monitor.feed'
     );
@@ -445,7 +513,9 @@ Route::middleware([
             'show'
         ]
     )
-    ->whereNumber('event')
+    ->whereNumber(
+        'event'
+    )
     ->name(
         'my-events.show'
     );
@@ -464,7 +534,9 @@ Route::middleware([
             'index'
         ]
     )
-    ->whereNumber('event')
+    ->whereNumber(
+        'event'
+    )
     ->name(
         'attendance.index'
     );
@@ -477,7 +549,9 @@ Route::middleware([
             'scan'
         ]
     )
-    ->whereNumber('event')
+    ->whereNumber(
+        'event'
+    )
     ->name(
         'attendance.scan'
     );
@@ -490,13 +564,181 @@ Route::middleware([
             'feed'
         ]
     )
-    ->whereNumber('event')
+    ->whereNumber(
+        'event'
+    )
     ->name(
         'attendance.feed'
     );
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Attendance Personnel Availability Management
+    |--------------------------------------------------------------------------
+    |
+    | Attendance Personnel can declare, update, and remove only their own
+    | availability schedules.
+    |
+    */
+
+    Route::get(
+        '/my-availability',
+        [
+            PersonnelAvailabilityController::class,
+            'index'
+        ]
+    )
+    ->name(
+        'personnel-availability.index'
+    );
+
+
+    Route::post(
+        '/my-availability',
+        [
+            PersonnelAvailabilityController::class,
+            'store'
+        ]
+    )
+    ->name(
+        'personnel-availability.store'
+    );
+
+
+    Route::put(
+        '/my-availability/{availability}',
+        [
+            PersonnelAvailabilityController::class,
+            'update'
+        ]
+    )
+    ->whereNumber(
+        'availability'
+    )
+    ->name(
+        'personnel-availability.update'
+    );
+
+
+    Route::delete(
+        '/my-availability/{availability}',
+        [
+            PersonnelAvailabilityController::class,
+            'destroy'
+        ]
+    )
+    ->whereNumber(
+        'availability'
+    )
+    ->name(
+        'personnel-availability.destroy'
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Personnel Duty Monitoring & Completion
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/my-duties',
+        [
+            PersonnelDutyController::class,
+            'index'
+        ]
+    )
+    ->name(
+        'personnel-duties.index'
+    );
+
+
+    Route::post(
+        '/my-duties/{assignment}/check-in',
+        [
+            PersonnelDutyController::class,
+            'checkIn'
+        ]
+    )
+    ->whereNumber(
+        'assignment'
+    )
+    ->name(
+        'personnel-duties.check-in'
+    );
+
+
+    Route::post(
+        '/my-duties/{assignment}/check-out',
+        [
+            PersonnelDutyController::class,
+            'checkOut'
+        ]
+    )
+    ->whereNumber(
+        'assignment'
+    )
+    ->name(
+        'personnel-duties.check-out'
+    );
+
 });
 
+
+/*
+|--------------------------------------------------------------------------
+| Attendance Personnel Availability - Department Staff View
+|--------------------------------------------------------------------------
+|
+| Department Staff can review declared personnel availability before
+| assigning attendance duties. This route is view-only.
+|
+*/
+
+Route::middleware([
+    'auth',
+    'role:Department Staff'
+])
+->group(function () {
+
+
+    Route::get(
+        '/personnel-availability',
+        [
+            PersonnelAvailabilityController::class,
+            'staffIndex'
+        ]
+    )
+    ->name(
+        'personnel-availability.staff'
+    );
+
+});
+
+/*
+|--------------------------------------------------------------------------
+| Personnel Duty Monitoring - Department Staff
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware([
+    'auth',
+    'role:Department Staff'
+])
+->group(function () {
+
+    Route::get(
+        '/personnel-duty-monitoring',
+        [
+            PersonnelDutyController::class,
+            'staffIndex'
+        ]
+    )
+    ->name(
+        'personnel-duties.staff'
+    );
+
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -524,7 +766,9 @@ Route::middleware([
             'edit'
         ]
     )
-    ->whereNumber('id')
+    ->whereNumber(
+        'id'
+    )
     ->name(
         'roles.permissions'
     );
@@ -537,7 +781,9 @@ Route::middleware([
             'update'
         ]
     )
-    ->whereNumber('id')
+    ->whereNumber(
+        'id'
+    )
     ->name(
         'roles.permissions.update'
     );
@@ -549,22 +795,23 @@ Route::middleware([
     |--------------------------------------------------------------------------
     */
 
-Route::middleware([
-    'auth',
-    'role:Administrator'
-])
-->group(function () {
+    Route::middleware([
+        'auth',
+        'role:Administrator'
+    ])
+    ->group(function () {
 
-    Route::get(
-        '/backup',
-        [
-            BackupController::class,
-            'index'
-        ]
-    )
-    ->name(
-        'backup.index'
-    );
+
+        Route::get(
+            '/backup',
+            [
+                BackupController::class,
+                'index'
+            ]
+        )
+        ->name(
+            'backup.index'
+        );
 
 
         Route::post(
@@ -586,7 +833,9 @@ Route::middleware([
                 'download'
             ]
         )
-        ->whereNumber('backup')
+        ->whereNumber(
+            'backup'
+        )
         ->name(
             'backup.download'
         );
@@ -724,16 +973,16 @@ Route::middleware([
     |
     */
 
-        Route::get(
-            '/reports/participation',
-            [
-                ParticipationReportController::class,
-                'index'
-            ]
-        )
-        ->name(
-            'reports.participation'
-        );
+    Route::get(
+        '/reports/participation',
+        [
+            ParticipationReportController::class,
+            'index'
+        ]
+    )
+    ->name(
+        'reports.participation'
+    );
 
 
     /*

@@ -44,38 +44,105 @@ class Event extends Model
         ?Carbon $now = null
     ): string {
 
+        /*
+        |--------------------------------------------------------------------------
+        | Preserve Cancelled Status
+        |--------------------------------------------------------------------------
+        */
+
         if ($this->status === 'Cancelled') {
             return 'Cancelled';
         }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Current Date and Time
+        |--------------------------------------------------------------------------
+        */
 
         $now = $now
             ? $now->copy()->setTimezone(self::EVENT_TIMEZONE)
             : Carbon::now(self::EVENT_TIMEZONE);
 
-        $eventDate = $this->event_date
-            ? Carbon::parse(
-                $this->event_date
-            )->format('Y-m-d')
-            : null;
+
+        /*
+        |--------------------------------------------------------------------------
+        | Validate Schedule Information
+        |--------------------------------------------------------------------------
+        */
 
         if (
-            !$eventDate
+            !$this->event_date
             || !$this->start_time
             || !$this->end_time
         ) {
             return $this->status ?? 'Upcoming';
         }
 
-        $eventStart = Carbon::parse(
-            $eventDate . ' ' . $this->start_time,
+
+        /*
+        |--------------------------------------------------------------------------
+        | Normalize Event Date
+        |--------------------------------------------------------------------------
+        |
+        | event_date is cast as a Carbon date object.
+        | We explicitly format it to Y-m-d so that the automatic
+        | 00:00:00 portion is never included when combining it
+        | with start_time or end_time.
+        |
+        */
+
+        $eventDate = Carbon::parse(
+            $this->event_date
+        )->format('Y-m-d');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Normalize Start and End Time
+        |--------------------------------------------------------------------------
+        |
+        | We also normalize the time fields to H:i:s.
+        | This prevents Carbon from receiving something like:
+        |
+        | 2026-10-05 00:00:00 07:30:00
+        |
+        */
+
+        $startTime = Carbon::parse(
+            $this->start_time
+        )->format('H:i:s');
+
+        $endTime = Carbon::parse(
+            $this->end_time
+        )->format('H:i:s');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Build Full Event DateTime
+        |--------------------------------------------------------------------------
+        */
+
+        $eventStart = Carbon::createFromFormat(
+            'Y-m-d H:i:s',
+            $eventDate . ' ' . $startTime,
             self::EVENT_TIMEZONE
         );
 
-        $eventEnd = Carbon::parse(
-            $eventDate . ' ' . $this->end_time,
+        $eventEnd = Carbon::createFromFormat(
+            'Y-m-d H:i:s',
+            $eventDate . ' ' . $endTime,
             self::EVENT_TIMEZONE
         );
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Determine Automatic Status
+        |--------------------------------------------------------------------------
+        */
 
         if ($now->lt($eventStart)) {
             return 'Upcoming';
@@ -88,6 +155,12 @@ class Event extends Model
         return 'Completed';
     }
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Synchronize Single Event Status
+    |--------------------------------------------------------------------------
+    */
 
     public function syncScheduledStatus(
         ?Carbon $now = null
@@ -111,9 +184,17 @@ class Event extends Model
     }
 
 
+    /*
+    |--------------------------------------------------------------------------
+    | Synchronize All Event Statuses
+    |--------------------------------------------------------------------------
+    */
+
     public static function syncScheduledStatuses(): void
     {
-        $now = Carbon::now(self::EVENT_TIMEZONE);
+        $now = Carbon::now(
+            self::EVENT_TIMEZONE
+        );
 
         static::query()
             ->where(
