@@ -18,6 +18,7 @@ use App\Http\Controllers\AttendanceReportController;
 use App\Http\Controllers\ParticipationReportController;
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\BackupController;
+use App\Http\Controllers\EventEligibilityController;
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
@@ -273,33 +274,79 @@ Route::middleware([
 
     /*
     |--------------------------------------------------------------------------
-    | Event Personnel Assignment
+    | Event Participant Eligibility Management
+    |--------------------------------------------------------------------------
+    |
+    |
+    */
+
+    /*
+    |--------------------------------------------------------------------------
+    | Participant Eligibility Event Selection
     |--------------------------------------------------------------------------
     */
 
     Route::get(
-        '/events/{id}/personnel',
+        '/event-eligibility',
         [
-            EventController::class,
-            'personnel'
+            EventEligibilityController::class,
+            'events'
         ]
     )
-    ->whereNumber('id')
     ->name(
-        'events.personnel'
+        'events.eligibility.events'
+    );
+
+    Route::get(
+        '/events/{event}/eligibility',
+        [
+            EventEligibilityController::class,
+            'index'
+        ]
+    )
+    ->whereNumber('event')
+    ->name(
+        'events.eligibility.index'
     );
 
 
-    Route::put(
-        '/events/{id}/personnel',
+    Route::post(
+        '/events/{event}/eligibility',
         [
-            EventController::class,
-            'updatePersonnel'
+            EventEligibilityController::class,
+            'store'
         ]
     )
-    ->whereNumber('id')
+    ->whereNumber('event')
     ->name(
-        'events.personnel.update'
+        'events.eligibility.store'
+    );
+
+
+    Route::delete(
+        '/events/{event}/eligibility/rules/{rule}',
+        [
+            EventEligibilityController::class,
+            'destroy'
+        ]
+    )
+    ->whereNumber('event')
+    ->whereNumber('rule')
+    ->name(
+        'events.eligibility.destroy'
+    );
+
+
+    Route::post(
+        '/events/{event}/eligibility/refresh',
+        [
+            EventEligibilityController::class,
+            'refresh'
+        ]
+    )
+    ->whereNumber('event')
+    ->name(
+        'events.eligibility.refresh'
     );
 
 
@@ -307,6 +354,9 @@ Route::middleware([
     |--------------------------------------------------------------------------
     | Event CRUD
     |--------------------------------------------------------------------------
+    |
+    | Module #4 - Event Setup & Management
+    |
     */
 
     Route::resource(

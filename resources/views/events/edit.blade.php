@@ -4,10 +4,6 @@
 
     $currentUser = auth()->user();
 
-    $currentRole =
-        $currentUser->role->role_name ?? null;
-
-
     $statusConfig = match($event->status) {
 
         'Upcoming' => [
@@ -49,7 +45,6 @@
     */
 
     .event-edit-hero {
-
         background:
             linear-gradient(
                 100deg,
@@ -61,7 +56,6 @@
 
         background-size: cover;
         background-position: center;
-
     }
 
 
@@ -72,10 +66,8 @@
     */
 
     .event-edit-section {
-
         box-shadow:
             0 1px 2px rgba(15, 23, 42, .025);
-
     }
 
 </style>
@@ -116,7 +108,6 @@
         ></div>
 
 
-
         <div
             class="
                 relative
@@ -131,7 +122,6 @@
             "
         >
 
-
             <div class="min-w-0 max-w-3xl">
 
                 <p
@@ -143,7 +133,7 @@
                         text-[#E7C75B]
                     "
                 >
-                    Event Administration
+                    Event Management
                 </p>
 
 
@@ -170,10 +160,9 @@
                         text-white/75
                     "
                 >
-                    Update the official event record, schedule,
-                    location, department, and lifecycle status.
+                    Update the official event information,
+                    venue, schedule, and description.
                 </p>
-
 
 
                 <div
@@ -193,21 +182,17 @@
                         {{ $event->event_name }}
                     </span>
 
-
                     <span class="text-white/30">
                         •
                     </span>
-
 
                     <span>
                         Event #{{ $event->event_id }}
                     </span>
 
-
                     <span class="text-white/30">
                         •
                     </span>
-
 
                     <span
                         class="
@@ -233,7 +218,6 @@
                 </div>
 
             </div>
-
 
 
             <div class="shrink-0">
@@ -279,7 +263,6 @@
                 </a>
 
             </div>
-
 
         </div>
 
@@ -398,7 +381,6 @@
 
         <section class="min-w-0">
 
-
             <div class="mb-4">
 
                 <p
@@ -433,12 +415,11 @@
                         text-gray-400
                     "
                 >
-                    Update the official event identity,
-                    location, and organizational scope.
+                    Update the official event name,
+                    venue, and event information.
                 </p>
 
             </div>
-
 
 
             <div
@@ -451,7 +432,6 @@
                     bg-white
                 "
             >
-
 
                 <div
                     class="
@@ -571,7 +551,7 @@
 
 
 
-                    {{-- DEPARTMENT --}}
+                    {{-- ORGANIZING DEPARTMENT --}}
 
                     <div
                         class="
@@ -579,16 +559,14 @@
                             border-gray-100
                             px-6
                             py-6
-                            md:border-r
                             md:border-b-0
+                            md:border-r
                         "
                     >
 
-                        <label
-                            for="department_id"
+                        <p
                             class="
                                 mb-2
-                                block
                                 text-[10px]
                                 font-bold
                                 uppercase
@@ -596,137 +574,51 @@
                                 text-gray-400
                             "
                         >
-                            Department
-                        </label>
+                            Organizing Department
+                        </p>
 
 
-                        @if($currentRole === 'Department Staff')
+                        <div
+                            class="
+                                flex
+                                min-h-[46px]
+                                items-center
+                                rounded-lg
+                                border
+                                border-gray-200
+                                bg-gray-50
+                                px-4
+                                text-sm
+                                font-semibold
+                                text-gray-700
+                            "
+                        >
+                            {{
+                                $event->department?->department_name
+                                ?? $currentUser->department?->department_name
+                                ?? 'No department assigned'
+                            }}
+                        </div>
 
 
-                            <div
-                                class="
-                                    flex
-                                    min-h-[46px]
-                                    items-center
-                                    rounded-lg
-                                    border
-                                    border-gray-200
-                                    bg-gray-50
-                                    px-4
-                                    text-sm
-                                    font-semibold
-                                    text-gray-700
-                                "
-                            >
-                                {{
-                                    $currentUser
-                                        ->department
-                                        ->department_name
-                                    ?? 'No department assigned'
-                                }}
-                            </div>
-
-
-                            <input
-                                type="hidden"
-                                name="department_id"
-                                value="{{ $currentUser->department_id }}"
-                            >
-
-
-                            <p
-                                class="
-                                    mt-2
-                                    text-xs
-                                    leading-5
-                                    text-gray-400
-                                "
-                            >
-                                Department Staff cannot transfer
-                                an event to another department.
-                            </p>
-
-
-                        @else
-
-
-                            <select
-                                id="department_id"
-                                name="department_id"
-                                class="
-                                    w-full
-                                    rounded-lg
-                                    border-gray-200
-                                    px-4
-                                    py-3
-                                    text-sm
-                                    text-gray-700
-                                    focus:border-[#101064]
-                                    focus:ring-[#101064]
-                                "
-                            >
-
-                                <option
-                                    value=""
-                                    {{
-                                        old(
-                                            'department_id',
-                                            $event->department_id
-                                        ) === null
-                                            || old(
-                                                'department_id',
-                                                $event->department_id
-                                            ) === ''
-                                                ? 'selected'
-                                                : ''
-                                    }}
-                                >
-                                    University-wide Event
-                                </option>
-
-
-                                @foreach($departments as $department)
-
-                                    <option
-                                        value="{{ $department->department_id }}"
-                                        {{
-                                            (string) old(
-                                                'department_id',
-                                                $event->department_id
-                                            )
-                                            ===
-                                            (string) $department->department_id
-                                                ? 'selected'
-                                                : ''
-                                        }}
-                                    >
-                                        {{ $department->department_name }}
-                                    </option>
-
-                                @endforeach
-
-                            </select>
-
-
-                            <p
-                                class="
-                                    mt-2
-                                    text-xs
-                                    leading-5
-                                    text-gray-400
-                                "
-                            >
-                                Changing the department may require
-                                updating the assigned attendance personnel.
-                            </p>
-
-                        @endif
+                        <p
+                            class="
+                                mt-2
+                                text-xs
+                                leading-5
+                                text-gray-400
+                            "
+                        >
+                            The organizing department is based on
+                            your Department Staff account and cannot
+                            be changed here.
+                        </p>
 
                     </div>
 
 
 
-                    {{-- EVENT SCOPE INFO --}}
+                    {{-- AUTOMATIC STATUS INFORMATION --}}
 
                     <div
                         class="
@@ -745,73 +637,38 @@
                                 text-gray-400
                             "
                         >
-                            Current Event Scope
+                            Automatic Event Status
                         </p>
 
 
                         <div class="mt-3">
 
-                            @if($event->department)
+                            <span
+                                class="
+                                    inline-flex
+                                    items-center
+                                    gap-2
+                                    rounded-full
+                                    px-3
+                                    py-1
+                                    text-xs
+                                    font-semibold
+                                    {{ $statusConfig['class'] }}
+                                "
+                            >
 
                                 <span
                                     class="
-                                        inline-flex
-                                        items-center
-                                        gap-2
+                                        h-1.5
+                                        w-1.5
                                         rounded-full
-                                        bg-[#FFF9E7]
-                                        px-3
-                                        py-1
-                                        text-xs
-                                        font-semibold
-                                        text-[#8A6D00]
+                                        {{ $statusConfig['dot'] }}
                                     "
-                                >
+                                ></span>
 
-                                    <span
-                                        class="
-                                            h-1.5
-                                            w-1.5
-                                            rounded-full
-                                            bg-[#D4A017]
-                                        "
-                                    ></span>
+                                {{ $event->status }}
 
-                                    Department Event
-
-                                </span>
-
-                            @else
-
-                                <span
-                                    class="
-                                        inline-flex
-                                        items-center
-                                        gap-2
-                                        rounded-full
-                                        bg-[#F0F1F8]
-                                        px-3
-                                        py-1
-                                        text-xs
-                                        font-semibold
-                                        text-[#101064]
-                                    "
-                                >
-
-                                    <span
-                                        class="
-                                            h-1.5
-                                            w-1.5
-                                            rounded-full
-                                            bg-[#101064]
-                                        "
-                                    ></span>
-
-                                    University-wide
-
-                                </span>
-
-                            @endif
+                            </span>
 
                         </div>
 
@@ -824,12 +681,12 @@
                                 text-gray-500
                             "
                         >
-                            Personnel assignments must remain
-                            compatible with the event department.
+                            Status is automatically determined
+                            using the event date, start time,
+                            and end time.
                         </p>
 
                     </div>
-
 
                 </div>
 
@@ -844,7 +701,6 @@
         {{-- ====================================================== --}}
 
         <section class="min-w-0">
-
 
             <div class="mb-4">
 
@@ -880,11 +736,12 @@
                         text-gray-400
                     "
                 >
-                    Update the scheduled date and attendance window.
+                    Update when the event will take place.
+                    The event status will automatically adjust
+                    according to the updated schedule.
                 </p>
 
             </div>
-
 
 
             <div
@@ -938,6 +795,10 @@
                         value="{{ old(
                             'event_date',
                             $event->event_date
+                                ? \Carbon\Carbon::parse(
+                                    $event->event_date
+                                )->format('Y-m-d')
+                                : ''
                         ) }}"
                         required
                         class="
@@ -1067,258 +928,6 @@
 
                 </div>
 
-
-            </div>
-
-        </section>
-
-
-
-        {{-- ====================================================== --}}
-        {{-- EVENT STATUS --}}
-        {{-- ====================================================== --}}
-
-        <section class="min-w-0">
-
-
-            <div class="mb-4">
-
-                <p
-                    class="
-                        text-xs
-                        font-semibold
-                        uppercase
-                        tracking-[0.28em]
-                        text-[#D4A017]
-                    "
-                >
-                    Lifecycle
-                </p>
-
-
-                <h2
-                    class="
-                        mt-2
-                        text-xl
-                        font-bold
-                        text-[#101064]
-                    "
-                >
-                    Event Status
-                </h2>
-
-
-                <p
-                    class="
-                        mt-1
-                        text-sm
-                        text-gray-400
-                    "
-                >
-                    Update the current operational state
-                    of this event.
-                </p>
-
-            </div>
-
-
-
-            <div
-                class="
-                    event-edit-section
-                    grid
-                    grid-cols-1
-                    overflow-hidden
-                    border
-                    border-gray-200
-                    bg-white
-                    lg:grid-cols-[1fr_360px]
-                "
-            >
-
-
-                {{-- STATUS SELECT --}}
-
-                <div
-                    class="
-                        border-b
-                        border-gray-100
-                        px-6
-                        py-6
-                        lg:border-b-0
-                        lg:border-r
-                    "
-                >
-
-                    <label
-                        for="status"
-                        class="
-                            mb-2
-                            block
-                            text-[10px]
-                            font-bold
-                            uppercase
-                            tracking-wider
-                            text-gray-400
-                        "
-                    >
-                        Status
-                        <span class="text-red-500">*</span>
-                    </label>
-
-
-                    <select
-                        id="status"
-                        name="status"
-                        required
-                        class="
-                            w-full
-                            rounded-lg
-                            border-gray-200
-                            px-4
-                            py-3
-                            text-sm
-                            text-gray-700
-                            focus:border-[#101064]
-                            focus:ring-[#101064]
-                        "
-                    >
-
-                        <option
-                            value="Upcoming"
-                            {{
-                                old(
-                                    'status',
-                                    $event->status
-                                ) === 'Upcoming'
-                                    ? 'selected'
-                                    : ''
-                            }}
-                        >
-                            Upcoming
-                        </option>
-
-
-                        <option
-                            value="Ongoing"
-                            {{
-                                old(
-                                    'status',
-                                    $event->status
-                                ) === 'Ongoing'
-                                    ? 'selected'
-                                    : ''
-                            }}
-                        >
-                            Ongoing
-                        </option>
-
-
-                        <option
-                            value="Completed"
-                            {{
-                                old(
-                                    'status',
-                                    $event->status
-                                ) === 'Completed'
-                                    ? 'selected'
-                                    : ''
-                            }}
-                        >
-                            Completed
-                        </option>
-
-
-                        <option
-                            value="Cancelled"
-                            {{
-                                old(
-                                    'status',
-                                    $event->status
-                                ) === 'Cancelled'
-                                    ? 'selected'
-                                    : ''
-                            }}
-                        >
-                            Cancelled
-                        </option>
-
-                    </select>
-
-                </div>
-
-
-
-                {{-- CURRENT STATUS --}}
-
-                <div
-                    class="
-                        bg-gray-50/60
-                        px-6
-                        py-6
-                    "
-                >
-
-                    <p
-                        class="
-                            text-[10px]
-                            font-bold
-                            uppercase
-                            tracking-wider
-                            text-gray-400
-                        "
-                    >
-                        Current Status
-                    </p>
-
-
-                    <div class="mt-3">
-
-                        <span
-                            class="
-                                inline-flex
-                                items-center
-                                gap-2
-                                rounded-full
-                                px-3
-                                py-1
-                                text-xs
-                                font-semibold
-                                {{ $statusConfig['class'] }}
-                            "
-                        >
-
-                            <span
-                                class="
-                                    h-1.5
-                                    w-1.5
-                                    rounded-full
-                                    {{ $statusConfig['dot'] }}
-                                "
-                            ></span>
-
-                            {{ $event->status }}
-
-                        </span>
-
-                    </div>
-
-
-                    <p
-                        class="
-                            mt-3
-                            text-xs
-                            leading-5
-                            text-gray-500
-                        "
-                    >
-                        Completed and cancelled events cannot
-                        have their personnel assignments changed.
-                    </p>
-
-                </div>
-
-
             </div>
 
         </section>
@@ -1330,7 +939,6 @@
         {{-- ====================================================== --}}
 
         <section class="min-w-0">
-
 
             <div class="mb-4">
 
@@ -1358,8 +966,18 @@
                     Description
                 </h2>
 
-            </div>
 
+                <p
+                    class="
+                        mt-1
+                        text-sm
+                        text-gray-400
+                    "
+                >
+                    Update additional information about the event.
+                </p>
+
+            </div>
 
 
             <div
@@ -1420,142 +1038,6 @@
 
 
         {{-- ====================================================== --}}
-        {{-- PERSONNEL NOTICE --}}
-        {{-- ====================================================== --}}
-
-        <section
-            class="
-                event-edit-section
-                overflow-hidden
-                border
-                border-[#E7C75B]
-                bg-white
-            "
-        >
-
-            <div
-                class="
-                    flex
-                    flex-col
-                    gap-5
-                    px-6
-                    py-6
-                    sm:flex-row
-                    sm:items-center
-                    sm:justify-between
-                "
-            >
-
-
-                <div
-                    class="
-                        flex
-                        min-w-0
-                        items-start
-                        gap-4
-                    "
-                >
-
-                    <div
-                        class="
-                            flex
-                            h-11
-                            w-11
-                            shrink-0
-                            items-center
-                            justify-center
-                            rounded-full
-                            bg-[#FFF9E7]
-                            text-[#B68A0D]
-                        "
-                    >
-
-                        <svg
-                            class="h-5 w-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                stroke-width="1.8"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2m7-10a4 4 0 100-8 4 4 0 000 8"
-                            />
-                        </svg>
-
-                    </div>
-
-
-
-                    <div class="min-w-0">
-
-                        <p
-                            class="
-                                font-bold
-                                text-[#101064]
-                            "
-                        >
-                            Attendance Personnel
-                        </p>
-
-
-                        <p
-                            class="
-                                mt-1
-                                max-w-2xl
-                                text-sm
-                                leading-6
-                                text-gray-500
-                            "
-                        >
-                            Personnel assignment is managed separately
-                            so schedule and event details do not
-                            accidentally alter attendance staffing.
-                        </p>
-
-                    </div>
-
-                </div>
-
-
-
-                <a
-                    href="{{ route(
-                        'events.personnel',
-                        $event->event_id
-                    ) }}"
-                    class="
-                        inline-flex
-                        shrink-0
-                        items-center
-                        justify-center
-                        gap-2
-                        rounded-lg
-                        border
-                        border-[#D4A017]
-                        bg-white
-                        px-5
-                        py-2.5
-                        text-xs
-                        font-semibold
-                        text-[#8A6D00]
-                        transition
-                        hover:bg-[#FFF9E7]
-                    "
-                >
-                    Manage Personnel
-                    <span>→</span>
-                </a>
-
-
-            </div>
-
-        </section>
-
-
-
-        {{-- ====================================================== --}}
         {{-- SAVE ACTIONS --}}
         {{-- ====================================================== --}}
 
@@ -1581,7 +1063,6 @@
                     sm:justify-between
                 "
             >
-
 
                 <div>
 
@@ -1609,7 +1090,6 @@
                     </p>
 
                 </div>
-
 
 
                 <div
@@ -1645,7 +1125,6 @@
                     >
                         Cancel
                     </a>
-
 
 
                     <button
@@ -1687,7 +1166,6 @@
                     </button>
 
                 </div>
-
 
             </div>
 

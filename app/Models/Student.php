@@ -24,9 +24,13 @@ class Student extends Model
         'status',
     ];
 
-    /**
-     * Student attendance records.
-     */
+
+    /*
+    |--------------------------------------------------------------------------
+    | Attendance Records
+    |--------------------------------------------------------------------------
+    */
+
     public function attendanceRecords()
     {
         return $this->hasMany(
@@ -36,13 +40,33 @@ class Student extends Model
         );
     }
 
-    /**
-     * Student's associated login account.
-     */
+
+    /*
+    |--------------------------------------------------------------------------
+    | Student Account
+    |--------------------------------------------------------------------------
+    */
+
     public function user()
     {
         return $this->hasOne(
             User::class,
+            'student_id',
+            'student_id'
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Event Eligibility
+    |--------------------------------------------------------------------------
+    */
+
+    public function eventEligibilities()
+    {
+        return $this->hasMany(
+            EventEligibleStudent::class,
             'student_id',
             'student_id'
         );

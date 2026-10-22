@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Department;
 use App\Models\Event;
-use App\Models\AttendanceRecord;
 use App\Models\EventAssignment;
 use App\Models\Personnel;
 use Illuminate\Http\Request;
@@ -21,7 +20,13 @@ class EventController extends Controller
 
     public function index(Request $request)
     {
-        $this->authorizeEventAccess();
+        $this->authorizeEventViewing();
+
+        /*
+         * Synchronize schedule-based statuses before
+         * filtering or displaying the event directory.
+         */
+        Event::syncScheduledStatuses();
 
         $user = auth()->user();
 
@@ -31,9 +36,9 @@ class EventController extends Controller
             'assignments.personnel.user.role',
             'assignments.personnel.user.department',
         ])
-        ->withCount('assignments')
-        ->orderByDesc('event_date')
-        ->orderByDesc('start_time');
+            ->withCount('assignments')
+            ->orderByDesc('event_date')
+            ->orderByDesc('start_time');
 
 
         /*
@@ -42,7 +47,10 @@ class EventController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        if ($user->role->role_name === 'Department Staff') {
+        if (
+            $user->role->role_name ===
+            'Department Staff'
+        ) {
 
             $this->ensureDepartmentStaffHasDepartment();
 
@@ -51,7 +59,9 @@ class EventController extends Controller
                 $user->department_id
             );
 
-        } elseif ($request->filled('department_id')) {
+        } elseif (
+            $request->filled('department_id')
+        ) {
 
             $query->where(
                 'department_id',
@@ -68,26 +78,29 @@ class EventController extends Controller
 
         if ($request->filled('search')) {
 
-            $search = trim($request->search);
+            $search =
+                trim($request->search);
 
-            $query->where(function ($q) use ($search) {
+            $query->where(
+                function ($q) use ($search) {
 
-                $q->where(
-                    'event_name',
-                    'like',
-                    "%{$search}%"
-                )
-                ->orWhere(
-                    'location',
-                    'like',
-                    "%{$search}%"
-                )
-                ->orWhere(
-                    'description',
-                    'like',
-                    "%{$search}%"
-                );
-            });
+                    $q->where(
+                        'event_name',
+                        'like',
+                        "%{$search}%"
+                    )
+                        ->orWhere(
+                            'location',
+                            'like',
+                            "%{$search}%"
+                        )
+                        ->orWhere(
+                            'description',
+                            'like',
+                            "%{$search}%"
+                        );
+                }
+            );
         }
 
 
@@ -121,7 +134,8 @@ class EventController extends Controller
         }
 
 
-        $events = $query->get();
+        $events =
+            $query->get();
 
 
         /*
@@ -130,7 +144,10 @@ class EventController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        if ($user->role->role_name === 'Department Staff') {
+        if (
+            $user->role->role_name ===
+            'Department Staff'
+        ) {
 
             $departments = Department::where(
                 'department_id',
@@ -163,69 +180,15 @@ class EventController extends Controller
 
     public function create()
     {
-        $this->authorizeEventAccess();
-
-        $user = auth()->user();
-
-
         /*
-        |--------------------------------------------------------------------------
-        | Department Options
-        |--------------------------------------------------------------------------
-        */
+         * Only Department Staff may create events.
+         */
+        $this->authorizeEventManagement();
 
-        if ($user->role->role_name === 'Department Staff') {
-
-            $this->ensureDepartmentStaffHasDepartment();
-
-            $departments = Department::where(
-                'department_id',
-                $user->department_id
-            )->get();
-
-            /*
-             * Department Staff can only select personnel that are either:
-             *
-             * 1. assigned to the same department; or
-             * 2. university-wide personnel with department_id = NULL.
-             */
-
-            $personnel = $this
-                ->attendancePersonnelQuery(
-                    $user->department_id
-                )
-                ->orderBy('last_name')
-                ->orderBy('first_name')
-                ->get();
-
-        } else {
-
-            $departments = Department::orderBy(
-                'department_name'
-            )->get();
-
-            /*
-             * Administrator initially receives every eligible
-             * Attendance Personnel account.
-             *
-             * The Create Event view can filter this list dynamically
-             * when a department is selected.
-             */
-
-            $personnel = $this
-                ->attendancePersonnelQuery()
-                ->orderBy('last_name')
-                ->orderBy('first_name')
-                ->get();
-        }
-
+        $this->ensureDepartmentStaffHasDepartment();
 
         return view(
-            'events.create',
-            compact(
-                'departments',
-                'personnel'
-            )
+            'events.create'
         );
     }
 
@@ -238,9 +201,14 @@ class EventController extends Controller
 
     public function store(Request $request)
     {
-        $this->authorizeEventAccess();
+        /*
+         * Only Department Staff may save events.
+         */
+        $this->authorizeEventManagement();
 
         $user = auth()->user();
+
+        $this->ensureDepartmentStaffHasDepartment();
 
 
         $validated = $request->validate([
@@ -279,130 +247,53 @@ class EventController extends Controller
                 'max:255',
             ],
 
-            'department_id' => [
-                'nullable',
-                'integer',
-                'exists:departments,department_id',
-            ],
-
-            'personnel_id' => [
-                'required',
-                'integer',
-                'exists:personnel,personnel_id',
-            ],
-
         ]);
 
 
         /*
         |--------------------------------------------------------------------------
-        | Department Staff Security
+        | Automatic Ownership
         |--------------------------------------------------------------------------
+        |
+        | Department information is never trusted from the browser.
+        | The event automatically belongs to the logged-in
+        | Department Staff account's department.
+        |
         */
 
-        if ($user->role->role_name === 'Department Staff') {
-
-            $this->ensureDepartmentStaffHasDepartment();
-
-            /*
-             * Never trust department_id coming from the browser
-             * for a Department Staff account.
-             */
-
-            $validated['department_id'] =
-                $user->department_id;
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Validate Attendance Personnel
-        |--------------------------------------------------------------------------
-        */
-
-        $departmentId =
-            $validated['department_id'] ?? null;
-
-
-        $selectedPersonnel = $this
-            ->attendancePersonnelQuery(
-                $departmentId
-            )
-            ->where(
-                'personnel_id',
-                $validated['personnel_id']
-            )
-            ->first();
-
-
-        if (!$selectedPersonnel) {
-
-            throw ValidationException::withMessages([
-
-                'personnel_id' =>
-                    'Please select an active Attendance Personnel account that is allowed for this department.',
-
-            ]);
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Separate Event Data From Assignment Data
-        |--------------------------------------------------------------------------
-        */
-
-        $personnelId =
-            $selectedPersonnel->personnel_id;
-
-
-        unset(
-            $validated['personnel_id']
-        );
-
+        $validated['department_id'] =
+            $user->department_id;
 
         $validated['created_by'] =
             $user->user_id;
 
-
+        /*
+         * Initial value is immediately recalculated below.
+         */
         $validated['status'] =
             'Upcoming';
 
 
         /*
         |--------------------------------------------------------------------------
-        | Create Event + Initial Personnel Assignment
+        | Create Event
         |--------------------------------------------------------------------------
+        |
+        | Personnel assignment is NOT performed here.
+        | It belongs to Event Personnel Assignment Management.
+        |
         */
 
-        $event = null;
+        $event = Event::create(
+            $validated
+        );
 
 
-        DB::transaction(function () use (
-            $validated,
-            $personnelId,
-            $user,
-            &$event
-        ) {
-
-            $event = Event::create(
-                $validated
-            );
-
-
-            EventAssignment::create([
-
-                'event_id' =>
-                    $event->event_id,
-
-                'personnel_id' =>
-                    $personnelId,
-
-                'assigned_by' =>
-                    $user->user_id,
-
-            ]);
-        });
+        /*
+         * Determine the correct status from
+         * the event schedule.
+         */
+        $event->syncScheduledStatus();
 
 
         return redirect()
@@ -425,10 +316,8 @@ class EventController extends Controller
 
     public function show(string $id)
     {
-        $event = $this->accessibleEvent(
-            $id
-        );
-
+        $event =
+            $this->accessibleEvent($id);
 
         return view(
             'events.show',
@@ -445,37 +334,34 @@ class EventController extends Controller
 
     public function edit(string $id)
     {
-        $event = $this->accessibleEvent(
-            $id
-        );
+        /*
+         * Only Department Staff may edit events.
+         */
+        $this->authorizeEventManagement();
+
+        $event =
+            $this->accessibleEvent($id);
+
+        $this->ensureDepartmentStaffHasDepartment();
 
 
-        $user = auth()->user();
+        if ($event->status === 'Cancelled') {
 
-
-        if ($user->role->role_name === 'Department Staff') {
-
-            $this->ensureDepartmentStaffHasDepartment();
-
-            $departments = Department::where(
-                'department_id',
-                $user->department_id
-            )->get();
-
-        } else {
-
-            $departments = Department::orderBy(
-                'department_name'
-            )->get();
+            return redirect()
+                ->route(
+                    'events.show',
+                    $event->event_id
+                )
+                ->with(
+                    'error',
+                    'Cancelled events can no longer be edited.'
+                );
         }
 
 
         return view(
             'events.edit',
-            compact(
-                'event',
-                'departments'
-            )
+            compact('event')
         );
     }
 
@@ -490,13 +376,29 @@ class EventController extends Controller
         Request $request,
         string $id
     ) {
+        /*
+         * Only Department Staff may update events.
+         */
+        $this->authorizeEventManagement();
 
-        $event = $this->accessibleEvent(
-            $id
-        );
+        $event =
+            $this->accessibleEvent($id);
+
+        $this->ensureDepartmentStaffHasDepartment();
 
 
-        $user = auth()->user();
+        if ($event->status === 'Cancelled') {
+
+            return redirect()
+                ->route(
+                    'events.show',
+                    $event->event_id
+                )
+                ->with(
+                    'error',
+                    'Cancelled events can no longer be edited.'
+                );
+        }
 
 
         $validated = $request->validate([
@@ -534,57 +436,30 @@ class EventController extends Controller
                 'max:255',
             ],
 
-            'department_id' => [
-                'nullable',
-                'integer',
-                'exists:departments,department_id',
-            ],
-
-            'status' => [
-                'required',
-                'in:Upcoming,Ongoing,Completed,Cancelled',
-            ],
-
         ]);
 
 
         /*
         |--------------------------------------------------------------------------
-        | Department Staff Cannot Change Department
-        |--------------------------------------------------------------------------
-        */
-
-        if ($user->role->role_name === 'Department Staff') {
-
-            $this->ensureDepartmentStaffHasDepartment();
-
-            $validated['department_id'] =
-                $user->department_id;
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Verify Existing Personnel Still Match Department
+        | Update Basic Event Information Only
         |--------------------------------------------------------------------------
         |
-        | Example:
-        |
-        | If an Administrator changes an event from CCS to Engineering,
-        | a personnel account specifically assigned to CCS should not remain
-        | assigned accidentally.
+        | Department cannot be changed here.
+        | Personnel assignments are not changed here.
+        | Status is not manually submitted.
         |
         */
-
-        $this->validateExistingAssignmentsForDepartment(
-            $event,
-            $validated['department_id'] ?? null
-        );
-
 
         $event->update(
             $validated
         );
+
+
+        /*
+         * Recalculate event status because the
+         * date/time may have changed.
+         */
+        $event->syncScheduledStatus();
 
 
         return redirect()
@@ -607,15 +482,15 @@ class EventController extends Controller
 
     public function personnel(string $id)
     {
-        $event = $this->accessibleEvent(
-            $id
-        );
-
-
         /*
-         * Completed and Cancelled events may still be viewed,
-         * but their assignments should no longer be changed.
+         * Only Department Staff may access
+         * personnel assignment management.
          */
+        $this->authorizeEventManagement();
+
+        $event =
+            $this->accessibleEvent($id);
+
 
         $availablePersonnel = $this
             ->attendancePersonnelQuery(
@@ -656,10 +531,14 @@ class EventController extends Controller
         Request $request,
         string $id
     ) {
+        /*
+         * Only Department Staff may modify
+         * personnel assignments.
+         */
+        $this->authorizeEventManagement();
 
-        $event = $this->accessibleEvent(
-            $id
-        );
+        $event =
+            $this->accessibleEvent($id);
 
 
         if (
@@ -703,11 +582,11 @@ class EventController extends Controller
         $submittedIds = collect(
             $validated['personnel_ids']
         )
-        ->map(
-            fn ($id) => (int) $id
-        )
-        ->unique()
-        ->values();
+            ->map(
+                fn ($id) => (int) $id
+            )
+            ->unique()
+            ->values();
 
 
         /*
@@ -730,9 +609,10 @@ class EventController extends Controller
             );
 
 
-        $invalidIds = $submittedIds->diff(
-            $eligibleIds
-        );
+        $invalidIds =
+            $submittedIds->diff(
+                $eligibleIds
+            );
 
 
         if ($invalidIds->isNotEmpty()) {
@@ -752,72 +632,73 @@ class EventController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        DB::transaction(function () use (
-            $event,
-            $submittedIds
-        ) {
+        DB::transaction(
+            function () use (
+                $event,
+                $submittedIds
+            ) {
 
-            $currentIds = EventAssignment::where(
-                'event_id',
-                $event->event_id
-            )
-            ->pluck('personnel_id')
-            ->map(
-                fn ($id) => (int) $id
-            );
-
-
-            /*
-             * Remove personnel no longer selected.
-             */
-
-            $removeIds =
-                $currentIds->diff(
-                    $submittedIds
-                );
-
-
-            if ($removeIds->isNotEmpty()) {
-
-                EventAssignment::where(
+                $currentIds = EventAssignment::where(
                     'event_id',
                     $event->event_id
                 )
-                ->whereIn(
-                    'personnel_id',
-                    $removeIds->all()
-                )
-                ->delete();
+                    ->pluck('personnel_id')
+                    ->map(
+                        fn ($id) => (int) $id
+                    );
+
+
+                /*
+                 * Remove personnel no longer selected.
+                 */
+
+                $removeIds =
+                    $currentIds->diff(
+                        $submittedIds
+                    );
+
+
+                if ($removeIds->isNotEmpty()) {
+
+                    EventAssignment::where(
+                        'event_id',
+                        $event->event_id
+                    )
+                        ->whereIn(
+                            'personnel_id',
+                            $removeIds->all()
+                        )
+                        ->delete();
+                }
+
+
+                /*
+                 * Add newly selected personnel.
+                 */
+
+                $addIds =
+                    $submittedIds->diff(
+                        $currentIds
+                    );
+
+
+                foreach ($addIds as $personnelId) {
+
+                    EventAssignment::create([
+
+                        'event_id' =>
+                            $event->event_id,
+
+                        'personnel_id' =>
+                            $personnelId,
+
+                        'assigned_by' =>
+                            auth()->id(),
+
+                    ]);
+                }
             }
-
-
-            /*
-             * Add newly selected personnel.
-             */
-
-            $addIds =
-                $submittedIds->diff(
-                    $currentIds
-                );
-
-
-            foreach ($addIds as $personnelId) {
-
-                EventAssignment::create([
-
-                    'event_id' =>
-                        $event->event_id,
-
-                    'personnel_id' =>
-                        $personnelId,
-
-                    'assigned_by' =>
-                        auth()->id(),
-
-                ]);
-            }
-
-        });
+        );
 
 
         return redirect()
@@ -840,9 +721,13 @@ class EventController extends Controller
 
     public function destroy(string $id)
     {
-        $event = $this->accessibleEvent(
-            $id
-        );
+        /*
+         * Only Department Staff may cancel events.
+         */
+        $this->authorizeEventManagement();
+
+        $event =
+            $this->accessibleEvent($id);
 
 
         if ($event->status === 'Cancelled') {
@@ -859,11 +744,26 @@ class EventController extends Controller
         }
 
 
+        if ($event->status === 'Completed') {
+
+            return redirect()
+                ->route(
+                    'events.show',
+                    $event->event_id
+                )
+                ->with(
+                    'error',
+                    'A completed event can no longer be cancelled.'
+                );
+        }
+
+
+        /*
+         * Cancelled is the only manually controlled
+         * lifecycle status.
+         */
         $event->update([
-
-            'status' =>
-                'Cancelled',
-
+            'status' => 'Cancelled',
         ]);
 
 
@@ -883,31 +783,11 @@ class EventController extends Controller
     |--------------------------------------------------------------------------
     | Attendance Personnel Query
     |--------------------------------------------------------------------------
-    |
-    | Requirements:
-    |
-    | - Personnel profile exists.
-    | - User account is Active.
-    | - Account setup is completed.
-    | - Role is Attendance Personnel.
-    | - Role itself is Active.
-    |
-    | Department rule:
-    |
-    | A personnel account with NULL department_id is treated as
-    | university-wide personnel.
-    |
-    | For a department event, eligible personnel are:
-    |
-    | - personnel from the same department; OR
-    | - university-wide personnel.
-    |
     */
 
     private function attendancePersonnelQuery(
         ?int $departmentId = null
     ) {
-
         return Personnel::query()
             ->with([
                 'user.role',
@@ -945,6 +825,13 @@ class EventController extends Controller
                         );
 
 
+                    /*
+                     * Department-specific event:
+                     *
+                     * Personnel may either belong to the same
+                     * department or be university-wide.
+                     */
+
                     if ($departmentId !== null) {
 
                         $userQuery->where(
@@ -963,67 +850,8 @@ class EventController extends Controller
                             }
                         );
                     }
-
                 }
             );
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Validate Assigned Personnel Against Department
-    |--------------------------------------------------------------------------
-    */
-
-    private function validateExistingAssignmentsForDepartment(
-        Event $event,
-        ?int $departmentId
-    ): void {
-
-        /*
-         * University-wide event:
-         * all eligible Attendance Personnel departments are acceptable.
-         */
-
-        if ($departmentId === null) {
-
-            return;
-        }
-
-
-        $hasInvalidAssignment = EventAssignment::where(
-            'event_id',
-            $event->event_id
-        )
-        ->whereHas(
-            'personnel.user',
-            function ($query) use (
-                $departmentId
-            ) {
-
-                $query
-                    ->whereNotNull(
-                        'department_id'
-                    )
-                    ->where(
-                        'department_id',
-                        '!=',
-                        $departmentId
-                    );
-            }
-        )
-        ->exists();
-
-
-        if ($hasInvalidAssignment) {
-
-            throw ValidationException::withMessages([
-
-                'department_id' =>
-                    'This event currently has personnel assigned from another department. Update the personnel assignments before changing the event department.',
-
-            ]);
-        }
     }
 
 
@@ -1035,7 +863,8 @@ class EventController extends Controller
 
     private function ensureDepartmentStaffHasDepartment(): void
     {
-        $user = auth()->user();
+        $user =
+            auth()->user();
 
 
         if (
@@ -1054,14 +883,21 @@ class EventController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Event Management Authorization
+    | Event Viewing Authorization
     |--------------------------------------------------------------------------
+    |
+    | Administrator:
+    | - View all event records.
+    |
+    | Department Staff:
+    | - View events belonging to their department.
+    |
     */
 
-    private function authorizeEventAccess(): void
+    private function authorizeEventViewing(): void
     {
-        $user = auth()->user();
-
+        $user =
+            auth()->user();
 
         $role =
             $user->role->role_name
@@ -1079,8 +915,46 @@ class EventController extends Controller
             )
         ) {
 
-            abort(403);
+            abort(
+                403,
+                'You are not authorized to view event records.'
+            );
         }
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Event Management Authorization
+    |--------------------------------------------------------------------------
+    |
+    | Only Department Staff may perform operational
+    | Event Management.
+    |
+    | Administrator has read-only oversight access.
+    |
+    */
+
+    private function authorizeEventManagement(): void
+    {
+        $user =
+            auth()->user();
+
+        $role =
+            $user->role->role_name
+            ?? null;
+
+
+        if ($role !== 'Department Staff') {
+
+            abort(
+                403,
+                'Only Department Staff can manage events.'
+            );
+        }
+
+
+        $this->ensureDepartmentStaffHasDepartment();
     }
 
 
@@ -1094,15 +968,15 @@ class EventController extends Controller
         string $id
     ): Event {
 
-        $this->authorizeEventAccess();
+        $this->authorizeEventViewing();
 
-
-        $user = auth()->user();
+        $user =
+            auth()->user();
 
 
         if (
             $user->role->role_name ===
-                'Department Staff'
+            'Department Staff'
         ) {
 
             $this->ensureDepartmentStaffHasDepartment();
@@ -1122,15 +996,15 @@ class EventController extends Controller
             'assignments.assignedBy',
 
         ])
-        ->where(
-            'event_id',
-            $id
-        );
+            ->where(
+                'event_id',
+                $id
+            );
 
 
         if (
             $user->role->role_name ===
-                'Department Staff'
+            'Department Staff'
         ) {
 
             $query->where(
@@ -1140,6 +1014,17 @@ class EventController extends Controller
         }
 
 
-        return $query->firstOrFail();
+        $event =
+            $query->firstOrFail();
+
+
+        /*
+         * Keep this specific event's status
+         * synchronized whenever it is accessed.
+         */
+        $event->syncScheduledStatus();
+
+
+        return $event;
     }
 }
