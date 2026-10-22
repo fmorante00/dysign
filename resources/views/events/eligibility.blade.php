@@ -1407,7 +1407,9 @@
 
 
                                 <select
+                                    id="specific_participation_type"
                                     name="participation_type"
+                                    required
                                     class="
                                         w-full
                                         rounded-lg
@@ -1418,15 +1420,36 @@
                                     "
                                 >
 
-                                    <option value="Required">
-                                        Required
+                                    <option
+                                        value=""
+                                        disabled
+                                        @selected(
+                                            old('selection_mode') !== 'specific'
+                                            || !in_array(old('participation_type'), ['Required', 'Optional'], true)
+                                        )
+                                    >
+                                        Select participation type
                                     </option>
 
-                                    <option value="Optional">
-                                        Optional
+                                    <option
+                                        value="Required"
+                                        @selected(old('selection_mode') === 'specific' && old('participation_type') === 'Required')
+                                    >
+                                        Required - Expected to participate
+                                    </option>
+
+                                    <option
+                                        value="Optional"
+                                        @selected(old('selection_mode') === 'specific' && old('participation_type') === 'Optional')
+                                    >
+                                        Optional - Allowed to participate
                                     </option>
 
                                 </select>
+
+                                <p class="mt-2 text-xs leading-5 text-gray-500">
+                                    Choose whether this student is required to attend or may attend optionally.
+                                </p>
 
                             </div>
 

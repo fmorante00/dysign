@@ -151,8 +151,13 @@
                     text-gray-400
                 "
             >
-                Eligibility can be configured for upcoming events
-                within your department.
+                @if(auth()->user()->role?->role_name === 'Administrator')
+                    Manage participant eligibility for upcoming events
+                    across all departments.
+                @else
+                    Manage participant eligibility for upcoming events
+                    within your department.
+                @endif
             </p>
 
         </div>

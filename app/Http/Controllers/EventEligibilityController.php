@@ -36,10 +36,13 @@ class EventEligibilityController extends Controller
                 'eligibilityRules',
                 'eligibleStudents',
             ])
-            ->where(
-                'department_id',
-                $user->department_id
-            )
+            ->when(
+    $user->role->role_name === 'Department Staff',
+    fn ($query) => $query->where(
+        'department_id',
+        $user->department_id
+    )
+)
             ->where(
                 'status',
                 'Upcoming'
@@ -1089,10 +1092,13 @@ class EventEligibilityController extends Controller
                     'event_id',
                     $event
                 )
-                ->where(
-                    'department_id',
-                    $user->department_id
-                )
+                ->when(
+    $user->role->role_name === 'Department Staff',
+    fn ($query) => $query->where(
+        'department_id',
+        $user->department_id
+    )
+)
                 ->firstOrFail();
 
 
@@ -1133,38 +1139,19 @@ class EventEligibilityController extends Controller
     | Authorization
     |--------------------------------------------------------------------------
     */
+private function authorizeEligibilityManagement(): void
+{
+    $user = auth()->user();
 
-    private function authorizeEligibilityManagement(): void
-    {
-        $user =
-            auth()->user();
+    $role = $user->role->role_name ?? null;
 
-
-        $role =
-            $user->role->role_name
-            ?? null;
-
-
-        if (
-            $role
-            !== 'Department Staff'
-        ) {
-
-            abort(
-                403,
-                'Only Department Staff can manage participant eligibility.'
-            );
-        }
-
-
-        if (
-            !$user->department_id
-        ) {
-
-            abort(
-                403,
-                'Your account is not assigned to a department.'
-            );
-        }
+    if (!in_array($role, ['Administrator', 'Department Staff'], true)) {
+        abort(403, 'You are not authorized to manage participant eligibility.');
     }
+
+    if ($role === 'Department Staff' && !$user->department_id) {
+        abort(403, 'Your account is not assigned to a department.');
+    }
+}
+
 }
