@@ -19,19 +19,30 @@ class Student extends Model
         'year_level',
         'student_status',
         'rfid_identifier',
-
-        // NEW
         'email',
         'photo_path',
-
         'status',
     ];
 
-
+    /**
+     * Student attendance records.
+     */
     public function attendanceRecords()
     {
         return $this->hasMany(
             AttendanceRecord::class,
+            'student_id',
+            'student_id'
+        );
+    }
+
+    /**
+     * Student's associated login account.
+     */
+    public function user()
+    {
+        return $this->hasOne(
+            User::class,
             'student_id',
             'student_id'
         );

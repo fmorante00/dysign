@@ -1042,7 +1042,7 @@
                             <input
                                 type="text"
                                 x-model="search"
-                                placeholder="Search name, email, department, position, or role..."
+                                placeholder="Search name, email, department, or role..."
                                 class="
                                     w-full
                                     rounded-lg
@@ -1094,7 +1094,7 @@
                 <table
                     class="
                         w-full
-                        min-w-[1150px]
+                        min-w-[980px]
                         table-auto
                     "
                 >
@@ -1140,22 +1140,6 @@
                                 "
                             >
                                 Department
-                            </th>
-
-
-                            <th
-                                class="
-                                    px-6
-                                    py-4
-                                    text-left
-                                    text-[10px]
-                                    font-bold
-                                    uppercase
-                                    tracking-wider
-                                    text-gray-400
-                                "
-                            >
-                                Position
                             </th>
 
 
@@ -1230,7 +1214,6 @@
                                     ($person->first_name ?? '') . ' ' .
                                     ($person->last_name ?? '') . ' ' .
                                     ($person->department ?? '') . ' ' .
-                                    ($person->position ?? '') . ' ' .
                                     ($person->user->email ?? '') . ' ' .
                                     ($person->user->role->role_name ?? '')
                                 );
@@ -1347,21 +1330,6 @@
                                     "
                                 >
                                     {{ $person->department }}
-                                </td>
-
-
-
-                                {{-- POSITION --}}
-
-                                <td
-                                    class="
-                                        px-6
-                                        py-5
-                                        text-sm
-                                        text-gray-600
-                                    "
-                                >
-                                    {{ $person->position }}
                                 </td>
 
 

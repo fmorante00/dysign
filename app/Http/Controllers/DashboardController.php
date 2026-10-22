@@ -392,4 +392,46 @@ class DashboardController extends Controller
 
     }
 
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Student Account Dashboard
+    |--------------------------------------------------------------------------
+    */
+
+    public function student()
+    {
+        $user = auth()->user();
+
+        // Only Student Accounts may use this dashboard method.
+        abort_unless(
+            $user && $user->role?->role_name === 'Student Account',
+            403
+        );
+
+        // Use the linked student record, never a student ID from the URL.
+        $student = $user->student;
+
+        abort_unless(
+            $student && $student->status === 'Active',
+            403,
+            'No active student record is linked to this account.'
+        );
+
+        $totalAttendanceRecords = $student->attendanceRecords()->count();
+
+        $recentAttendance = $student->attendanceRecords()
+            ->with('event')
+            ->orderByDesc('time_in')
+            ->take(5)
+            ->get();
+
+        return view('dashboard.student', compact(
+            'student',
+            'totalAttendanceRecords',
+            'recentAttendance'
+        ));
+    }
+
 }

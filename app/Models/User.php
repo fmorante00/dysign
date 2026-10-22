@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+
 use Database\Factories\UserFactory;
 use App\Models\Department;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,6 +14,7 @@ class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
+
     protected $primaryKey = 'user_id';
 
     /**
@@ -20,52 +22,96 @@ class User extends Authenticatable
      *
      * @var list<string>
      */
-protected $fillable = [
-    'name',
-    'username',
-    'email',
-    'password',
-    'status',
-    'role_id',
-    'department_id',
-    'must_change_password',
-];
-
-    public function role()
-    {
-        return $this->belongsTo(Role::class, 'role_id', 'role_id');
-    }
-
-    public function department()
-{
-    return $this->belongsTo(
-        Department::class,
+    protected $fillable = [
+        'name',
+        'username',
+        'email',
+        'password',
+        'status',
+        'role_id',
         'department_id',
-        'department_id'
-    );
-}
-
-    public function personnel()
-    {
-        return $this->hasOne(Personnel::class, 'user_id', 'user_id');
-    }
-
-    public function invitation()
-{
-    return $this->hasOne(AccountInvitation::class, 'user_id', 'user_id');
-}
-
-    public function hasPermission($permission)
-{
-    return $this->role
-        ->permissions()
-        ->where('permission_name', $permission)
-        ->where('permissions.status', 'Active')
-        ->exists();
-}
+        'must_change_password',
+    ];
 
     /**
-     * The attributes that should be hidden for serialization.
+     * Relationship: User belongs to a Role.
+     */
+    public function role()
+    {
+        return $this->belongsTo(
+            Role::class,
+            'role_id',
+            'role_id'
+        );
+    }
+
+    /**
+     * Relationship: User belongs to a Department.
+     */
+    public function department()
+    {
+        return $this->belongsTo(
+            Department::class,
+            'department_id',
+            'department_id'
+        );
+    }
+
+    /**
+     * Relationship: User has one Personnel record.
+     */
+    public function personnel()
+    {
+        return $this->hasOne(
+            Personnel::class,
+            'user_id',
+            'user_id'
+        );
+    }
+
+    /**
+     * Relationship: User has one Account Invitation.
+     */
+    public function invitation()
+    {
+        return $this->hasOne(
+            AccountInvitation::class,
+            'user_id',
+            'user_id'
+        );
+    }
+
+    /**
+     * Relationship: Student Account belongs to a Student.
+     *
+     * The student_id column is nullable because
+     * Administrator, Department Staff, and Attendance
+     * Personnel accounts do not require student records.
+     */
+    public function student()
+    {
+        return $this->belongsTo(
+            Student::class,
+            'student_id',
+            'student_id'
+        );
+    }
+
+    /**
+     * Check whether the user has a permission.
+     */
+    public function hasPermission($permission)
+    {
+        return $this->role
+            ->permissions()
+            ->where('permission_name', $permission)
+            ->where('permissions.status', 'Active')
+            ->exists();
+    }
+
+    /**
+     * The attributes that should be hidden
+     * for serialization.
      *
      * @var list<string>
      */

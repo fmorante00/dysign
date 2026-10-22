@@ -77,6 +77,15 @@ Route::get('/dashboard', function () {
     }
 
 
+    if ($role === 'Student Account') {
+
+        return app(
+            DashboardController::class
+        )->student();
+
+    }
+
+
     abort(403);
 
 })
@@ -92,6 +101,7 @@ Route::get('/dashboard', function () {
 
 Route::middleware([
     'auth',
+    'role:Administrator',
     'permission:manage_personnel_accounts'
 ])
 ->group(function () {
@@ -204,12 +214,59 @@ Route::middleware([
 
 /*
 |--------------------------------------------------------------------------
+| Student Account Provisioning
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware([
+    'auth',
+    'role:Administrator'
+])
+->group(function () {
+
+    /*
+    |--------------------------------------------------------------------------
+    | Student Account Provisioning Overview
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/student-accounts',
+        [
+            \App\Http\Controllers\StudentAccountProvisioningController::class,
+            'index'
+        ]
+    )
+    ->name('students.accounts.index');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Automated Bulk Student Account Creation
+    |--------------------------------------------------------------------------
+    */
+
+    Route::post(
+        '/student-accounts/provision',
+        [
+            \App\Http\Controllers\StudentAccountProvisioningController::class,
+            'provision'
+        ]
+    )
+    ->name('students.accounts.provision');
+
+});
+
+
+/*
+|--------------------------------------------------------------------------
 | Event Management
 |--------------------------------------------------------------------------
 */
 
 Route::middleware([
-    'auth'
+    'auth',
+    'role:Administrator,Department Staff'
 ])
 ->group(function () {
 
@@ -398,7 +455,8 @@ Route::middleware([
 */
 
 Route::middleware([
-    'auth'
+    'auth',
+    'role:Administrator'
 ])
 ->group(function () {
 
@@ -517,7 +575,8 @@ Route::middleware([
 */
 
 Route::middleware([
-    'auth'
+    'auth',
+    'role:Administrator'
 ])
 ->group(function () {
 
@@ -579,7 +638,8 @@ Route::middleware([
 */
 
 Route::middleware([
-    'auth'
+    'auth',
+    'role:Administrator'
 ])
 ->group(function () {
 
@@ -659,7 +719,8 @@ Route::middleware([
 */
 
 Route::middleware([
-    'auth'
+    'auth',
+    'role:Administrator'
 ])
 ->group(function () {
 

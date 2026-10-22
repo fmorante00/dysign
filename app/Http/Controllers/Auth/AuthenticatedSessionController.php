@@ -12,7 +12,7 @@ use Illuminate\View\View;
 class AuthenticatedSessionController extends Controller
 {
     /**
-     * Display the login view.
+     * Display the login page.
      */
     public function create(): View
     {
@@ -23,44 +23,73 @@ class AuthenticatedSessionController extends Controller
      * Handle an incoming authentication request.
      */
     public function store(LoginRequest $request): RedirectResponse
-{
-    $request->authenticate();
+    {
+        // Authenticate using existing login validation.
+        $request->authenticate();
 
-    $user = Auth::user();
+        $user = Auth::user();
 
-    if ($user->status !== 'Active') {
-        Auth::logout();
+        /*
+        |--------------------------------------------------------------------------
+        | BLOCK INACTIVE ACCOUNTS
+        |--------------------------------------------------------------------------
+        */
 
-        return back()->withErrors([
-            'email' => 'Your account is inactive. Please contact the administrator.',
-        ]);
+        if ($user->status !== 'Active') {
+
+            $this->terminateSession($request);
+
+            return back()->withErrors([
+                'email' => 'Your account is inactive. Please contact the administrator.',
+            ]);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | REQUIRE ACCOUNT SETUP
+        |--------------------------------------------------------------------------
+        */
+
+        if ($user->must_change_password) {
+
+            $this->terminateSession($request);
+
+            return back()->withErrors([
+                'email' => 'Please complete your account setup before logging in.',
+            ]);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | SUCCESSFUL LOGIN
+        |--------------------------------------------------------------------------
+        */
+
+        $request->session()->regenerate();
+
+        return redirect()->intended(
+            route('dashboard', absolute: false)
+        );
     }
-
-
-    if ($user->must_change_password) {
-        Auth::logout();
-
-        return back()->withErrors([
-            'email' => 'Please complete your account setup before logging in.',
-        ]);
-    }
-
-
-    $request->session()->regenerate();
-
-    return redirect()->intended(route('dashboard', absolute: false));
-}
 
     /**
-     * Destroy an authenticated session.
+     * Securely terminate a user session.
      */
-    public function destroy(Request $request): RedirectResponse
+    private function terminateSession(Request $request): void
     {
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();
 
         $request->session()->regenerateToken();
+    }
+
+    /**
+     * Handle logout.
+     */
+    public function destroy(Request $request): RedirectResponse
+    {
+        $this->terminateSession($request);
 
         return redirect('/login');
     }

@@ -717,6 +717,43 @@
             @endif
 
 
+
+            <!-- ================================================= -->
+            <!-- STUDENT ACCOUNT -->
+            <!-- ================================================= -->
+
+            @if($role === 'Student Account')
+
+                <!-- STUDENT DASHBOARD -->
+
+                <a
+                    href="{{ route('dashboard') }}"
+                    class="{{ $link }} {{ request()->routeIs('dashboard') ? $active : '' }}"
+                >
+
+                    <svg
+                        class="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M3 12l9-9 9 9M5 10v10h14V10"
+                        />
+                    </svg>
+
+                    <span>
+                        Dashboard
+                    </span>
+
+                </a>
+
+            @endif
+
+
         </nav>
 
 

@@ -513,8 +513,8 @@
                             border-gray-100
                             px-6
                             py-6
+                            md:col-span-2
                             md:border-b-0
-                            md:border-r
                         "
                     >
 
@@ -567,62 +567,7 @@
 
 
 
-                    {{-- POSITION --}}
 
-                    <div
-                        class="
-                            min-w-0
-                            px-6
-                            py-6
-                        "
-                    >
-
-                        <label
-                            for="position"
-                            class="
-                                mb-2
-                                block
-                                text-[10px]
-                                font-bold
-                                uppercase
-                                tracking-wider
-                                text-gray-400
-                            "
-                        >
-                            Position
-                            <span class="text-red-500">*</span>
-                        </label>
-
-
-                        <input
-                            id="position"
-                            type="text"
-                            name="position"
-                            value="{{ old('position') }}"
-                            placeholder="Example: Registrar Staff"
-                            required
-                            class="
-                                w-full
-                                rounded-lg
-                                border-gray-200
-                                px-4
-                                py-3
-                                text-sm
-                                text-gray-700
-                                placeholder:text-gray-400
-                                focus:border-[#101064]
-                                focus:ring-[#101064]
-                            "
-                        >
-
-
-                        @error('position')
-                            <p class="mt-2 text-xs text-red-500">
-                                {{ $message }}
-                            </p>
-                        @enderror
-
-                    </div>
 
 
                 </div>
@@ -739,7 +684,8 @@
                             type="text"
                             name="username"
                             value="{{ old('username') }}"
-                            placeholder="Enter username"
+                            placeholder="Generated automatically"
+                            readonly
                             required
                             class="
                                 w-full
@@ -1272,5 +1218,47 @@
 
 
 </div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const firstNameInput = document.getElementById('first_name');
+    const lastNameInput = document.getElementById('last_name');
+    const usernameInput = document.getElementById('username');
+
+    if (!firstNameInput || !lastNameInput || !usernameInput) {
+        return;
+    }
+
+    function cleanName(value) {
+        return value
+            .trim()
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]/g, '');
+    }
+
+    function generateUsername() {
+        const firstName = cleanName(firstNameInput.value);
+        const lastName = cleanName(lastNameInput.value);
+
+        if (firstName && lastName) {
+            usernameInput.value = firstName + '.' + lastName;
+        } else if (firstName) {
+            usernameInput.value = firstName;
+        } else if (lastName) {
+            usernameInput.value = lastName;
+        } else {
+            usernameInput.value = '';
+        }
+    }
+
+    firstNameInput.addEventListener('input', generateUsername);
+    lastNameInput.addEventListener('input', generateUsername);
+
+    generateUsername();
+});
+</script>
 
 </x-admin-layout>
