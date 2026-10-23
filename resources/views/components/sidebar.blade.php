@@ -43,7 +43,6 @@
             x-data="{
                 user: {{
                     request()->routeIs('personnel.*')
-                    || request()->routeIs('roles.*')
                         ? 'true'
                         : 'false'
                 }},
@@ -208,41 +207,14 @@
                                 •
                             </span>
 
-                            Personnel Management
+                            Staff Accounts
 
                         </a>
 
                     @endif
 
 
-                    @if(
-                        auth()->user()
-                            ->hasPermission(
-                                'assign_roles'
-                            )
-                    )
 
-                        <a
-                            href="{{ route('roles.index') }}"
-                            class="
-                                {{ $child }}
-                                {{
-                                    request()->routeIs('roles.*')
-                                        ? $active
-                                        : ''
-                                }}
-                            "
-                        >
-
-                            <span class="text-[#D4A017]">
-                                •
-                            </span>
-
-                            Roles & Access
-
-                        </a>
-
-                    @endif
 
                 </div>
 

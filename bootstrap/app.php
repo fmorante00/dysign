@@ -46,6 +46,11 @@ return Application::configure(
         \App\Http\Middleware\ActivityLogMiddleware::class
     );
 
+    $middleware->appendToGroup(
+    'web',
+    \App\Http\Middleware\EnsureAccountIsActive::class
+);
+
 })
 ->withExceptions(function (Exceptions $exceptions): void {
 

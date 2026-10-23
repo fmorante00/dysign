@@ -16,9 +16,18 @@
     $pendingSetup = $personnel->filter(function ($person) {
 
         return $person->user
+            && $person->user->status === 'Active'
             && $person->user->must_change_password == true;
 
     })->count();
+
+    // Inactive accounts are tracked separately from pending account setup.
+    $inactiveAccounts = $personnel->filter(function ($person) {
+        return $person->user && $person->user->status === 'Inactive';
+    })->count();
+
+    $staffRoles = $personnel->pluck('user.role.role_name')
+        ->filter()->unique()->sort()->values();
 
 @endphp
 
@@ -114,6 +123,30 @@
 
         search: '',
 
+        roleFilter: 'all',
+
+        statusFilter: 'all',
+
+        submitting: false,
+
+        matchesStaff(row) {
+            const query = this.search.trim().toLowerCase();
+            return row.dataset.search.includes(query)
+                && (this.roleFilter === 'all' || row.dataset.role === this.roleFilter)
+                && (this.statusFilter === 'all' || row.dataset.status === this.statusFilter);
+        },
+
+        get visibleCount() {
+            return Array.from(document.querySelectorAll('[data-staff-row]'))
+                .filter(row => this.matchesStaff(row)).length;
+        },
+
+        clearFilters() {
+            this.search = '';
+            this.roleFilter = 'all';
+            this.statusFilter = 'all';
+            this.openMenu = null;
+        },
 
         openDropdown(id) {
 
@@ -142,6 +175,8 @@
 
         submitForm() {
 
+            if (this.submitting) return;
+
             const form =
                 document.getElementById(
                     this.formId
@@ -149,6 +184,7 @@
 
             if (form) {
 
+                this.submitting = true;
                 form.submit();
 
             }
@@ -234,7 +270,7 @@
                         md:text-4xl
                     "
                 >
-                    Personnel Management
+                    Staff Account Management
                 </h1>
 
 
@@ -247,9 +283,8 @@
                         text-white/75
                     "
                 >
-                    Manage authorized personnel accounts,
-                    departmental assignments, access roles,
-                    and account setup within DySign.
+                    Manage staff account creation, assigned roles, account setup,
+                    and access status within DySign.
                 </p>
 
 
@@ -298,7 +333,7 @@
 
                         <span>
                             {{ $totalPersonnel }}
-                            personnel records
+                            staff account records
                         </span>
 
                     </div>
@@ -355,6 +390,11 @@
 
                     </div>
 
+                    <div class="flex items-center gap-2">
+                        <span class="h-2 w-2 rounded-full bg-gray-300"></span>
+                        <span>{{ $inactiveAccounts }} inactive</span>
+                    </div>
+
 
                 </div>
 
@@ -399,7 +439,7 @@
                         />
                     </svg>
 
-                    Add Personnel
+                    Add Staff Account
 
                 </a>
 
@@ -489,6 +529,20 @@
 
 
     {{-- ====================================================== --}}
+    {{-- ERROR MESSAGE --}}
+    {{-- ====================================================== --}}
+
+    @if(session('error'))
+        <div class="personnel-section flex items-start gap-4 border border-red-200 bg-white px-6 py-5" role="alert">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-50 font-bold text-red-600">!</span>
+            <div class="min-w-0">
+                <p class="font-bold text-[#101064]">Action Needs Attention</p>
+                <p class="mt-1 break-words text-sm text-red-700">{{ session('error') }}</p>
+            </div>
+        </div>
+    @endif
+
+    {{-- ====================================================== --}}
     {{-- PERSONNEL OVERVIEW --}}
     {{-- ====================================================== --}}
 
@@ -530,7 +584,7 @@
                         text-[#101064]
                     "
                 >
-                    Personnel Account Summary
+                    Staff Account Summary
                 </h2>
 
 
@@ -540,7 +594,7 @@
                         text-gray-400
                     "
                 >
-                    Current authorized personnel records
+                    Current authorized staff account records
                 </p>
 
             </div>
@@ -597,7 +651,7 @@
                                 text-gray-400
                             "
                         >
-                            Total Personnel
+                            Total Staff Accounts
                         </p>
 
 
@@ -911,7 +965,7 @@
                         text-[#101064]
                     "
                 >
-                    Personnel Directory
+                    Staff Account Directory
                 </h2>
 
 
@@ -922,7 +976,7 @@
                         text-gray-400
                     "
                 >
-                    View and manage authorized system personnel.
+                    View, filter, and manage authorized DySign staff accounts.
                 </p>
 
             </div>
@@ -949,7 +1003,7 @@
                     hover:bg-[#FFF9E7]
                 "
             >
-                Add Personnel
+                Add Staff Account
                 <span>→</span>
             </a>
 
@@ -1009,7 +1063,7 @@
                                 text-gray-400
                             "
                         >
-                            Search Personnel
+                            Search Staff Accounts
                         </label>
 
 
@@ -1040,9 +1094,10 @@
 
 
                             <input
-                                type="text"
+                                type="search"
+                                aria-label="Search staff accounts"
                                 x-model="search"
-                                placeholder="Search name, email, department, or role..."
+                                placeholder="Search name, username, email, department, or role..."
                                 class="
                                     w-full
                                     rounded-lg
@@ -1063,16 +1118,44 @@
                     </div>
 
 
-                    <p
-                        class="
-                            shrink-0
-                            text-xs
-                            text-gray-400
-                        "
-                    >
-                        {{ $totalPersonnel }}
-                        registered personnel
-                    </p>
+                    {{-- ROLE FILTER --}}
+                    <div class="w-full md:w-52">
+                        <label for="staff-role-filter" class="mb-2 block text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+                            Filter by Role
+                        </label>
+                        <select id="staff-role-filter" x-model="roleFilter" @change="openMenu = null"
+                                class="w-full rounded-lg border-gray-200 py-2.5 text-sm text-gray-700 focus:border-[#101064] focus:ring-[#101064]">
+                            <option value="all">All Roles</option>
+                            @foreach($staffRoles as $roleName)
+                                <option value="{{ $roleName }}">{{ $roleName }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    {{-- STATUS FILTER --}}
+                    <div class="w-full md:w-44">
+                        <label for="staff-status-filter" class="mb-2 block text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+                            Filter by Status
+                        </label>
+                        <select id="staff-status-filter" x-model="statusFilter" @change="openMenu = null"
+                                class="w-full rounded-lg border-gray-200 py-2.5 text-sm text-gray-700 focus:border-[#101064] focus:ring-[#101064]">
+                            <option value="all">All Statuses</option>
+                            <option value="active">Active</option>
+                            <option value="pending">Pending Setup</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+
+                    <div class="flex shrink-0 items-center gap-3 pb-2">
+                        <p class="text-xs text-gray-500" aria-live="polite">
+                            <span x-text="visibleCount">{{ $totalPersonnel }}</span> of {{ $totalPersonnel }} shown
+                        </p>
+                        <button type="button" @click="clearFilters()"
+                                x-show="search || roleFilter !== 'all' || statusFilter !== 'all'"
+                                class="text-xs font-semibold text-[#101064] underline underline-offset-2 hover:text-[#B68A0D]">
+                            Clear
+                        </button>
+                    </div>
 
                 </div>
 
@@ -1123,7 +1206,7 @@
                                     text-gray-400
                                 "
                             >
-                                Personnel
+                                Staff Member
                             </th>
 
 
@@ -1215,20 +1298,24 @@
                                     ($person->last_name ?? '') . ' ' .
                                     ($person->department ?? '') . ' ' .
                                     ($person->user->email ?? '') . ' ' .
+                                    ($person->user->username ?? '') . ' ' .
+                                    ($person->position ?? '') . ' ' .
                                     ($person->user->role->role_name ?? '')
                                 );
+
+                                $accountStatus = $person->user->status === 'Inactive'
+                                    ? 'inactive'
+                                    : ($person->user->must_change_password ? 'pending' : 'active');
 
                             @endphp
 
 
                             <tr
+                                data-staff-row
                                 data-search="{{ $searchText }}"
-
-                                x-show="
-                                    $el.dataset.search.includes(
-                                        search.toLowerCase()
-                                    )
-                                "
+                                data-role="{{ $person->user->role->role_name ?? '' }}"
+                                data-status="{{ $accountStatus }}"
+                                x-show="matchesStaff($el)"
 
                                 class="
                                     transition
@@ -1309,6 +1396,9 @@
                                                 "
                                             >
                                                 {{ $person->user->email }}
+                                            </p>
+                                            <p class="mt-1 max-w-[240px] truncate text-xs text-gray-400">
+                                                Username: {{ $person->user->username }}
                                             </p>
 
                                         </div>
@@ -1582,15 +1672,14 @@
                                                     hover:text-[#101064]
                                                 "
                                             >
-                                                Edit Personnel
+                                                Edit Staff Account
                                             </a>
 
 
 
                                             @if(
-                                                $person
-                                                    ->user
-                                                    ->must_change_password
+                                                $person->user->status === 'Active'
+                                                && $person->user->must_change_password
                                             )
 
                                                 <form
@@ -1761,6 +1850,16 @@
 
                         @endforeach
 
+                        <tr x-show="visibleCount === 0" style="display:none;">
+                            <td colspan="5" class="px-6 py-14 text-center">
+                                <p class="font-semibold text-[#101064]" x-text="{{ $totalPersonnel }} === 0 ? 'No staff accounts yet' : 'No matching staff accounts'"></p>
+                                <p class="mt-2 text-sm text-gray-500">Try adjusting your search or filters.</p>
+                                <button type="button" @click="clearFilters()" x-show="{{ $totalPersonnel }} > 0"
+                                        class="mt-4 rounded-lg border border-[#101064] px-4 py-2 text-sm font-semibold text-[#101064] hover:bg-gray-50">
+                                    Clear Filters
+                                </button>
+                            </td>
+                        </tr>
 
                     </tbody>
 
@@ -2015,6 +2114,7 @@
                 <button
                     type="button"
                     @click="submitForm()"
+                    :disabled="submitting"
                     class="
                         rounded-lg
                         bg-[#101064]

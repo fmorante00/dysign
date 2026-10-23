@@ -111,7 +111,7 @@
                         md:text-4xl
                     "
                 >
-                    Create Personnel Account
+                    Create Staff Account
                 </h1>
 
 
@@ -124,9 +124,8 @@
                         text-white/75
                     "
                 >
-                    Register authorized personnel, configure their
-                    system access, and send a secure account setup
-                    invitation.
+                    Register a staff member, assign their predefined
+                    system role, and generate an account setup invitation.
                 </p>
 
 
@@ -214,7 +213,7 @@
                         />
                     </svg>
 
-                    Back to Personnel
+                    Back to Staff Accounts
 
                 </a>
 
@@ -313,7 +312,7 @@
 
 
         {{-- ====================================================== --}}
-        {{-- PERSONNEL INFORMATION --}}
+        {{-- STAFF INFORMATION --}}
         {{-- ====================================================== --}}
 
         <section class="min-w-0">
@@ -329,7 +328,7 @@
                         text-[#D4A017]
                     "
                 >
-                    Personnel Record
+                    Staff Profile
                 </p>
 
 
@@ -341,7 +340,7 @@
                         text-[#101064]
                     "
                 >
-                    Personnel Information
+                    Staff Information
                 </h2>
 
 
@@ -352,8 +351,7 @@
                         text-gray-400
                     "
                 >
-                    Enter the official identity and departmental
-                    information of the personnel.
+                    Enter the staff member’s official name and department.
                 </p>
 
             </div>
@@ -415,6 +413,8 @@
                             id="first_name"
                             type="text"
                             name="first_name"
+                            maxlength="100"
+                            autocomplete="given-name"
                             value="{{ old('first_name') }}"
                             placeholder="Enter first name"
                             required
@@ -476,6 +476,8 @@
                             id="last_name"
                             type="text"
                             name="last_name"
+                            maxlength="100"
+                            autocomplete="family-name"
                             value="{{ old('last_name') }}"
                             placeholder="Enter last name"
                             required
@@ -519,7 +521,7 @@
                     >
 
                         <label
-                            for="department"
+                            for="department_id"
                             class="
                                 mb-2
                                 block
@@ -535,12 +537,9 @@
                         </label>
 
 
-                        <input
-                            id="department"
-                            type="text"
-                            name="department"
-                            value="{{ old('department') }}"
-                            placeholder="Example: Registrar Office"
+                        <select
+                            id="department_id"
+                            name="department_id"
                             required
                             class="
                                 w-full
@@ -550,14 +549,27 @@
                                 py-3
                                 text-sm
                                 text-gray-700
-                                placeholder:text-gray-400
                                 focus:border-[#101064]
                                 focus:ring-[#101064]
                             "
                         >
+                            <option value="">Select department</option>
+                            @foreach($departments as $department)
+                                <option
+                                    value="{{ $department->department_id }}"
+                                    @selected(old('department_id') == $department->department_id)
+                                >
+                                    {{ $department->department_name }}
+                                </option>
+                            @endforeach
+                        </select>
 
+                        <p class="mt-2 text-xs leading-5 text-gray-500">
+                            Select the official department. DySign will link it
+                            to the staff account automatically.
+                        </p>
 
-                        @error('department')
+                        @error('department_id')
                             <p class="mt-2 text-xs text-red-500">
                                 {{ $message }}
                             </p>
@@ -618,8 +630,8 @@
                         text-gray-400
                     "
                 >
-                    Create the account identity that will be used
-                    to access DySign.
+                    Provide a valid email address. DySign automatically generates
+                    a username and secure account setup invitation.
                 </p>
 
             </div>
@@ -674,19 +686,17 @@
                                 text-gray-400
                             "
                         >
-                            Username
-                            <span class="text-red-500">*</span>
+                            Username Preview
                         </label>
 
 
                         <input
                             id="username"
                             type="text"
-                            name="username"
                             value="{{ old('username') }}"
                             placeholder="Generated automatically"
                             readonly
-                            required
+                            aria-describedby="username_help"
                             class="
                                 w-full
                                 rounded-lg
@@ -701,6 +711,11 @@
                             "
                         >
 
+
+                        <p id="username_help" class="mt-2 text-xs leading-5 text-gray-500">
+                            Preview only. The final username is generated on the server
+                            and may include a number to avoid duplicates.
+                        </p>
 
                         @error('username')
                             <p class="mt-2 text-xs text-red-500">
@@ -743,6 +758,8 @@
                             id="email"
                             type="email"
                             name="email"
+                            maxlength="255"
+                            autocomplete="email"
                             value="{{ old('email') }}"
                             placeholder="example@email.com"
                             required
@@ -849,11 +866,10 @@
                                     text-gray-500
                                 "
                             >
-                                After the account is created, the
-                                personnel will receive an email
-                                invitation containing a secure setup
-                                link. They will create their own
-                                password through the invitation.
+                                After registration, DySign generates a time-limited
+                                account setup link and attempts to email it
+                                to the staff member. Email delivery depends
+                                on the configured mail service.
                             </p>
 
                         </div>
@@ -909,8 +925,8 @@
                         text-gray-400
                     "
                 >
-                    Assign the appropriate system role and access
-                    level to this personnel.
+                    Assign a predefined role to determine which DySign modules
+                    this staff account can access.
                 </p>
 
             </div>
@@ -1008,6 +1024,11 @@
                         </select>
 
 
+                        <p class="mt-2 text-xs leading-5 text-gray-500">
+                            Staff accounts can be assigned to Department Staff or
+                            Attendance Personnel. Student accounts are provisioned separately.
+                        </p>
+
                         @error('role_id')
                             <p class="mt-2 text-xs text-red-500">
                                 {{ $message }}
@@ -1062,9 +1083,9 @@
                                 text-gray-500
                             "
                         >
-                            The selected role determines which
-                            DySign modules and administrative
-                            functions this account can access.
+                            Permissions are applied automatically from the
+                            selected predefined role. No manual permission
+                            setup is needed.
                         </p>
 
                     </div>
@@ -1128,8 +1149,8 @@
                             text-gray-400
                         "
                     >
-                        An invitation will be generated after the
-                        personnel account is successfully registered.
+                        The system validates the details, creates the linked
+                        staff account, and generates a setup invitation.
                     </p>
 
                 </div>
@@ -1203,7 +1224,7 @@
                             />
                         </svg>
 
-                        Create Account & Send Invitation
+                        Create Staff Account
 
                     </button>
 

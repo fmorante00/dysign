@@ -32,6 +32,13 @@ class AccountSetupController extends Controller
             abort(403, 'This account has already been set up or is unavailable.');
         }
 
+        // Staff accounts are created Active while awaiting setup.
+        // A deactivated staff member must not reactivate via an unused invitation.
+        // Student Account provisioning has a separate pending-account lifecycle.
+        if ($user->role?->role_name !== 'Student Account' && $user->status !== 'Active') {
+            abort(403, 'This staff account has been deactivated. Please contact the administrator.');
+        }
+
         // Student invitations must point to an actual linked student record.
         if ($user->role?->role_name === 'Student Account' && !$user->student) {
             abort(403, 'No student record is linked to this account.');
@@ -71,6 +78,11 @@ class AccountSetupController extends Controller
 
             if ($user->status === 'Active' && !$user->must_change_password) {
                 abort(403, 'This account has already been set up.');
+            }
+
+            // Re-check after locking the user record to avoid setup/deactivation races.
+            if ($user->role?->role_name !== 'Student Account' && $user->status !== 'Active') {
+                abort(403, 'This staff account has been deactivated. Please contact the administrator.');
             }
 
             if ($user->role?->role_name === 'Student Account' && !$user->student) {

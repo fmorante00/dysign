@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Mail\AccountInvitationMail;
 use App\Models\AccountInvitation;
+use App\Models\Department;
 use App\Models\Personnel;
 use App\Models\Role;
 use App\Models\User;
@@ -30,11 +31,15 @@ class PersonnelController extends Controller
 
     public function create()
     {
+        // Only predefined staff roles belong to this module.
         $roles = Role::where('status', 'Active')
+            ->whereIn('role_name', ['Department Staff', 'Attendance Personnel'])
             ->orderBy('role_name')
             ->get();
 
-        return view('personnel.create', compact('roles'));
+        $departments = Department::orderBy('department_name')->get();
+
+        return view('personnel.create', compact('roles', 'departments'));
     }
 
     public function store(Request $request)
@@ -42,15 +47,18 @@ class PersonnelController extends Controller
         $validated = $request->validate([
             'first_name' => ['required', 'string', 'max:100'],
             'last_name' => ['required', 'string', 'max:100'],
-            'department' => ['required', 'string', 'max:150'],
+            'department_id' => ['required', 'integer', Rule::exists('departments', 'department_id')],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'role_id' => [
                 'required',
                 Rule::exists('roles', 'role_id')
-                    ->where(fn ($query) => $query->where('status', 'Active')),
+                    ->where(fn ($query) => $query
+                        ->where('status', 'Active')
+                        ->whereIn('role_name', ['Department Staff', 'Attendance Personnel'])),
             ],
         ]);
 
+        $department = Department::findOrFail($validated['department_id']);
         $firstName = trim($validated['first_name']);
         $lastName = trim($validated['last_name']);
 
@@ -61,6 +69,7 @@ class PersonnelController extends Controller
 
         $result = DB::transaction(function () use (
             $validated,
+            $department,
             $firstName,
             $lastName,
             $username
@@ -71,6 +80,7 @@ class PersonnelController extends Controller
                 'email' => strtolower(trim($validated['email'])),
                 'password' => Hash::make(Str::random(64)),
                 'role_id' => $validated['role_id'],
+                'department_id' => $department->department_id,
                 'status' => 'Active',
                 'must_change_password' => true,
             ]);
@@ -79,7 +89,7 @@ class PersonnelController extends Controller
                 'user_id' => $user->user_id,
                 'first_name' => $firstName,
                 'last_name' => $lastName,
-                'department' => trim($validated['department']),
+                'department' => $department->department_name,
             ]);
 
             $invitation = AccountInvitation::create([
@@ -107,7 +117,7 @@ class PersonnelController extends Controller
                 ->route('personnel.index')
                 ->with(
                     'success',
-                    'Personnel account created successfully. An account setup invitation was sent to ' .
+                    'Staff account created successfully. An account setup invitation was sent to ' .
                     $user->email .
                     '. Username: ' .
                     $user->username
@@ -119,7 +129,7 @@ class PersonnelController extends Controller
                 ->route('personnel.index')
                 ->with(
                     'error',
-                    'The personnel account was created, but the invitation email could not be sent. Please use Resend Invitation after checking the mail configuration.'
+                    'The staff account was created, but the invitation email could not be sent. Please use Resend Invitation after checking the mail configuration.'
                 );
         }
     }
@@ -137,57 +147,82 @@ class PersonnelController extends Controller
 
     public function edit(string $id)
     {
-        $personnel = Personnel::with('user')->findOrFail($id);
+        $personnel = Personnel::with('user.role')->findOrFail($id);
+        $staffRoles = ['Department Staff', 'Attendance Personnel'];
+        $isStaffAccount = in_array($personnel->user->role?->role_name, $staffRoles, true);
 
-        $roles = Role::where('status', 'Active')
-            ->orderBy('role_name')
-            ->get();
+        // Only staff roles may be selected for staff accounts. Preserve the
+        // current role on older non-staff records without allowing escalation.
+        $roles = $isStaffAccount
+            ? Role::where('status', 'Active')->whereIn('role_name', $staffRoles)->orderBy('role_name')->get()
+            : Role::whereKey($personnel->user->role_id)->get();
 
-        return view('personnel.edit', compact('personnel', 'roles'));
+        $departments = Department::orderBy('department_name')->get();
+        $selectedDepartmentId = $personnel->user->department_id
+            ?? Department::where('department_name', $personnel->department)->value('department_id');
+
+        return view('personnel.edit', compact('personnel', 'roles', 'departments', 'selectedDepartmentId'));
     }
 
     public function update(Request $request, string $id)
     {
-        $personnel = Personnel::with('user')->findOrFail($id);
+        $personnel = Personnel::with('user.role')->findOrFail($id);
+        $staffRoles = ['Department Staff', 'Attendance Personnel'];
+        $isStaffAccount = in_array($personnel->user->role?->role_name, $staffRoles, true);
+
+        $allowedRoleIds = $isStaffAccount
+            ? Role::where('status', 'Active')->whereIn('role_name', $staffRoles)->pluck('role_id')->all()
+            : [$personnel->user->role_id];
 
         $validated = $request->validate([
             'first_name' => ['required', 'string', 'max:100'],
             'last_name' => ['required', 'string', 'max:100'],
-            'department' => ['required', 'string', 'max:150'],
-            'position' => ['required', 'string', 'max:150'],
-            'role_id' => [
-                'required',
-                Rule::exists('roles', 'role_id')
-                    ->where(fn ($query) => $query->where('status', 'Active')),
-            ],
+            'department_id' => ['required', 'integer', Rule::exists('departments', 'department_id')],
+            'position' => ['nullable', 'string', 'max:150'],
+            'role_id' => ['required', 'integer', Rule::in($allowedRoleIds)],
         ]);
 
-        DB::transaction(function () use ($validated, $personnel) {
+        $department = Department::findOrFail($validated['department_id']);
+
+        DB::transaction(function () use ($validated, $personnel, $department) {
             $firstName = trim($validated['first_name']);
             $lastName = trim($validated['last_name']);
+            $position = isset($validated['position']) ? trim($validated['position']) : null;
 
             $personnel->update([
                 'first_name' => $firstName,
                 'last_name' => $lastName,
-                'department' => trim($validated['department']),
-                'position' => trim($validated['position']),
+                'department' => $department->department_name,
+                'position' => $position !== '' ? $position : null,
             ]);
 
             $personnel->user->update([
                 'name' => $firstName . ' ' . $lastName,
                 'role_id' => $validated['role_id'],
+                'department_id' => $department->department_id,
             ]);
         });
 
         return redirect()
             ->route('personnel.index')
-            ->with('success', 'Personnel updated successfully.');
+            ->with('success', 'Staff account updated successfully.');
     }
 
     public function resendInvitation(string $id)
     {
         $personnel = Personnel::with('user.invitation')->findOrFail($id);
         $user = $personnel->user;
+
+        
+if ($user->status !== 'Active') {
+    return redirect()
+        ->route('personnel.index')
+        ->with(
+            'error',
+            'Cannot resend an invitation to a deactivated account. Please reactivate the account first.'
+        );
+}
+
 
         if (!$user->must_change_password) {
             return redirect()

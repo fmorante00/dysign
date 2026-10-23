@@ -132,7 +132,7 @@
                         text-[#E7C75B]
                     "
                 >
-                    Personnel Administration
+                    Staff Account Administration
                 </p>
 
 
@@ -146,7 +146,7 @@
                         md:text-4xl
                     "
                 >
-                    Edit Personnel Account
+                    Edit Staff Account
                 </h1>
 
 
@@ -159,7 +159,7 @@
                         text-white/75
                     "
                 >
-                    Update personnel profile information,
+                    Update staff profile information,
                     departmental assignment, and system access.
                 </p>
 
@@ -382,7 +382,7 @@
                         text-[#D4A017]
                     "
                 >
-                    Personnel Record
+                    Staff Profile
                 </p>
 
 
@@ -394,7 +394,7 @@
                         text-[#101064]
                     "
                 >
-                    Personnel Information
+                    Staff Information
                 </h2>
 
 
@@ -405,7 +405,7 @@
                         text-gray-400
                     "
                 >
-                    Update the personnel's official identity
+                    Update the staff member's official identity
                     and departmental information.
                 </p>
 
@@ -590,14 +590,9 @@
                         </label>
 
 
-                        <input
+                        <select
                             id="department"
-                            type="text"
-                            name="department"
-                            value="{{ old(
-                                'department',
-                                $personnel->department
-                            ) }}"
+                            name="department_id"
                             required
                             class="
                                 w-full
@@ -611,9 +606,19 @@
                                 focus:ring-[#101064]
                             "
                         >
+                            <option value="">Select department</option>
+                            @foreach($departments as $department)
+                                <option
+                                    value="{{ $department->department_id }}"
+                                    @selected(old('department_id', $selectedDepartmentId) == $department->department_id)
+                                >
+                                    {{ $department->department_name }}
+                                </option>
+                            @endforeach
+                        </select>
 
 
-                        @error('department')
+                        @error('department_id')
                             <p class="mt-2 text-xs text-red-500">
                                 {{ $message }}
                             </p>
@@ -645,8 +650,7 @@
                                 text-gray-400
                             "
                         >
-                            Position
-                            <span class="text-red-500">*</span>
+                            Position <span class="text-gray-400 font-normal">(optional)</span>
                         </label>
 
 
@@ -654,11 +658,11 @@
                             id="position"
                             type="text"
                             name="position"
+                            maxlength="150"
                             value="{{ old(
                                 'position',
                                 $personnel->position
                             ) }}"
-                            required
                             class="
                                 w-full
                                 rounded-lg
@@ -1114,7 +1118,7 @@
 
                                 This account is currently inactive.
                                 Account activation is managed from
-                                Personnel Management.
+                                Staff Account Management.
 
                             @elseif($personnel->user->must_change_password)
 
@@ -1215,7 +1219,7 @@
                             text-gray-400
                         "
                     >
-                        Personnel ID
+                        Staff Record ID
                     </p>
 
 
@@ -1364,7 +1368,7 @@
                             text-[#101064]
                         "
                     >
-                        Save Personnel Changes
+                        Save Staff Account Changes
                     </p>
 
 
