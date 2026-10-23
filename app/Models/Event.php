@@ -303,4 +303,13 @@ class Event extends Model
             'event_id'
         );
     }
+
+    public function evaluationForms()
+    {
+        return $this->hasMany(
+            EvaluationForm::class,
+            'event_id',
+            'event_id'
+        );
+    }
 }

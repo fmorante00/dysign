@@ -57,6 +57,8 @@
                 event: {{
                     request()->routeIs('events.*')
                     || request()->routeIs('announcements.*')
+                    || request()->routeIs('staff.excuse-requests.*')
+                    || request()->routeIs('staff.evaluation-forms.*')
                         ? 'true'
                         : 'false'
                 }},
@@ -308,6 +310,7 @@
 
                     @endif
 
+
                     <a
                         href="{{ route('students.accounts.index') }}"
                         class="{{ $child }} {{ request()->routeIs('students.accounts.*') ? $active : '' }}"
@@ -377,8 +380,6 @@
                     </a>
 
 
-                    <!-- PARTICIPANT ELIGIBILITY -->
-
                     <a
                         href="{{ route('events.eligibility.events') }}"
                         class="{{ $child }} {{ request()->routeIs('events.eligibility.*') ? $active : '' }}"
@@ -389,29 +390,6 @@
                         </span>
 
                         Participant Eligibility
-
-                    </a>
-
-
-                    <a
-                        href="{{ route('announcements.index') }}"
-                        class="
-                            {{ $child }}
-                            {{
-                                request()->routeIs(
-                                    'announcements.*'
-                                )
-                                    ? $active
-                                    : ''
-                            }}
-                        "
-                    >
-
-                        <span class="text-[#D4A017]">
-                            •
-                        </span>
-
-                        Announcements
 
                     </a>
 
@@ -471,11 +449,7 @@
                     )
 
                         <a
-                            href="{{
-                                route(
-                                    'attendance.monitor'
-                                )
-                            }}"
+                            href="{{ route('attendance.monitor') }}"
                             class="
                                 {{ $child }}
                                 {{
@@ -498,11 +472,7 @@
 
 
                         <a
-                            href="{{
-                                route(
-                                    'attendance.alerts'
-                                )
-                            }}"
+                            href="{{ route('attendance.alerts') }}"
                             class="
                                 {{ $child }}
                                 {{
@@ -527,11 +497,7 @@
 
 
                     <a
-                        href="{{
-                            route(
-                                'participation.records'
-                            )
-                        }}"
+                        href="{{ route('participation.records') }}"
                         class="
                             {{ $child }}
                             {{
@@ -554,11 +520,7 @@
 
 
                     <a
-                        href="{{
-                            route(
-                                'participation.evaluation'
-                            )
-                        }}"
+                        href="{{ route('participation.evaluation') }}"
                         class="
                             {{ $child }}
                             {{
@@ -622,11 +584,7 @@
                 >
 
                     <a
-                        href="{{
-                            route(
-                                'reports.attendance'
-                            )
-                        }}"
+                        href="{{ route('reports.attendance') }}"
                         class="
                             {{ $child }}
                             {{
@@ -649,11 +607,7 @@
 
 
                     <a
-                        href="{{
-                            route(
-                                'reports.participation'
-                            )
-                        }}"
+                        href="{{ route('reports.participation') }}"
                         class="
                             {{ $child }}
                             {{
@@ -877,11 +831,7 @@
                     {{-- PARTICIPANT ELIGIBILITY --}}
 
                     <a
-                        href="{{
-                            route(
-                                'events.eligibility.events'
-                            )
-                        }}"
+                        href="{{ route('events.eligibility.events') }}"
                         class="
                             {{ $child }}
                             {{
@@ -907,11 +857,7 @@
                     {{-- PERSONNEL ASSIGNMENT --}}
 
                     <a
-                        href="{{
-                            route(
-                                'events.personnel-assignment.events'
-                            )
-                        }}"
+                        href="{{ route('events.personnel-assignment.events') }}"
                         class="
                             {{ $child }}
                             {{
@@ -932,6 +878,85 @@
 
                     </a>
 
+
+
+                    {{-- ANNOUNCEMENTS --}}
+
+                    <a
+                        href="{{ route('announcements.index') }}"
+                        class="
+                            {{ $child }}
+                            {{
+                                request()->routeIs(
+                                    'announcements.*'
+                                )
+                                    ? $active
+                                    : ''
+                            }}
+                        "
+                    >
+
+                        <span class="text-[#D4A017]">
+                            •
+                        </span>
+
+                        Announcements
+
+                    </a>
+
+
+
+                    {{-- EXCUSE REQUESTS --}}
+
+                    <a
+                        href="{{ route('staff.excuse-requests.index') }}"
+                        class="
+                            {{ $child }}
+                            {{
+                                request()->routeIs(
+                                    'staff.excuse-requests.*'
+                                )
+                                    ? $active
+                                    : ''
+                            }}
+                        "
+                    >
+
+                        <span class="text-[#D4A017]">
+                            •
+                        </span>
+
+                        Excuse Requests
+
+                    </a>
+
+
+
+                    {{-- EVALUATION FORMS --}}
+
+                    <a
+                        href="{{ route('staff.evaluation-forms.index') }}"
+                        class="
+                            {{ $child }}
+                            {{
+                                request()->routeIs(
+                                    'staff.evaluation-forms.*'
+                                )
+                                    ? $active
+                                    : ''
+                            }}
+                        "
+                    >
+
+                        <span class="text-[#D4A017]">
+                            •
+                        </span>
+
+                        Evaluation Forms
+
+                    </a>
+
+
                 </div>
 
 
@@ -941,11 +966,7 @@
                 <!-- ================================================= -->
 
                 <a
-                    href="{{
-                        route(
-                            'personnel-availability.staff'
-                        )
-                    }}"
+                    href="{{ route('personnel-availability.staff') }}"
                     class="
                         {{ $link }}
                         mt-3
@@ -985,34 +1006,47 @@
 
                 </a>
 
-        {{-- PERSONNEL DUTY MONITORING --}}
 
-            <a
-                href="{{ route('personnel-duties.staff') }}"
-                class="{{ $link }} mt-3 {{
-                    request()->routeIs('personnel-duties.staff')
-                        ? $active
-                        : ''
-                }}"
-            >
-                <svg
-                    class="h-5 w-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+
+                <!-- ================================================= -->
+                <!-- PERSONNEL DUTY MONITORING -->
+                <!-- ================================================= -->
+
+                <a
+                    href="{{ route('personnel-duties.staff') }}"
+                    class="
+                        {{ $link }}
+                        mt-3
+                        {{
+                            request()->routeIs(
+                                'personnel-duties.staff'
+                            )
+                                ? $active
+                                : ''
+                        }}
+                    "
                 >
-                    <path
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="M9 12l2 2 4-4m5-4.5A11.95 11.95 0 0112 3a11.95 11.95 0 01-8 2.5V11c0 5.25 3.4 9.74 8 11 4.6-1.26 8-5.75 8-11V5.5z"
-                    />
-                </svg>
 
-                <span>
-                    Duty Monitoring
-                </span>
-            </a>
+                    <svg
+                        class="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M9 12l2 2 4-4m5-4.5A11.95 11.95 0 0112 3a11.95 11.95 0 01-8 2.5V11c0 5.25 3.4 9.74 8 11 4.6-1.26 8-5.75 8-11V5.5z"
+                        />
+                    </svg>
+
+                    <span>
+                        Duty Monitoring
+                    </span>
+
+                </a>
+
 
             @endif
 
@@ -1111,11 +1145,7 @@
                 <!-- ================================================= -->
 
                 <a
-                    href="{{
-                        route(
-                            'personnel-availability.index'
-                        )
-                    }}"
+                    href="{{ route('personnel-availability.index') }}"
                     class="
                         {{ $link }}
                         mt-3
@@ -1160,38 +1190,47 @@
                 </a>
 
 
-                {{-- MY DUTIES --}}
 
-<a
-    href="{{ route('personnel-duties.index') }}"
-    class="{{ $link }} mt-3 {{
-        request()->routeIs(
-            'personnel-duties.index',
-            'personnel-duties.check-in',
-            'personnel-duties.check-out'
-        )
-            ? $active
-            : ''
-    }}"
->
-    <svg
-        class="h-5 w-5"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-    >
-        <path
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"
-        />
-    </svg>
+                <!-- ================================================= -->
+                <!-- MY DUTIES -->
+                <!-- ================================================= -->
 
-    <span>
-        My Duties
-    </span>
-</a>
+                <a
+                    href="{{ route('personnel-duties.index') }}"
+                    class="
+                        {{ $link }}
+                        mt-3
+                        {{
+                            request()->routeIs(
+                                'personnel-duties.index',
+                                'personnel-duties.check-in',
+                                'personnel-duties.check-out'
+                            )
+                                ? $active
+                                : ''
+                        }}
+                    "
+                >
+
+                    <svg
+                        class="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"
+                        />
+                    </svg>
+
+                    <span>
+                        My Duties
+                    </span>
+
+                </a>
 
 
             @endif
@@ -1205,7 +1244,9 @@
             @if($role === 'Student Account')
 
 
-                <!-- STUDENT DASHBOARD -->
+                <!-- ================================================= -->
+                <!-- DASHBOARD -->
+                <!-- ================================================= -->
 
                 <a
                     href="{{ route('dashboard') }}"
@@ -1235,6 +1276,142 @@
 
                     <span>
                         Dashboard
+                    </span>
+
+                </a>
+
+
+
+                <!-- ================================================= -->
+                <!-- MY ANNOUNCEMENTS -->
+                <!-- ================================================= -->
+
+                <a
+                    href="{{ route('student.announcements.index') }}"
+                    class="
+                        {{ $link }}
+                        mt-3
+                        {{
+                            request()->routeIs(
+                                'student.announcements.*'
+                            )
+                                ? $active
+                                : ''
+                        }}
+                    "
+                >
+
+                    <svg
+                        class="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="
+                                M8 10h8
+                                m-8 4h5
+                                M5 5h14
+                                a2 2 0 012 2
+                                v10
+                                a2 2 0 01-2 2
+                                H9
+                                l-4 3
+                                v-3
+                                a2 2 0 01-2-2
+                                V7
+                                a2 2 0 012-2
+                            "
+                        />
+                    </svg>
+
+                    <span>
+                        My Announcements
+                    </span>
+
+                </a>
+
+
+
+                <!-- ================================================= -->
+                <!-- MY EXCUSE REQUESTS -->
+                <!-- ================================================= -->
+
+                <a
+                    href="{{ route('student.excuse-requests.index') }}"
+                    class="
+                        {{ $link }}
+                        mt-3
+                        {{
+                            request()->routeIs(
+                                'student.excuse-requests.*'
+                            )
+                                ? $active
+                                : ''
+                        }}
+                    "
+                >
+
+                    <svg
+                        class="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M9 12h6m-6 4h6M9 8h2m-5-5h9l3 3v15H6V3z"
+                        />
+                    </svg>
+
+                    <span>
+                        My Excuse Requests
+                    </span>
+
+                </a>
+
+
+
+                <!-- ================================================= -->
+                <!-- MY EVALUATIONS -->
+                <!-- ================================================= -->
+
+                <a
+                    href="{{ route('student.evaluations.index') }}"
+                    class="
+                        {{ $link }}
+                        mt-3
+                        {{
+                            request()->routeIs(
+                                'student.evaluations.*'
+                            )
+                                ? $active
+                                : ''
+                        }}
+                    "
+                >
+
+                    <svg
+                        class="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"
+                        />
+                    </svg>
+
+                    <span>
+                        My Evaluations
                     </span>
 
                 </a>

@@ -71,4 +71,13 @@ class Student extends Model
             'student_id'
         );
     }
+
+    public function evaluationSubmissions()
+    {
+        return $this->hasMany(
+            EvaluationSubmission::class,
+            'student_id',
+            'student_id'
+        );
+    }
 }
