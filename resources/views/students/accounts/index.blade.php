@@ -40,7 +40,7 @@
 
             <div class="rounded-xl border border-green-200 bg-green-50 px-6 py-4">
                 <p class="font-semibold text-green-800">
-                    Provisioning Request Queued
+                    Action Completed
                 </p>
 
                 <p class="mt-1 text-sm text-green-700">
@@ -399,7 +399,7 @@
 
             <div class="overflow-x-auto">
 
-                <table class="w-full min-w-[950px] text-left">
+                <table class="w-full min-w-[1200px] text-left">
 
                     <thead class="bg-gray-50">
 
@@ -410,6 +410,8 @@
                             <th class="px-6 py-4">Email</th>
                             <th class="px-6 py-4">Program</th>
                             <th class="px-6 py-4">Provisioning Status</th>
+                            <th class="px-6 py-4">Account Access</th>
+                            <th class="px-6 py-4">Actions</th>
 
                         </tr>
 
@@ -488,13 +490,61 @@
 
                                 </td>
 
+                                {{-- Student login account state (separate from provisioning eligibility) --}}
+                                <td class="px-6 py-4">
+                                    @if(!$record['account_user_id'])
+                                        <span class="text-xs text-gray-400">Not provisioned</span>
+                                    @elseif($record['account_deactivated_at'] !== null)
+                                        <span class="inline-flex rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">Deactivated</span>
+                                    @elseif($record['account_status'] === 'Active')
+                                        <span class="inline-flex rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">Active</span>
+                                    @elseif($record['account_setup_pending'])
+                                        <span class="inline-flex rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">Pending Setup</span>
+                                    @else
+                                        <span class="inline-flex rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">Inactive</span>
+                                    @endif
+                                </td>
+
+                                {{-- Account-management actions: only for linked Student Account users --}}
+                                <td class="px-6 py-4">
+                                    @if(!$record['account_user_id'] || !$record['account_is_student_role'])
+                                        <span class="text-xs text-gray-400">—</span>
+                                    @elseif($record['account_deactivated_at'] !== null || ($record['account_status'] === 'Inactive' && !$record['account_setup_pending']))
+                                        @if($record['student_record_active'])
+                                            <form method="POST"
+                                                  action="{{ route('students.accounts.activate', ['id' => $record['account_user_id']]) }}"
+                                                  onsubmit="return confirm('Reactivate this student account? If account setup is pending, the student must still complete setup.');">
+                                                @csrf
+                                                @method('PATCH')
+                                                <button type="submit"
+                                                        class="rounded-lg border border-green-600 px-4 py-2 text-xs font-bold text-green-700 transition hover:bg-green-50">
+                                                    Reactivate
+                                                </button>
+                                            </form>
+                                        @else
+                                            <span class="text-xs text-gray-400">Student record inactive</span>
+                                        @endif
+                                    @else
+                                        <form method="POST"
+                                              action="{{ route('students.accounts.deactivate', ['id' => $record['account_user_id']]) }}"
+                                              onsubmit="return confirm('{{ $record['account_setup_pending'] ? 'Disable this student account before setup? The student cannot complete invitation setup while disabled.' : 'Deactivate this student account? The student will be blocked from accessing DySign.' }}');">
+                                            @csrf
+                                            @method('PATCH')
+                                            <button type="submit"
+                                                    class="rounded-lg border border-red-200 px-4 py-2 text-xs font-bold text-red-700 transition hover:bg-red-50">
+                                                {{ $record['account_setup_pending'] ? 'Disable Account' : 'Deactivate' }}
+                                            </button>
+                                        </form>
+                                    @endif
+                                </td>
+
                             </tr>
 
                         @empty
 
                             <tr>
 
-                                <td colspan="5" class="px-6 py-16 text-center">
+                                <td colspan="7" class="px-6 py-16 text-center">
 
                                     <p class="font-semibold text-[#101064]">
                                         No student records found

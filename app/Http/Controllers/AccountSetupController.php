@@ -33,15 +33,26 @@ class AccountSetupController extends Controller
         }
 
         // Staff accounts are created Active while awaiting setup.
-        // A deactivated staff member must not reactivate via an unused invitation.
-        // Student Account provisioning has a separate pending-account lifecycle.
+        // Deactivated staff cannot reactivate through an invitation.
         if ($user->role?->role_name !== 'Student Account' && $user->status !== 'Active') {
             abort(403, 'This staff account has been deactivated. Please contact the administrator.');
         }
 
-        // Student invitations must point to an actual linked student record.
+        // Student invitations must be linked to an existing student.
         if ($user->role?->role_name === 'Student Account' && !$user->student) {
             abort(403, 'No student record is linked to this account.');
+        }
+
+        // Block deliberately deactivated Student Accounts.
+        // First-time setup remains allowed when deactivated_at is null.
+        if (
+            $user->role?->role_name === 'Student Account' &&
+            $user->deactivated_at !== null
+        ) {
+            abort(
+                403,
+                'This student account has been deactivated. Please contact the administrator.'
+            );
         }
 
         return view('auth.account-setup', compact('invitation'));
@@ -57,16 +68,18 @@ class AccountSetupController extends Controller
         ]);
 
         DB::transaction(function () use ($token, $validated) {
-            // Read the invitation first to determine which user row to lock.
-            $candidate = AccountInvitation::where('token', $token)->firstOrFail();
 
-            // Serialize setup requests for the same user, even if they have
-            // different valid invitation tokens.
+            // Retrieve the invitation.
+            $candidate = AccountInvitation::where('token', $token)
+                ->firstOrFail();
+
+            // Lock the user to prevent concurrent setup requests.
             $user = User::query()
                 ->whereKey($candidate->user_id)
                 ->lockForUpdate()
                 ->firstOrFail();
 
+            // Lock and validate the invitation.
             $invitation = AccountInvitation::where('token', $token)
                 ->whereNull('used_at')
                 ->lockForUpdate()
@@ -80,29 +93,57 @@ class AccountSetupController extends Controller
                 abort(403, 'This account has already been set up.');
             }
 
-            // Re-check after locking the user record to avoid setup/deactivation races.
-            if ($user->role?->role_name !== 'Student Account' && $user->status !== 'Active') {
-                abort(403, 'This staff account has been deactivated. Please contact the administrator.');
+            // Prevent deactivated staff accounts from being reactivated.
+            if (
+                $user->role?->role_name !== 'Student Account' &&
+                $user->status !== 'Active'
+            ) {
+                abort(
+                    403,
+                    'This staff account has been deactivated. Please contact the administrator.'
+                );
             }
 
-            if ($user->role?->role_name === 'Student Account' && !$user->student) {
+            // Ensure Student Accounts are linked to a student record.
+            if (
+                $user->role?->role_name === 'Student Account' &&
+                !$user->student
+            ) {
                 abort(403, 'No student record is linked to this account.');
             }
 
+            // Recheck student deactivation under the database lock.
+            if (
+                $user->role?->role_name === 'Student Account' &&
+                $user->deactivated_at !== null
+            ) {
+                abort(
+                    403,
+                    'This student account has been deactivated. Please contact the administrator.'
+                );
+            }
+
+            // Complete account setup.
             $user->update([
                 'password' => Hash::make($validated['password']),
                 'must_change_password' => false,
                 'status' => 'Active',
             ]);
 
-            // Invalidate all outstanding account-setup links for this user.
+            // Invalidate all remaining setup invitations.
             AccountInvitation::where('user_id', $user->getKey())
                 ->whereNull('used_at')
-                ->update(['used_at' => now()]);
+                ->update([
+                    'used_at' => now(),
+                ]);
+
         }, 3);
 
         return redirect()
             ->route('login')
-            ->with('success', 'Your account setup is complete. You may now log in.');
+            ->with(
+                'success',
+                'Your account setup is complete. You may now log in.'
+            );
     }
 }

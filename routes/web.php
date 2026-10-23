@@ -275,6 +275,26 @@ Route::middleware([
         'students.accounts.provision'
     );
 
+    
+    // Activate Student Account
+    Route::patch(
+        '/student-accounts/{id}/activate',
+        [
+            \App\Http\Controllers\StudentAccountProvisioningController::class,
+            'activate'
+        ]
+    )->name('students.accounts.activate');
+
+    // Deactivate Student Account
+    Route::patch(
+        '/student-accounts/{id}/deactivate',
+        [
+            \App\Http\Controllers\StudentAccountProvisioningController::class,
+            'deactivate'
+        ]
+    )->name('students.accounts.deactivate');
+
+
 });
 
 
