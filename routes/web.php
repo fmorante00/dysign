@@ -10,6 +10,7 @@ use App\Http\Controllers\StudentController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\MyAssignedEventsController;
 use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\RfidCardLifecycleController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\AttendanceMonitoringController;
 use App\Http\Controllers\ParticipationRecordsController;
@@ -294,6 +295,51 @@ Route::middleware([
         ]
     )->name('students.accounts.deactivate');
 
+
+});
+
+
+/*
+|--------------------------------------------------------------------------
+| Module 23 - RFID Card Lifecycle Management
+|--------------------------------------------------------------------------
+|
+| System Administrator only: lost cards, replacements, and imported UID review.
+|
+*/
+
+Route::middleware([
+    'auth',
+    'role:Administrator'
+])
+->group(function () {
+
+    Route::get(
+        '/rfid-cards',
+        [RfidCardLifecycleController::class, 'index']
+    )
+    ->name('rfid-cards.index');
+
+    Route::post(
+        '/rfid-cards/{student}/lost',
+        [RfidCardLifecycleController::class, 'reportLost']
+    )
+    ->whereNumber('student')
+    ->name('rfid-cards.lost');
+
+    Route::post(
+        '/rfid-cards/{student}/replace',
+        [RfidCardLifecycleController::class, 'replace']
+    )
+    ->whereNumber('student')
+    ->name('rfid-cards.replace');
+
+    Route::post(
+        '/rfid-cards/{student}/approve-imported',
+        [RfidCardLifecycleController::class, 'approveImported']
+    )
+    ->whereNumber('student')
+    ->name('rfid-cards.approve');
 
 });
 
@@ -1805,6 +1851,34 @@ Route::post(
 ->name(
     'account.setup.store'
 );
+
+
+/*
+|--------------------------------------------------------------------------
+| Module 22 - Student Attendance Discrepancy Request Management
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['auth', 'role:Student Account'])->group(function () {
+    Route::get('/student/attendance-discrepancies',
+        [\App\Http\Controllers\StudentAttendanceDiscrepancyController::class, 'index'])
+        ->name('attendance-discrepancies.student.index');
+
+    Route::post('/student/attendance-discrepancies',
+        [\App\Http\Controllers\StudentAttendanceDiscrepancyController::class, 'store'])
+        ->name('attendance-discrepancies.student.store');
+});
+
+Route::middleware(['auth', 'role:Attendance Personnel'])->group(function () {
+    Route::get('/attendance-discrepancies',
+        [\App\Http\Controllers\PersonnelAttendanceDiscrepancyController::class, 'index'])
+        ->name('attendance-discrepancies.staff.index');
+
+    Route::post('/attendance-discrepancies/{discrepancyRequest}/review',
+        [\App\Http\Controllers\PersonnelAttendanceDiscrepancyController::class, 'review'])
+        ->whereNumber('discrepancyRequest')
+        ->name('attendance-discrepancies.staff.review');
+});
 
 
 /*

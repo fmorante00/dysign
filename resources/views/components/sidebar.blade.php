@@ -49,6 +49,7 @@
 
                 student: {{
                     request()->routeIs('students.*')
+                    || request()->routeIs('rfid-cards.*')
                         ? 'true'
                         : 'false'
                 }},
@@ -293,6 +294,21 @@
                         </span>
 
                         Account Provisioning
+
+                    </a>
+
+
+                    {{-- Module 23: RFID Card Lifecycle Management --}}
+                    <a
+                        href="{{ route('rfid-cards.index') }}"
+                        class="{{ $child }} {{ request()->routeIs('rfid-cards.*') ? $active : '' }}"
+                    >
+
+                        <span class="text-[#D4A017]">
+                            •
+                        </span>
+
+                        RFID Card Lifecycle
 
                     </a>
 
@@ -1205,6 +1221,32 @@
                 </a>
 
 
+                <!-- ================================================= -->
+                <!-- MODULE 22 - ATTENDANCE DISCREPANCY REVIEW -->
+                <!-- ================================================= -->
+
+                <a
+                    href="{{ route('attendance-discrepancies.staff.index') }}"
+                    class="{{ $link }} mt-3 {{ request()->routeIs('attendance-discrepancies.staff.*') ? $active : '' }}"
+                >
+                    <svg
+                        class="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <path
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M9 12h6m-6 4h6M5 3h14v18H5V3z"
+                        />
+                    </svg>
+                    <span>Discrepancy Requests</span>
+                </a>
+
+
             @endif
 
 
@@ -1386,6 +1428,32 @@
                         My Evaluations
                     </span>
 
+                </a>
+
+
+                <!-- ================================================= -->
+                <!-- MODULE 22 - STUDENT ATTENDANCE DISCREPANCIES -->
+                <!-- ================================================= -->
+
+                <a
+                    href="{{ route('attendance-discrepancies.student.index') }}"
+                    class="{{ $link }} mt-3 {{ request()->routeIs('attendance-discrepancies.student.*') ? $active : '' }}"
+                >
+                    <svg
+                        class="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <path
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M9 12h6m-6 4h6M5 3h14v18H5V3z"
+                        />
+                    </svg>
+                    <span>Attendance Discrepancies</span>
                 </a>
 
 

@@ -304,6 +304,33 @@ class AttendanceController extends Controller
 
                 /*
                 |--------------------------------------------------------------------------
+                | RFID Card Lifecycle Security
+                |--------------------------------------------------------------------------
+                |
+                | The student may retain an old UID after reporting a lost card
+                | because students.rfid_identifier is NOT NULL. Only a matching
+                | Active lifecycle assignment may scan. This also blocks an RFID
+                | changed by an import without a synchronized lifecycle record.
+                |
+                */
+
+                $activeRfidAssignment = DB::table('rfid_card_assignments')
+                    ->where('student_id', $student->student_id)
+                    ->where('rfid_identifier', $rfid)
+                    ->where('status', 'Active')
+                    ->exists();
+
+                if (!$activeRfidAssignment) {
+                    return response()->json([
+                        'success' => false,
+                        'code' => 'rfid_card_inactive',
+                        'message' => 'This RFID card is lost, replaced, or not activated.',
+                    ], 403);
+                }
+
+
+                /*
+                |--------------------------------------------------------------------------
                 | Inactive Student
                 |--------------------------------------------------------------------------
                 */
