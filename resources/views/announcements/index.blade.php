@@ -12,9 +12,9 @@
         background:
             linear-gradient(
                 100deg,
-                rgba(16,16,100,.97) 0%,
-                rgba(16,16,100,.92) 52%,
-                rgba(16,16,100,.74) 100%
+                rgba(16, 16, 100, .97) 0%,
+                rgba(16, 16, 100, .92) 52%,
+                rgba(16, 16, 100, .74) 100%
             ),
             url('{{ asset('images/school.jpg') }}');
 
@@ -23,6 +23,67 @@
     }
 
 </style>
+
+
+
+@php
+
+    /*
+    |--------------------------------------------------------------------------
+    | Announcement Summary
+    |--------------------------------------------------------------------------
+    |
+    | We calculate the cards directly from the announcements already
+    | supplied by AnnouncementController@index.
+    |
+    */
+
+    $announcementCollection =
+        collect($announcements ?? []);
+
+
+    $totalAnnouncements =
+        $announcementCollection->count();
+
+
+    $totalRecipients =
+        $announcementCollection->sum(
+            function ($announcement) {
+
+                return
+                    (int) (
+                        $announcement->recipient_count
+                        ?? 0
+                    );
+
+            }
+        );
+
+
+    $sentAnnouncements =
+        $announcementCollection->filter(
+            function ($announcement) {
+
+                return in_array(
+                    $announcement->status,
+                    [
+                        'Sent',
+                        'Partially Sent',
+                    ]
+                );
+
+            }
+        )->count();
+
+
+    $processingAnnouncements =
+        $announcementCollection->where(
+            'status',
+            'Processing'
+        )->count();
+
+@endphp
+
 
 
 <div class="min-w-0 space-y-8">
@@ -109,12 +170,13 @@
                         text-white/70
                     "
                 >
-                    Create and manage event announcements,
-                    reminders, and notifications for students
-                    and authorized personnel.
+                    Create and publish event announcements
+                    to eligible students, selected students,
+                    colleges, year levels, and assigned personnel.
                 </p>
 
             </div>
+
 
 
             <div
@@ -175,7 +237,7 @@
                             text-[#E7C75B]
                         "
                     >
-                        Communication Type
+                        Module
                     </p>
 
 
@@ -187,7 +249,7 @@
                             text-white
                         "
                     >
-                        Event Notifications
+                        Announcement & Publication
                     </p>
 
                 </div>
@@ -240,10 +302,11 @@
                     text-gray-500
                 "
             >
-                Overview of announcement and notification activity.
+                Current announcement and delivery activity.
             </p>
 
         </div>
+
 
 
         <div
@@ -251,9 +314,11 @@
                 grid
                 grid-cols-1
                 overflow-hidden
+                rounded-2xl
                 border
                 border-gray-200
                 bg-white
+                shadow-sm
                 sm:grid-cols-2
                 xl:grid-cols-4
             "
@@ -306,7 +371,7 @@
                                 text-[#101064]
                             "
                         >
-                            24
+                            {{ number_format($totalAnnouncements) }}
                         </p>
 
                     </div>
@@ -348,7 +413,7 @@
 
 
 
-            {{-- SENT NOTIFICATIONS --}}
+            {{-- TOTAL RECIPIENTS --}}
 
             <div
                 class="
@@ -381,7 +446,95 @@
                                 text-gray-400
                             "
                         >
-                            Sent Notifications
+                            Total Recipients
+                        </p>
+
+
+                        <p
+                            class="
+                                mt-2
+                                text-3xl
+                                font-bold
+                                tracking-tight
+                                text-[#101064]
+                            "
+                        >
+                            {{ number_format($totalRecipients) }}
+                        </p>
+
+                    </div>
+
+
+                    <div
+                        class="
+                            flex
+                            h-10
+                            w-10
+                            shrink-0
+                            items-center
+                            justify-center
+                            rounded-xl
+                            bg-[#F1F2FA]
+                            text-[#101064]
+                        "
+                    >
+
+                        <svg
+                            class="h-5 w-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-width="1.8"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2m7-10a4 4 0 100-8 4 4 0 000 8zm7 10v-2a4 4 0 00-3-3.87"
+                            />
+                        </svg>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+
+            {{-- SENT --}}
+
+            <div
+                class="
+                    border-b
+                    border-gray-100
+                    px-6
+                    py-6
+                    sm:border-r
+                    sm:border-b-0
+                "
+            >
+
+                <div
+                    class="
+                        flex
+                        items-start
+                        justify-between
+                        gap-4
+                    "
+                >
+
+                    <div>
+
+                        <p
+                            class="
+                                text-[10px]
+                                font-bold
+                                uppercase
+                                tracking-[0.16em]
+                                text-gray-400
+                            "
+                        >
+                            Delivered
                         </p>
 
 
@@ -394,7 +547,7 @@
                                 text-green-600
                             "
                         >
-                            1,245
+                            {{ number_format($sentAnnouncements) }}
                         </p>
 
                     </div>
@@ -436,18 +589,9 @@
 
 
 
-            {{-- UPCOMING REMINDERS --}}
+            {{-- PROCESSING --}}
 
-            <div
-                class="
-                    border-b
-                    border-gray-100
-                    px-6
-                    py-6
-                    sm:border-r
-                    sm:border-b-0
-                "
-            >
+            <div class="px-6 py-6">
 
                 <div
                     class="
@@ -469,7 +613,7 @@
                                 text-gray-400
                             "
                         >
-                            Upcoming Reminders
+                            Processing
                         </p>
 
 
@@ -482,7 +626,7 @@
                                 text-[#D4A017]
                             "
                         >
-                            8
+                            {{ number_format($processingAnnouncements) }}
                         </p>
 
                     </div>
@@ -522,85 +666,6 @@
 
             </div>
 
-
-
-            {{-- RECIPIENTS --}}
-
-            <div class="px-6 py-6">
-
-                <div
-                    class="
-                        flex
-                        items-start
-                        justify-between
-                        gap-4
-                    "
-                >
-
-                    <div>
-
-                        <p
-                            class="
-                                text-[10px]
-                                font-bold
-                                uppercase
-                                tracking-[0.16em]
-                                text-gray-400
-                            "
-                        >
-                            Recipients
-                        </p>
-
-
-                        <p
-                            class="
-                                mt-2
-                                text-3xl
-                                font-bold
-                                tracking-tight
-                                text-[#101064]
-                            "
-                        >
-                            2,540
-                        </p>
-
-                    </div>
-
-
-                    <div
-                        class="
-                            flex
-                            h-10
-                            w-10
-                            shrink-0
-                            items-center
-                            justify-center
-                            rounded-xl
-                            bg-[#F1F2FA]
-                            text-[#101064]
-                        "
-                    >
-
-                        <svg
-                            class="h-5 w-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                stroke-width="1.8"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2m7-10a4 4 0 100-8 4 4 0 000 8zm7 10v-2a4 4 0 00-3-3.87"
-                            />
-                        </svg>
-
-                    </div>
-
-                </div>
-
-            </div>
-
         </div>
 
     </section>
@@ -608,99 +673,106 @@
 
 
     {{-- ====================================================== --}}
-{{-- CREATE ANNOUNCEMENT --}}
-{{-- ====================================================== --}}
+    {{-- CREATE ANNOUNCEMENT --}}
+    {{-- ====================================================== --}}
 
-<section>
-
-    <div
-        class="
-            mb-4
-            flex
-            flex-col
-            gap-4
-            sm:flex-row
-            sm:items-end
-            sm:justify-between
-        "
-    >
-
-        <div>
-
-            <p
-                class="
-                    text-xs
-                    font-semibold
-                    uppercase
-                    tracking-[0.28em]
-                    text-[#D4A017]
-                "
-            >
-                Announcement Composer
-            </p>
-
-            <h2
-                class="
-                    mt-2
-                    text-xl
-                    font-bold
-                    text-[#101064]
-                "
-            >
-                Create Announcement
-            </h2>
-
-            <p
-                class="
-                    mt-1
-                    text-sm
-                    text-gray-500
-                "
-            >
-                Prepare the announcement, select recipients,
-                and optionally attach images or PDF documents.
-            </p>
-
-        </div>
-
+    <section>
 
         <div
             class="
-                inline-flex
-                w-fit
-                items-center
-                gap-2
-                rounded-full
-                bg-[#F1F2FA]
-                px-3
-                py-1.5
-                text-xs
-                font-semibold
-                text-[#101064]
+                mb-4
+                flex
+                flex-col
+                gap-4
+                sm:flex-row
+                sm:items-end
+                sm:justify-between
             "
         >
 
-            <span
-                class="
-                    h-1.5
-                    w-1.5
-                    rounded-full
-                    bg-[#D4A017]
-                "
-            ></span>
+            <div>
 
-            New Announcement
+                <p
+                    class="
+                        text-xs
+                        font-semibold
+                        uppercase
+                        tracking-[0.28em]
+                        text-[#D4A017]
+                    "
+                >
+                    Announcement Composer
+                </p>
+
+
+                <h2
+                    class="
+                        mt-2
+                        text-xl
+                        font-bold
+                        text-[#101064]
+                    "
+                >
+                    Create Announcement
+                </h2>
+
+
+                <p
+                    class="
+                        mt-1
+                        text-sm
+                        text-gray-500
+                    "
+                >
+                    Select an event, automatically resolve recipients,
+                    and publish through the DySign announcement API.
+                </p>
+
+            </div>
+
+
+            <div
+                class="
+                    inline-flex
+                    w-fit
+                    items-center
+                    gap-2
+                    rounded-full
+                    bg-[#F1F2FA]
+                    px-3
+                    py-1.5
+                    text-xs
+                    font-semibold
+                    text-[#101064]
+                "
+            >
+
+                <span
+                    class="
+                        h-1.5
+                        w-1.5
+                        rounded-full
+                        bg-[#D4A017]
+                    "
+                ></span>
+
+                Announcement
+
+            </div>
 
         </div>
 
-    </div>
 
 
-    @if(session('success'))
+        {{-- ====================================================== --}}
+        {{-- AJAX SUCCESS / ERROR --}}
+        {{-- ====================================================== --}}
 
         <div
+            id="announcementSuccess"
             class="
                 mb-5
+                hidden
                 rounded-xl
                 border
                 border-green-200
@@ -711,40 +783,14 @@
                 font-medium
                 text-green-700
             "
-        >
-            {{ session('success') }}
-        </div>
+        ></div>
 
-    @endif
-
-
-    @if(session('error'))
 
         <div
+            id="announcementError"
             class="
                 mb-5
-                rounded-xl
-                border
-                border-red-200
-                bg-red-50
-                px-5
-                py-4
-                text-sm
-                font-medium
-                text-red-700
-            "
-        >
-            {{ session('error') }}
-        </div>
-
-    @endif
-
-
-    @if($errors->any())
-
-        <div
-            class="
-                mb-5
+                hidden
                 rounded-xl
                 border
                 border-red-200
@@ -754,448 +800,565 @@
                 text-sm
                 text-red-700
             "
-        >
-
-            <p class="font-semibold">
-                Please check the announcement details.
-            </p>
-
-            <ul class="mt-2 list-disc space-y-1 pl-5">
-
-                @foreach($errors->all() as $error)
-
-                    <li>
-                        {{ $error }}
-                    </li>
-
-                @endforeach
-
-            </ul>
-
-        </div>
-
-    @endif
+        ></div>
 
 
-    <form
-        method="POST"
-        action="{{ route('announcements.store') }}"
-        enctype="multipart/form-data"
-        id="announcementForm"
-    >
 
-        @csrf
-
-
-        <div
-            class="
-                overflow-hidden
-                border
-                border-gray-200
-                bg-white
-            "
+        <form
+            id="announcementForm"
+            enctype="multipart/form-data"
         >
 
             <div
                 class="
-                    grid
-                    grid-cols-1
-                    lg:grid-cols-[1fr_300px]
+                    overflow-hidden
+                    rounded-2xl
+                    border
+                    border-gray-200
+                    bg-white
+                    shadow-sm
                 "
             >
 
-
-                {{-- MAIN COMPOSER --}}
-
                 <div
                     class="
-                        border-b
-                        border-gray-100
-                        px-7
-                        py-7
-                        lg:border-b-0
-                        lg:border-r
+                        grid
+                        grid-cols-1
+                        lg:grid-cols-[1fr_300px]
                     "
                 >
 
+
+                    {{-- ====================================================== --}}
+                    {{-- MAIN COMPOSER --}}
+                    {{-- ====================================================== --}}
+
                     <div
                         class="
-                            grid
-                            grid-cols-1
-                            gap-5
-                            md:grid-cols-2
+                            border-b
+                            border-gray-100
+                            px-7
+                            py-7
+                            lg:border-b-0
+                            lg:border-r
                         "
                     >
 
-
-                        {{-- EVENT --}}
-
-                        <div>
-
-                            <label
-                                class="
-                                    mb-2
-                                    block
-                                    text-sm
-                                    font-semibold
-                                    text-gray-600
-                                "
-                            >
-                                Select Event
-                            </label>
-
-                            <select
-                                name="event_id"
-                                id="event_id"
-                                required
-                                class="
-                                    w-full
-                                    rounded-xl
-                                    border
-                                    border-gray-300
-                                    bg-white
-                                    px-4
-                                    py-3
-                                    text-sm
-                                    text-gray-700
-                                    outline-none
-                                    transition
-                                    focus:border-[#D4A017]
-                                    focus:ring-2
-                                    focus:ring-[#D4A017]/20
-                                "
-                            >
-
-                                <option value="">
-                                    Select an event
-                                </option>
-
-                                @foreach($events as $event)
-
-                                    <option
-                                        value="{{ $event->event_id }}"
-                                        @selected(
-                                            old('event_id') ==
-                                            $event->event_id
-                                        )
-                                    >
-                                        {{ $event->event_name }}
-                                    </option>
-
-                                @endforeach
-
-                            </select>
-
-                        </div>
-
-
-                        {{-- RECIPIENT TYPE --}}
-
-                        <div>
-
-                            <label
-                                class="
-                                    mb-2
-                                    block
-                                    text-sm
-                                    font-semibold
-                                    text-gray-600
-                                "
-                            >
-                                Recipients
-                            </label>
-
-                            <select
-                                name="recipient_type"
-                                id="recipient_type"
-                                required
-                                class="
-                                    w-full
-                                    rounded-xl
-                                    border
-                                    border-gray-300
-                                    bg-white
-                                    px-4
-                                    py-3
-                                    text-sm
-                                    text-gray-700
-                                    outline-none
-                                    transition
-                                    focus:border-[#D4A017]
-                                    focus:ring-2
-                                    focus:ring-[#D4A017]/20
-                                "
-                            >
-
-                                <option value="">
-                                    Select recipients
-                                </option>
-
-                                <option
-                                    value="all_students"
-                                    @selected(
-                                        old('recipient_type')
-                                        === 'all_students'
-                                    )
-                                >
-                                    All Active Students
-                                </option>
-
-                                <option
-                                    value="assigned_personnel"
-                                    @selected(
-                                        old('recipient_type')
-                                        === 'assigned_personnel'
-                                    )
-                                >
-                                    Assigned Personnel
-                                </option>
-
-                                <option
-                                    value="specific_students"
-                                    @selected(
-                                        old('recipient_type')
-                                        === 'specific_students'
-                                    )
-                                >
-                                    Specific Students
-                                </option>
-
-                                <option
-                                    value="college"
-                                    @selected(
-                                        old('recipient_type')
-                                        === 'college'
-                                    )
-                                >
-                                    Students by College
-                                </option>
-
-                                <option
-                                    value="year"
-                                    @selected(
-                                        old('recipient_type')
-                                        === 'year'
-                                    )
-                                >
-                                    Students by Year Level
-                                </option>
-
-                                <option
-                                    value="college_year"
-                                    @selected(
-                                        old('recipient_type')
-                                        === 'college_year'
-                                    )
-                                >
-                                    College + Year Level
-                                </option>
-
-                            </select>
-
-                        </div>
-
-                    </div>
-
-
-                    {{-- DYNAMIC RECIPIENT OPTIONS --}}
-
-                    <div
-                        id="recipientOptions"
-                        class="mt-5"
-                    >
-
-
-                        {{-- COLLEGE --}}
-
                         <div
-                            id="collegeField"
-                            class="hidden"
+                            class="
+                                grid
+                                grid-cols-1
+                                gap-5
+                                md:grid-cols-2
+                            "
                         >
 
-                            <label
-                                class="
-                                    mb-2
-                                    block
-                                    text-sm
-                                    font-semibold
-                                    text-gray-600
-                                "
-                            >
-                                College
-                            </label>
 
-                            <select
-                                name="college"
-                                id="college"
-                                class="
-                                    w-full
-                                    rounded-xl
-                                    border
-                                    border-gray-300
-                                    bg-white
-                                    px-4
-                                    py-3
-                                    text-sm
-                                    text-gray-700
-                                    outline-none
-                                    transition
-                                    focus:border-[#D4A017]
-                                    focus:ring-2
-                                    focus:ring-[#D4A017]/20
-                                "
-                            >
+                            {{-- EVENT --}}
 
-                                <option value="">
-                                    Select college
-                                </option>
+                            <div>
 
-                                @foreach($colleges as $college)
+                                <label
+                                    for="event_id"
+                                    class="
+                                        mb-2
+                                        block
+                                        text-sm
+                                        font-semibold
+                                        text-gray-600
+                                    "
+                                >
+                                    Select Event
+                                </label>
 
-                                    <option
-                                        value="{{ $college }}"
-                                        @selected(
-                                            old('college')
-                                            === $college
-                                        )
-                                    >
-                                        {{ $college }}
+
+                                <select
+                                    name="event_id"
+                                    id="event_id"
+                                    required
+                                    class="
+                                        w-full
+                                        rounded-xl
+                                        border
+                                        border-gray-300
+                                        bg-white
+                                        px-4
+                                        py-3
+                                        text-sm
+                                        text-gray-700
+                                        outline-none
+                                        transition
+                                        focus:border-[#D4A017]
+                                        focus:ring-2
+                                        focus:ring-[#D4A017]/20
+                                    "
+                                >
+
+                                    <option value="">
+                                        Select an event
                                     </option>
 
-                                @endforeach
 
-                            </select>
+                                    @foreach($events as $event)
+
+                                        <option
+                                            value="{{ $event->event_id }}"
+                                        >
+                                            {{ $event->event_name }}
+
+                                            @if($event->event_date)
+                                                —
+                                                {{ \Carbon\Carbon::parse($event->event_date)->format('M d, Y') }}
+                                            @endif
+                                        </option>
+
+                                    @endforeach
+
+                                </select>
+
+                            </div>
+
+
+
+                            {{-- RECIPIENT TYPE --}}
+
+                            <div>
+
+                                <label
+                                    for="recipient_type"
+                                    class="
+                                        mb-2
+                                        block
+                                        text-sm
+                                        font-semibold
+                                        text-gray-600
+                                    "
+                                >
+                                    Recipients
+                                </label>
+
+
+                                <select
+                                    name="recipient_type"
+                                    id="recipient_type"
+                                    required
+                                    class="
+                                        w-full
+                                        rounded-xl
+                                        border
+                                        border-gray-300
+                                        bg-white
+                                        px-4
+                                        py-3
+                                        text-sm
+                                        text-gray-700
+                                        outline-none
+                                        transition
+                                        focus:border-[#D4A017]
+                                        focus:ring-2
+                                        focus:ring-[#D4A017]/20
+                                    "
+                                >
+
+                                    <option value="">
+                                        Select recipients
+                                    </option>
+
+
+                                    <option value="expected_participants">
+                                        Expected / Eligible Participants
+                                    </option>
+
+
+                                    <option value="specific_students">
+                                        Specific Students
+                                    </option>
+
+
+                                    <option value="college">
+                                        Students by College
+                                    </option>
+
+
+                                    <option value="year">
+                                        Students by Year Level
+                                    </option>
+
+
+                                    <option value="college_year">
+                                        College + Year Level
+                                    </option>
+
+
+                                    <option value="all_students">
+                                        All Active Students
+                                    </option>
+
+
+                                    <option value="assigned_personnel">
+                                        Assigned Personnel
+                                    </option>
+
+                                </select>
+
+                            </div>
 
                         </div>
 
 
-                        {{-- YEAR LEVEL --}}
+
+                        {{-- ====================================================== --}}
+                        {{-- DYNAMIC RECIPIENT OPTIONS --}}
+                        {{-- ====================================================== --}}
 
                         <div
-                            id="yearField"
-                            class="mt-5 hidden"
+                            id="recipientOptions"
+                            class="mt-5"
                         >
 
-                            <label
-                                class="
-                                    mb-2
-                                    block
-                                    text-sm
-                                    font-semibold
-                                    text-gray-600
-                                "
-                            >
-                                Year Level
-                            </label>
 
-                            <select
-                                name="year_level"
-                                id="year_level"
-                                class="
-                                    w-full
-                                    rounded-xl
-                                    border
-                                    border-gray-300
-                                    bg-white
-                                    px-4
-                                    py-3
-                                    text-sm
-                                    text-gray-700
-                                    outline-none
-                                    transition
-                                    focus:border-[#D4A017]
-                                    focus:ring-2
-                                    focus:ring-[#D4A017]/20
-                                "
+                            {{-- COLLEGE --}}
+
+                            <div
+                                id="collegeField"
+                                class="hidden"
                             >
 
-                                <option value="">
-                                    Select year level
-                                </option>
+                                <label
+                                    for="college"
+                                    class="
+                                        mb-2
+                                        block
+                                        text-sm
+                                        font-semibold
+                                        text-gray-600
+                                    "
+                                >
+                                    College
+                                </label>
 
-                                @foreach($yearLevels as $year)
 
-                                    <option
-                                        value="{{ $year }}"
-                                        @selected(
-                                            old('year_level')
-                                            == $year
-                                        )
-                                    >
-                                        Year {{ $year }}
+                                <select
+                                    name="college"
+                                    id="college"
+                                    class="
+                                        w-full
+                                        rounded-xl
+                                        border
+                                        border-gray-300
+                                        bg-white
+                                        px-4
+                                        py-3
+                                        text-sm
+                                        text-gray-700
+                                        outline-none
+                                        transition
+                                        focus:border-[#D4A017]
+                                        focus:ring-2
+                                        focus:ring-[#D4A017]/20
+                                    "
+                                >
+
+                                    <option value="">
+                                        Select college
                                     </option>
 
-                                @endforeach
 
-                            </select>
+                                    @foreach($colleges as $college)
 
-                        </div>
+                                        <option value="{{ $college }}">
+                                            {{ $college }}
+                                        </option>
+
+                                    @endforeach
+
+                                </select>
+
+                            </div>
 
 
-                        {{-- SPECIFIC STUDENTS --}}
 
-                        <div
-                            id="specificStudentsField"
-                            class="hidden"
-                        >
+                            {{-- YEAR --}}
 
-                            <label
-                                class="
-                                    mb-2
-                                    block
-                                    text-sm
-                                    font-semibold
-                                    text-gray-600
-                                "
-                            >
-                                Select Students
-                            </label>
-
-                            <select
-                                name="specific_student_ids[]"
-                                multiple
-                                size="8"
-                                class="
-                                    w-full
-                                    rounded-xl
-                                    border
-                                    border-gray-300
-                                    bg-white
-                                    px-4
-                                    py-3
-                                    text-sm
-                                    text-gray-700
-                                    outline-none
-                                    transition
-                                    focus:border-[#D4A017]
-                                    focus:ring-2
-                                    focus:ring-[#D4A017]/20
-                                "
+                            <div
+                                id="yearField"
+                                class="mt-5 hidden"
                             >
 
-                                @foreach($students as $student)
+                                <label
+                                    for="year_level"
+                                    class="
+                                        mb-2
+                                        block
+                                        text-sm
+                                        font-semibold
+                                        text-gray-600
+                                    "
+                                >
+                                    Year Level
+                                </label>
 
-                                    <option
-                                        value="{{ $student->student_id }}"
-                                    >
-                                        {{ $student->student_number }}
-                                        —
-                                        {{ $student->last_name }},
-                                        {{ $student->first_name }}
 
-                                        @if($student->program_code)
+                                <select
+                                    name="year_level"
+                                    id="year_level"
+                                    class="
+                                        w-full
+                                        rounded-xl
+                                        border
+                                        border-gray-300
+                                        bg-white
+                                        px-4
+                                        py-3
+                                        text-sm
+                                        text-gray-700
+                                        outline-none
+                                        transition
+                                        focus:border-[#D4A017]
+                                        focus:ring-2
+                                        focus:ring-[#D4A017]/20
+                                    "
+                                >
+
+                                    <option value="">
+                                        Select year level
+                                    </option>
+
+
+                                    @foreach($yearLevels as $year)
+
+                                        <option value="{{ $year }}">
+                                            Year {{ $year }}
+                                        </option>
+
+                                    @endforeach
+
+                                </select>
+
+                            </div>
+
+
+
+                            {{-- SPECIFIC STUDENTS --}}
+
+                            <div
+                                id="specificStudentsField"
+                                class="hidden"
+                            >
+
+                                <label
+                                    for="specific_student_ids"
+                                    class="
+                                        mb-2
+                                        block
+                                        text-sm
+                                        font-semibold
+                                        text-gray-600
+                                    "
+                                >
+                                    Select Students
+                                </label>
+
+
+                                <select
+                                    name="specific_student_ids[]"
+                                    id="specific_student_ids"
+                                    multiple
+                                    size="9"
+                                    class="
+                                        w-full
+                                        rounded-xl
+                                        border
+                                        border-gray-300
+                                        bg-white
+                                        px-4
+                                        py-3
+                                        text-sm
+                                        text-gray-700
+                                        outline-none
+                                        transition
+                                        focus:border-[#D4A017]
+                                        focus:ring-2
+                                        focus:ring-[#D4A017]/20
+                                    "
+                                >
+
+                                    @foreach($students as $student)
+
+                                        <option
+                                            value="{{ $student->student_id }}"
+                                        >
+                                            {{ $student->student_number }}
                                             —
-                                            {{ $student->program_code }}
-                                        @endif
+                                            {{ $student->last_name }},
+                                            {{ $student->first_name }}
 
-                                        @if($student->year_level)
-                                            Year {{ $student->year_level }}
-                                        @endif
-                                    </option>
+                                            @if($student->program_code)
+                                                —
+                                                {{ $student->program_code }}
+                                            @endif
 
-                                @endforeach
+                                            @if($student->year_level)
+                                                • Year {{ $student->year_level }}
+                                            @endif
 
-                            </select>
+                                        </option>
+
+                                    @endforeach
+
+                                </select>
+
+
+                                <p
+                                    class="
+                                        mt-2
+                                        text-xs
+                                        text-gray-400
+                                    "
+                                >
+                                    Hold Ctrl while clicking to select
+                                    multiple students.
+                                </p>
+
+                            </div>
+
+                        </div>
+
+
+
+                        {{-- ====================================================== --}}
+                        {{-- RECIPIENT PREVIEW --}}
+                        {{-- ====================================================== --}}
+
+                        <div
+                            id="recipientPreview"
+                            class="
+                                mt-6
+                                hidden
+                                rounded-xl
+                                border
+                                border-gray-200
+                                bg-gray-50
+                                px-5
+                                py-4
+                            "
+                        >
+
+                            <div
+                                class="
+                                    flex
+                                    items-start
+                                    justify-between
+                                    gap-4
+                                "
+                            >
+
+                                <div>
+
+                                    <p
+                                        class="
+                                            text-xs
+                                            font-semibold
+                                            uppercase
+                                            tracking-[0.18em]
+                                            text-[#D4A017]
+                                        "
+                                    >
+                                        Recipient Preview
+                                    </p>
+
+
+                                    <p
+                                        id="recipientPreviewCount"
+                                        class="
+                                            mt-2
+                                            text-sm
+                                            font-semibold
+                                            text-[#101064]
+                                        "
+                                    ></p>
+
+                                </div>
+
+
+                                <div
+                                    id="previewLoading"
+                                    class="
+                                        hidden
+                                        text-xs
+                                        font-medium
+                                        text-gray-400
+                                    "
+                                >
+                                    Checking...
+                                </div>
+
+                            </div>
+
+
+                            <div
+                                id="recipientPreviewList"
+                                class="
+                                    mt-3
+                                    hidden
+                                    space-y-1
+                                    border-t
+                                    border-gray-200
+                                    pt-3
+                                    text-xs
+                                    text-gray-500
+                                "
+                            ></div>
+
+                        </div>
+
+
+
+                        {{-- ====================================================== --}}
+                        {{-- SUBJECT --}}
+                        {{-- ====================================================== --}}
+
+                        <div class="mt-6">
+
+                            <label
+                                for="subject"
+                                class="
+                                    mb-2
+                                    block
+                                    text-sm
+                                    font-semibold
+                                    text-gray-600
+                                "
+                            >
+                                Announcement Subject
+                            </label>
+
+
+                            <input
+                                type="text"
+                                name="subject"
+                                id="subject"
+                                maxlength="255"
+                                placeholder="Example: Orientation Reminder"
+                                class="
+                                    w-full
+                                    rounded-xl
+                                    border
+                                    border-gray-300
+                                    bg-white
+                                    px-4
+                                    py-3
+                                    text-sm
+                                    text-gray-700
+                                    outline-none
+                                    transition
+                                    placeholder:text-gray-400
+                                    focus:border-[#D4A017]
+                                    focus:ring-2
+                                    focus:ring-[#D4A017]/20
+                                "
+                            >
+
 
                             <p
                                 class="
@@ -1204,536 +1367,485 @@
                                     text-gray-400
                                 "
                             >
-                                Hold Ctrl while clicking to select
-                                multiple students.
+                                If left blank, DySign can automatically
+                                use the event name as the subject.
                             </p>
 
                         </div>
 
-                    </div>
 
 
-                    {{-- SUBJECT --}}
+                        {{-- ====================================================== --}}
+                        {{-- MESSAGE --}}
+                        {{-- ====================================================== --}}
 
-                    <div class="mt-6">
+                        <div class="mt-6">
 
-                        <label
-                            class="
-                                mb-2
-                                block
-                                text-sm
-                                font-semibold
-                                text-gray-600
-                            "
-                        >
-                            Email Subject
-                        </label>
-
-                        <input
-                            type="text"
-                            name="subject"
-                            value="{{ old('subject') }}"
-                            maxlength="255"
-                            placeholder="Example: Orientation Reminder"
-                            class="
-                                w-full
-                                rounded-xl
-                                border
-                                border-gray-300
-                                bg-white
-                                px-4
-                                py-3
-                                text-sm
-                                text-gray-700
-                                outline-none
-                                transition
-                                placeholder:text-gray-400
-                                focus:border-[#D4A017]
-                                focus:ring-2
-                                focus:ring-[#D4A017]/20
-                            "
-                        >
-
-                        <p
-                            class="
-                                mt-2
-                                text-xs
-                                text-gray-400
-                            "
-                        >
-                            If left blank, DySign will automatically
-                            use the event name as the subject.
-                        </p>
-
-                    </div>
+                            <label
+                                for="message"
+                                class="
+                                    mb-2
+                                    block
+                                    text-sm
+                                    font-semibold
+                                    text-gray-600
+                                "
+                            >
+                                Announcement Message
+                            </label>
 
 
-                    {{-- MESSAGE --}}
+                            <textarea
+                                name="message"
+                                id="message"
+                                rows="7"
+                                required
+                                maxlength="5000"
+                                class="
+                                    w-full
+                                    resize-none
+                                    rounded-xl
+                                    border
+                                    border-gray-300
+                                    bg-white
+                                    px-4
+                                    py-3
+                                    text-sm
+                                    leading-6
+                                    text-gray-700
+                                    outline-none
+                                    transition
+                                    placeholder:text-gray-400
+                                    focus:border-[#D4A017]
+                                    focus:ring-2
+                                    focus:ring-[#D4A017]/20
+                                "
+                                placeholder="Enter the event announcement or reminder..."
+                            ></textarea>
 
-                    <div class="mt-6">
-
-                        <label
-                            class="
-                                mb-2
-                                block
-                                text-sm
-                                font-semibold
-                                text-gray-600
-                            "
-                        >
-                            Announcement Message
-                        </label>
-
-                        <textarea
-                            name="message"
-                            rows="7"
-                            required
-                            maxlength="5000"
-                            class="
-                                w-full
-                                resize-none
-                                rounded-xl
-                                border
-                                border-gray-300
-                                bg-white
-                                px-4
-                                py-3
-                                text-sm
-                                leading-6
-                                text-gray-700
-                                outline-none
-                                transition
-                                placeholder:text-gray-400
-                                focus:border-[#D4A017]
-                                focus:ring-2
-                                focus:ring-[#D4A017]/20
-                            "
-                            placeholder="Enter the event announcement or reminder..."
-                        >{{ old('message') }}</textarea>
-
-                    </div>
+                        </div>
 
 
-                    {{-- ATTACHMENTS --}}
 
-                    <div class="mt-6">
+                        {{-- ====================================================== --}}
+                        {{-- ATTACHMENTS --}}
+                        {{-- ====================================================== --}}
 
-                        <label
-                            class="
-                                mb-2
-                                block
-                                text-sm
-                                font-semibold
-                                text-gray-600
-                            "
-                        >
-                            Attach Files
-                        </label>
+                        <div class="mt-6">
+
+                            <label
+                                for="attachments"
+                                class="
+                                    mb-2
+                                    block
+                                    text-sm
+                                    font-semibold
+                                    text-gray-600
+                                "
+                            >
+                                Attach Files
+                            </label>
+
+
+                            <div
+                                class="
+                                    rounded-xl
+                                    border
+                                    border-dashed
+                                    border-gray-300
+                                    bg-gray-50/60
+                                    p-5
+                                "
+                            >
+
+                                <input
+                                    type="file"
+                                    name="attachments[]"
+                                    id="attachments"
+                                    multiple
+                                    accept=".jpg,.jpeg,.png,.pdf"
+                                    class="
+                                        block
+                                        w-full
+                                        text-sm
+                                        text-gray-600
+                                        file:mr-4
+                                        file:rounded-lg
+                                        file:border-0
+                                        file:bg-[#101064]
+                                        file:px-4
+                                        file:py-2.5
+                                        file:text-sm
+                                        file:font-semibold
+                                        file:text-white
+                                        hover:file:bg-[#D4A017]
+                                        hover:file:text-[#101064]
+                                    "
+                                >
+
+
+                                <p
+                                    class="
+                                        mt-3
+                                        text-xs
+                                        leading-5
+                                        text-gray-400
+                                    "
+                                >
+                                    Up to 5 files. JPG, JPEG, PNG, or PDF.
+                                    Maximum 10 MB per file.
+                                </p>
+
+
+                                <div
+                                    id="selectedFiles"
+                                    class="
+                                        mt-3
+                                        hidden
+                                        space-y-2
+                                    "
+                                ></div>
+
+                            </div>
+
+                        </div>
+
+
+
+                        {{-- ====================================================== --}}
+                        {{-- SUBMIT --}}
+                        {{-- ====================================================== --}}
 
                         <div
                             class="
-                                rounded-xl
-                                border
-                                border-dashed
-                                border-gray-300
-                                bg-gray-50/60
-                                p-5
+                                mt-7
+                                flex
+                                justify-end
                             "
                         >
 
-                            <input
-                                type="file"
-                                name="attachments[]"
-                                id="attachments"
-                                multiple
-                                accept=".jpg,.jpeg,.png,.pdf"
+                            <button
+                                type="submit"
+                                id="sendAnnouncementButton"
                                 class="
-                                    block
-                                    w-full
+                                    inline-flex
+                                    items-center
+                                    justify-center
+                                    gap-2
+                                    rounded-xl
+                                    bg-[#101064]
+                                    px-6
+                                    py-3
                                     text-sm
-                                    text-gray-600
-                                    file:mr-4
-                                    file:rounded-lg
-                                    file:border-0
-                                    file:bg-[#101064]
-                                    file:px-4
-                                    file:py-2.5
-                                    file:text-sm
-                                    file:font-semibold
-                                    file:text-white
-                                    hover:file:bg-[#D4A017]
-                                    hover:file:text-[#101064]
+                                    font-semibold
+                                    text-white
+                                    transition
+                                    hover:bg-[#D4A017]
+                                    hover:text-[#101064]
+                                    disabled:cursor-not-allowed
+                                    disabled:opacity-60
                                 "
                             >
 
-                            <p
-                                class="
-                                    mt-3
-                                    text-xs
-                                    leading-5
-                                    text-gray-400
-                                "
-                            >
-                                Up to 5 files. JPG, JPEG, PNG, or PDF.
-                                Maximum 10 MB per file.
-                            </p>
+                                <svg
+                                    class="h-4 w-4"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-width="2"
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"
+                                    />
+                                </svg>
 
-                            <div
-                                id="selectedFiles"
-                                class="
-                                    mt-3
-                                    hidden
-                                    space-y-2
-                                "
-                            ></div>
+
+                                <span id="sendButtonText">
+                                    Publish Announcement
+                                </span>
+
+                            </button>
 
                         </div>
 
                     </div>
 
 
-                    {{-- RECIPIENT PREVIEW --}}
+
+                    {{-- ====================================================== --}}
+                    {{-- SIDE INFORMATION --}}
+                    {{-- ====================================================== --}}
 
                     <div
-                        id="recipientPreview"
                         class="
-                            mt-6
-                            hidden
-                            rounded-xl
-                            border
-                            border-gray-200
-                            bg-gray-50
-                            px-5
-                            py-4
+                            bg-gray-50/60
+                            px-7
+                            py-7
                         "
                     >
 
                         <p
                             class="
-                                text-xs
-                                font-semibold
+                                text-[10px]
+                                font-bold
                                 uppercase
-                                tracking-[0.18em]
+                                tracking-[0.22em]
                                 text-[#D4A017]
                             "
                         >
-                            Recipient Preview
+                            Automated Delivery
                         </p>
 
+
+                        <h3
+                            class="
+                                mt-2
+                                text-lg
+                                font-bold
+                                text-[#101064]
+                            "
+                        >
+                            How It Works
+                        </h3>
+
+
                         <p
-                            id="recipientPreviewCount"
                             class="
                                 mt-2
                                 text-sm
-                                font-semibold
-                                text-[#101064]
-                            "
-                        ></p>
-
-                    </div>
-
-
-                    {{-- ACTION --}}
-
-                    <div
-                        class="
-                            mt-7
-                            flex
-                            justify-end
-                        "
-                    >
-
-                        <button
-                            type="submit"
-                            id="sendAnnouncementButton"
-                            class="
-                                inline-flex
-                                items-center
-                                justify-center
-                                gap-2
-                                rounded-xl
-                                bg-[#101064]
-                                px-6
-                                py-3
-                                text-sm
-                                font-semibold
-                                text-white
-                                transition
-                                hover:bg-[#D4A017]
-                                hover:text-[#101064]
-                                disabled:cursor-not-allowed
-                                disabled:opacity-60
+                                leading-6
+                                text-gray-500
                             "
                         >
-
-                            <svg
-                                class="h-4 w-4"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    stroke-width="2"
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"
-                                />
-                            </svg>
-
-                            <span id="sendButtonText">
-                                Send Announcement
-                            </span>
-
-                        </button>
-
-                    </div>
-
-                </div>
+                            DySign automatically resolves recipients,
+                            stores the announcement, and queues email
+                            delivery.
+                        </p>
 
 
-                {{-- SIDE INFORMATION --}}
 
-                <div
-                    class="
-                        bg-gray-50/60
-                        px-7
-                        py-7
-                    "
-                >
-
-                    <p
-                        class="
-                            text-[10px]
-                            font-bold
-                            uppercase
-                            tracking-[0.22em]
-                            text-[#D4A017]
-                        "
-                    >
-                        Delivery Guide
-                    </p>
-
-                    <h3
-                        class="
-                            mt-2
-                            text-lg
-                            font-bold
-                            text-[#101064]
-                        "
-                    >
-                        Before Sending
-                    </h3>
-
-                    <p
-                        class="
-                            mt-2
-                            text-sm
-                            leading-6
-                            text-gray-500
-                        "
-                    >
-                        Review the event, recipients,
-                        announcement message, and attachments
-                        before sending.
-                    </p>
+                        <div class="mt-6 space-y-5">
 
 
-                    <div class="mt-6 space-y-5">
+                            {{-- STEP 1 --}}
 
-                        <div class="flex gap-3">
+                            <div class="flex gap-3">
 
-                            <div
-                                class="
-                                    flex
-                                    h-8
-                                    w-8
-                                    shrink-0
-                                    items-center
-                                    justify-center
-                                    rounded-lg
-                                    bg-white
-                                    text-sm
-                                    font-bold
-                                    text-[#101064]
-                                    shadow-sm
-                                "
-                            >
-                                1
-                            </div>
-
-                            <div>
-
-                                <p
+                                <div
                                     class="
+                                        flex
+                                        h-8
+                                        w-8
+                                        shrink-0
+                                        items-center
+                                        justify-center
+                                        rounded-lg
+                                        bg-white
                                         text-sm
-                                        font-semibold
-                                        text-gray-700
+                                        font-bold
+                                        text-[#101064]
+                                        shadow-sm
                                     "
                                 >
-                                    Select the event
-                                </p>
+                                    1
+                                </div>
 
-                                <p
-                                    class="
-                                        mt-1
-                                        text-xs
-                                        leading-5
-                                        text-gray-400
-                                    "
-                                >
-                                    Choose the event related
-                                    to the announcement.
-                                </p>
+
+                                <div>
+
+                                    <p
+                                        class="
+                                            text-sm
+                                            font-semibold
+                                            text-gray-700
+                                        "
+                                    >
+                                        Select the event
+                                    </p>
+
+
+                                    <p
+                                        class="
+                                            mt-1
+                                            text-xs
+                                            leading-5
+                                            text-gray-400
+                                        "
+                                    >
+                                        Choose which event the
+                                        announcement belongs to.
+                                    </p>
+
+                                </div>
 
                             </div>
 
-                        </div>
 
 
-                        <div class="flex gap-3">
+                            {{-- STEP 2 --}}
 
-                            <div
-                                class="
-                                    flex
-                                    h-8
-                                    w-8
-                                    shrink-0
-                                    items-center
-                                    justify-center
-                                    rounded-lg
-                                    bg-white
-                                    text-sm
-                                    font-bold
-                                    text-[#101064]
-                                    shadow-sm
-                                "
-                            >
-                                2
-                            </div>
+                            <div class="flex gap-3">
 
-                            <div>
-
-                                <p
+                                <div
                                     class="
+                                        flex
+                                        h-8
+                                        w-8
+                                        shrink-0
+                                        items-center
+                                        justify-center
+                                        rounded-lg
+                                        bg-white
                                         text-sm
-                                        font-semibold
-                                        text-gray-700
+                                        font-bold
+                                        text-[#101064]
+                                        shadow-sm
                                     "
                                 >
-                                    Choose recipients
-                                </p>
+                                    2
+                                </div>
 
-                                <p
-                                    class="
-                                        mt-1
-                                        text-xs
-                                        leading-5
-                                        text-gray-400
-                                    "
-                                >
-                                    DySign will only send to
-                                    records with valid email addresses.
-                                </p>
+
+                                <div>
+
+                                    <p
+                                        class="
+                                            text-sm
+                                            font-semibold
+                                            text-gray-700
+                                        "
+                                    >
+                                        Resolve recipients
+                                    </p>
+
+
+                                    <p
+                                        class="
+                                            mt-1
+                                            text-xs
+                                            leading-5
+                                            text-gray-400
+                                        "
+                                    >
+                                        Expected Participants automatically
+                                        uses the event eligibility roster.
+                                    </p>
+
+                                </div>
 
                             </div>
 
-                        </div>
 
 
-                        <div class="flex gap-3">
+                            {{-- STEP 3 --}}
 
-                            <div
-                                class="
-                                    flex
-                                    h-8
-                                    w-8
-                                    shrink-0
-                                    items-center
-                                    justify-center
-                                    rounded-lg
-                                    bg-white
-                                    text-sm
-                                    font-bold
-                                    text-[#101064]
-                                    shadow-sm
-                                "
-                            >
-                                3
-                            </div>
+                            <div class="flex gap-3">
 
-                            <div>
-
-                                <p
+                                <div
                                     class="
+                                        flex
+                                        h-8
+                                        w-8
+                                        shrink-0
+                                        items-center
+                                        justify-center
+                                        rounded-lg
+                                        bg-white
                                         text-sm
-                                        font-semibold
-                                        text-gray-700
+                                        font-bold
+                                        text-[#101064]
+                                        shadow-sm
                                     "
                                 >
-                                    Add attachments
-                                </p>
+                                    3
+                                </div>
 
-                                <p
-                                    class="
-                                        mt-1
-                                        text-xs
-                                        leading-5
-                                        text-gray-400
-                                    "
-                                >
-                                    Optional JPG, PNG, or PDF
-                                    files will be included in the email.
-                                </p>
+
+                                <div>
+
+                                    <p
+                                        class="
+                                            text-sm
+                                            font-semibold
+                                            text-gray-700
+                                        "
+                                    >
+                                        Queue notification
+                                    </p>
+
+
+                                    <p
+                                        class="
+                                            mt-1
+                                            text-xs
+                                            leading-5
+                                            text-gray-400
+                                        "
+                                    >
+                                        Email delivery runs through the
+                                        Laravel queue instead of blocking
+                                        the page.
+                                    </p>
+
+                                </div>
 
                             </div>
 
-                        </div>
 
 
-                        <div class="flex gap-3">
+                            {{-- STEP 4 --}}
 
-                            <div
-                                class="
-                                    flex
-                                    h-8
-                                    w-8
-                                    shrink-0
-                                    items-center
-                                    justify-center
-                                    rounded-lg
-                                    bg-white
-                                    text-sm
-                                    font-bold
-                                    text-[#101064]
-                                    shadow-sm
-                                "
-                            >
-                                4
-                            </div>
+                            <div class="flex gap-3">
 
-                            <div>
-
-                                <p
+                                <div
                                     class="
+                                        flex
+                                        h-8
+                                        w-8
+                                        shrink-0
+                                        items-center
+                                        justify-center
+                                        rounded-lg
+                                        bg-white
                                         text-sm
-                                        font-semibold
-                                        text-gray-700
+                                        font-bold
+                                        text-[#101064]
+                                        shadow-sm
                                     "
                                 >
-                                    Send and record
-                                </p>
+                                    4
+                                </div>
 
-                                <p
-                                    class="
-                                        mt-1
-                                        text-xs
-                                        leading-5
-                                        text-gray-400
-                                    "
-                                >
-                                    Delivery results are stored
-                                    in the announcement history.
-                                </p>
+
+                                <div>
+
+                                    <p
+                                        class="
+                                            text-sm
+                                            font-semibold
+                                            text-gray-700
+                                        "
+                                    >
+                                        Publish to Student Account
+                                    </p>
+
+
+                                    <p
+                                        class="
+                                            mt-1
+                                            text-xs
+                                            leading-5
+                                            text-gray-400
+                                        "
+                                    >
+                                        Target students can also view
+                                        the announcement inside their
+                                        DySign Student Account.
+                                    </p>
+
+                                </div>
 
                             </div>
 
@@ -1745,144 +1857,9 @@
 
             </div>
 
-        </div>
+        </form>
 
-    </form>
-
-</section>
-
-
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-
-    const recipientType =
-        document.getElementById('recipient_type');
-
-    const eventSelect =
-        document.getElementById('event_id');
-
-    const collegeField =
-        document.getElementById('collegeField');
-
-    const yearField =
-        document.getElementById('yearField');
-
-    const specificStudentsField =
-        document.getElementById('specificStudentsField');
-
-    const attachmentInput =
-        document.getElementById('attachments');
-
-    const selectedFiles =
-        document.getElementById('selectedFiles');
-
-    const form =
-        document.getElementById('announcementForm');
-
-    const sendButton =
-        document.getElementById('sendAnnouncementButton');
-
-    const sendButtonText =
-        document.getElementById('sendButtonText');
-
-
-    function updateRecipientFields() {
-
-        const value = recipientType.value;
-
-        collegeField.classList.add('hidden');
-        yearField.classList.add('hidden');
-        specificStudentsField.classList.add('hidden');
-
-
-        if (value === 'college') {
-            collegeField.classList.remove('hidden');
-        }
-
-
-        if (value === 'year') {
-            yearField.classList.remove('hidden');
-        }
-
-
-        if (value === 'college_year') {
-
-            collegeField.classList.remove('hidden');
-            yearField.classList.remove('hidden');
-
-        }
-
-
-        if (value === 'specific_students') {
-            specificStudentsField.classList.remove('hidden');
-        }
-    }
-
-
-    recipientType.addEventListener(
-        'change',
-        updateRecipientFields
-    );
-
-
-    updateRecipientFields();
-
-
-    attachmentInput.addEventListener(
-        'change',
-        function () {
-
-            selectedFiles.innerHTML = '';
-
-            const files = Array.from(
-                attachmentInput.files
-            );
-
-
-            if (files.length === 0) {
-
-                selectedFiles.classList.add('hidden');
-                return;
-
-            }
-
-
-            selectedFiles.classList.remove('hidden');
-
-
-            files.forEach(function (file) {
-
-                const item =
-                    document.createElement('div');
-
-                item.className =
-                    'rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-600';
-
-                item.textContent =
-                    file.name;
-
-                selectedFiles.appendChild(item);
-
-            });
-
-        }
-    );
-
-
-    form.addEventListener(
-        'submit',
-        function () {
-
-            sendButton.disabled = true;
-
-            sendButtonText.textContent =
-                'Sending...';
-
-        }
-    );
-
-});
-</script>
+    </section>
 
 
 
@@ -1938,7 +1915,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         text-gray-500
                     "
                 >
-                    Review previously sent and scheduled event notifications.
+                    Review announcements stored in the DySign database.
                 </p>
 
             </div>
@@ -1969,7 +1946,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     "
                 ></span>
 
-                Notification Archive
+                {{ $totalAnnouncements }}
+                Record{{ $totalAnnouncements === 1 ? '' : 's' }}
 
             </div>
 
@@ -1980,9 +1958,11 @@ document.addEventListener('DOMContentLoaded', function () {
         <div
             class="
                 overflow-hidden
+                rounded-2xl
                 border
                 border-gray-200
                 bg-white
+                shadow-sm
             "
         >
 
@@ -1991,7 +1971,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 <table
                     class="
                         w-full
-                        min-w-[820px]
+                        min-w-[900px]
                         text-left
                     "
                 >
@@ -2011,7 +1991,22 @@ document.addEventListener('DOMContentLoaded', function () {
                                     text-gray-400
                                 "
                             >
-                                Event
+                                Event / Announcement
+                            </th>
+
+
+                            <th
+                                class="
+                                    px-6
+                                    py-4
+                                    text-[10px]
+                                    font-bold
+                                    uppercase
+                                    tracking-[0.16em]
+                                    text-gray-400
+                                "
+                            >
+                                Audience
                             </th>
 
 
@@ -2041,7 +2036,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                     text-gray-400
                                 "
                             >
-                                Date Sent
+                                Published
                             </th>
 
 
@@ -2067,221 +2062,292 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     <tbody class="divide-y divide-gray-100">
 
+                        @forelse(
+                            $announcementCollection->sortByDesc('created_at')
+                            as $announcement
+                        )
 
-                        {{-- NOTIFICATION 1 --}}
-
-                        <tr
-                            class="
-                                transition
-                                hover:bg-gray-50/70
-                            "
-                        >
-
-                            <td class="px-6 py-5">
-
-                                <p
-                                    class="
-                                        font-semibold
-                                        text-[#101064]
-                                    "
-                                >
-                                    Freshmen Orientation 2026
-                                </p>
-
-
-                                <p
-                                    class="
-                                        mt-1
-                                        text-xs
-                                        text-gray-400
-                                    "
-                                >
-                                    Event announcement
-                                </p>
-
-                            </td>
-
-
-                            <td
+                            <tr
                                 class="
-                                    px-6
-                                    py-5
-                                    text-sm
-                                    text-gray-600
+                                    transition
+                                    hover:bg-gray-50/70
                                 "
                             >
-                                BSIT First Year Students
-                            </td>
+
+                                {{-- EVENT / SUBJECT --}}
+
+                                <td class="px-6 py-5">
+
+                                    <p
+                                        class="
+                                            font-semibold
+                                            text-[#101064]
+                                        "
+                                    >
+                                        {{ $announcement->event->event_name ?? 'Event' }}
+                                    </p>
 
 
-                            <td class="px-6 py-5">
+                                    <p
+                                        class="
+                                            mt-1
+                                            text-xs
+                                            text-gray-500
+                                        "
+                                    >
+                                        {{ $announcement->subject }}
+                                    </p>
 
-                                <p
+                                </td>
+
+
+
+                                {{-- AUDIENCE --}}
+
+                                <td
                                     class="
+                                        px-6
+                                        py-5
                                         text-sm
-                                        font-medium
+                                        text-gray-600
+                                    "
+                                >
+
+                                    @switch($announcement->audience_type)
+
+                                        @case('All')
+                                            All Active Students
+                                            @break
+
+
+                                        @case('College')
+                                            {{ $announcement->college ?? 'College' }}
+                                            @break
+
+
+                                        @case('Year')
+                                            Year {{ $announcement->year_level ?? '—' }}
+                                            @break
+
+
+                                        @case('CollegeYear')
+                                            {{ $announcement->college ?? 'College' }}
+                                            /
+                                            Year {{ $announcement->year_level ?? '—' }}
+                                            @break
+
+
+                                        @case('Import')
+                                            Targeted Recipients
+                                            @break
+
+
+                                        @default
+                                            {{ $announcement->audience_type ?? 'Targeted' }}
+
+                                    @endswitch
+
+                                </td>
+
+
+
+                                {{-- RECIPIENT COUNT --}}
+
+                                <td
+                                    class="
+                                        px-6
+                                        py-5
+                                        text-sm
+                                        font-semibold
                                         text-gray-700
                                     "
                                 >
-                                    September 20, 2026
-                                </p>
+                                    {{ number_format($announcement->recipient_count ?? 0) }}
+                                </td>
 
 
-                                <p
-                                    class="
-                                        mt-1
-                                        text-xs
-                                        text-gray-400
-                                    "
-                                >
-                                    Notification sent
-                                </p>
 
-                            </td>
+                                {{-- DATE --}}
+
+                                <td class="px-6 py-5">
+
+                                    <p
+                                        class="
+                                            text-sm
+                                            font-medium
+                                            text-gray-700
+                                        "
+                                    >
+
+                                        @if($announcement->sent_at)
+
+                                            {{ \Carbon\Carbon::parse(
+                                                $announcement->sent_at
+                                            )->format('M d, Y') }}
+
+                                        @elseif($announcement->created_at)
+
+                                            {{ \Carbon\Carbon::parse(
+                                                $announcement->created_at
+                                            )->format('M d, Y') }}
+
+                                        @else
+
+                                            —
+
+                                        @endif
+
+                                    </p>
 
 
-                            <td class="px-6 py-5">
+                                    <p
+                                        class="
+                                            mt-1
+                                            text-xs
+                                            text-gray-400
+                                        "
+                                    >
 
-                                <span
-                                    class="
-                                        inline-flex
-                                        items-center
-                                        gap-2
-                                        rounded-full
-                                        bg-green-50
-                                        px-3
-                                        py-1
-                                        text-xs
-                                        font-semibold
-                                        text-green-700
-                                    "
-                                >
+                                        @if($announcement->sent_at)
+
+                                            {{ \Carbon\Carbon::parse(
+                                                $announcement->sent_at
+                                            )->format('h:i A') }}
+
+                                        @elseif($announcement->created_at)
+
+                                            {{ \Carbon\Carbon::parse(
+                                                $announcement->created_at
+                                            )->format('h:i A') }}
+
+                                        @endif
+
+                                    </p>
+
+                                </td>
+
+
+
+                                {{-- STATUS --}}
+
+                                <td class="px-6 py-5">
+
+                                    @php
+
+                                        $status =
+                                            $announcement->status
+                                            ?? 'Processing';
+
+                                        $statusClasses =
+                                            match ($status) {
+
+                                                'Sent' =>
+                                                    'bg-green-50 text-green-700',
+
+                                                'Partially Sent' =>
+                                                    'bg-yellow-50 text-yellow-700',
+
+                                                'Failed' =>
+                                                    'bg-red-50 text-red-700',
+
+                                                default =>
+                                                    'bg-blue-50 text-blue-700',
+
+                                            };
+
+                                        $dotClasses =
+                                            match ($status) {
+
+                                                'Sent' =>
+                                                    'bg-green-500',
+
+                                                'Partially Sent' =>
+                                                    'bg-yellow-500',
+
+                                                'Failed' =>
+                                                    'bg-red-500',
+
+                                                default =>
+                                                    'bg-blue-500',
+
+                                            };
+
+                                    @endphp
+
 
                                     <span
                                         class="
-                                            h-1.5
-                                            w-1.5
+                                            inline-flex
+                                            items-center
+                                            gap-2
                                             rounded-full
-                                            bg-green-500
+                                            px-3
+                                            py-1
+                                            text-xs
+                                            font-semibold
+                                            {{ $statusClasses }}
                                         "
-                                    ></span>
+                                    >
 
-                                    Sent
+                                        <span
+                                            class="
+                                                h-1.5
+                                                w-1.5
+                                                rounded-full
+                                                {{ $dotClasses }}
+                                            "
+                                        ></span>
 
-                                </span>
 
-                            </td>
+                                        {{ $status }}
 
-                        </tr>
+                                    </span>
+
+                                </td>
+
+                            </tr>
 
 
+                        @empty
 
-                        {{-- NOTIFICATION 2 --}}
+                            <tr>
 
-                        <tr
-                            class="
-                                transition
-                                hover:bg-gray-50/70
-                            "
-                        >
-
-                            <td class="px-6 py-5">
-
-                                <p
+                                <td
+                                    colspan="5"
                                     class="
-                                        font-semibold
-                                        text-[#101064]
-                                    "
-                                >
-                                    Leadership Training Seminar
-                                </p>
-
-
-                                <p
-                                    class="
-                                        mt-1
-                                        text-xs
-                                        text-gray-400
-                                    "
-                                >
-                                    Event reminder
-                                </p>
-
-                            </td>
-
-
-                            <td
-                                class="
-                                    px-6
-                                    py-5
-                                    text-sm
-                                    text-gray-600
-                                "
-                            >
-                                Assigned Personnel
-                            </td>
-
-
-                            <td class="px-6 py-5">
-
-                                <p
-                                    class="
-                                        text-sm
-                                        font-medium
-                                        text-gray-700
-                                    "
-                                >
-                                    September 22, 2026
-                                </p>
-
-
-                                <p
-                                    class="
-                                        mt-1
-                                        text-xs
-                                        text-gray-400
-                                    "
-                                >
-                                    Scheduled delivery
-                                </p>
-
-                            </td>
-
-
-                            <td class="px-6 py-5">
-
-                                <span
-                                    class="
-                                        inline-flex
-                                        items-center
-                                        gap-2
-                                        rounded-full
-                                        bg-blue-50
-                                        px-3
-                                        py-1
-                                        text-xs
-                                        font-semibold
-                                        text-blue-700
+                                        px-6
+                                        py-12
+                                        text-center
                                     "
                                 >
 
-                                    <span
+                                    <p
                                         class="
-                                            h-1.5
-                                            w-1.5
-                                            rounded-full
-                                            bg-blue-500
+                                            text-sm
+                                            font-semibold
+                                            text-gray-600
                                         "
-                                    ></span>
+                                    >
+                                        No announcements yet.
+                                    </p>
 
-                                    Scheduled
 
-                                </span>
+                                    <p
+                                        class="
+                                            mt-1
+                                            text-xs
+                                            text-gray-400
+                                        "
+                                    >
+                                        Published announcements will
+                                        appear here.
+                                    </p>
 
-                            </td>
+                                </td>
 
-                        </tr>
+                            </tr>
 
+                        @endforelse
 
                     </tbody>
 
@@ -2290,8 +2356,6 @@ document.addEventListener('DOMContentLoaded', function () {
             </div>
 
 
-
-            {{-- TABLE FOOTER --}}
 
             <div
                 class="
@@ -2329,5 +2393,1276 @@ document.addEventListener('DOMContentLoaded', function () {
 
 </div>
 
+
+
+{{-- ====================================================== --}}
+{{-- JAVASCRIPT --}}
+{{-- ====================================================== --}}
+
+<script>
+
+document.addEventListener(
+    'DOMContentLoaded',
+    function () {
+
+        /*
+        |--------------------------------------------------------------------------
+        | ELEMENTS
+        |--------------------------------------------------------------------------
+        */
+
+        const form =
+            document.getElementById(
+                'announcementForm'
+            );
+
+
+        const eventSelect =
+            document.getElementById(
+                'event_id'
+            );
+
+
+        const recipientType =
+            document.getElementById(
+                'recipient_type'
+            );
+
+
+        const collegeField =
+            document.getElementById(
+                'collegeField'
+            );
+
+
+        const collegeSelect =
+            document.getElementById(
+                'college'
+            );
+
+
+        const yearField =
+            document.getElementById(
+                'yearField'
+            );
+
+
+        const yearSelect =
+            document.getElementById(
+                'year_level'
+            );
+
+
+        const specificStudentsField =
+            document.getElementById(
+                'specificStudentsField'
+            );
+
+
+        const specificStudents =
+            document.getElementById(
+                'specific_student_ids'
+            );
+
+
+        const attachmentInput =
+            document.getElementById(
+                'attachments'
+            );
+
+
+        const selectedFiles =
+            document.getElementById(
+                'selectedFiles'
+            );
+
+
+        const recipientPreview =
+            document.getElementById(
+                'recipientPreview'
+            );
+
+
+        const recipientPreviewCount =
+            document.getElementById(
+                'recipientPreviewCount'
+            );
+
+
+        const recipientPreviewList =
+            document.getElementById(
+                'recipientPreviewList'
+            );
+
+
+        const previewLoading =
+            document.getElementById(
+                'previewLoading'
+            );
+
+
+        const sendButton =
+            document.getElementById(
+                'sendAnnouncementButton'
+            );
+
+
+        const sendButtonText =
+            document.getElementById(
+                'sendButtonText'
+            );
+
+
+        const successBox =
+            document.getElementById(
+                'announcementSuccess'
+            );
+
+
+        const errorBox =
+            document.getElementById(
+                'announcementError'
+            );
+
+
+        const csrfToken =
+            document
+                .querySelector(
+                    'meta[name="csrf-token"]'
+                )
+                ?.getAttribute(
+                    'content'
+                );
+
+
+        let previewTimer = null;
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | ALERTS
+        |--------------------------------------------------------------------------
+        */
+
+        function hideAlerts() {
+
+            successBox
+                .classList
+                .add(
+                    'hidden'
+                );
+
+
+            errorBox
+                .classList
+                .add(
+                    'hidden'
+                );
+
+
+            successBox.textContent = '';
+            errorBox.innerHTML = '';
+
+        }
+
+
+
+        function showSuccess(
+            message
+        ) {
+
+            errorBox
+                .classList
+                .add(
+                    'hidden'
+                );
+
+
+            successBox.textContent =
+                message;
+
+
+            successBox
+                .classList
+                .remove(
+                    'hidden'
+                );
+
+
+            successBox.scrollIntoView({
+                behavior:
+                    'smooth',
+
+                block:
+                    'center',
+            });
+
+        }
+
+
+
+        function showError(
+            message
+        ) {
+
+            successBox
+                .classList
+                .add(
+                    'hidden'
+                );
+
+
+            errorBox.textContent =
+                message;
+
+
+            errorBox
+                .classList
+                .remove(
+                    'hidden'
+                );
+
+
+            errorBox.scrollIntoView({
+                behavior:
+                    'smooth',
+
+                block:
+                    'center',
+            });
+
+        }
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | VALIDATION ERROR PARSER
+        |--------------------------------------------------------------------------
+        */
+
+        function validationMessage(
+            data
+        ) {
+
+            if (
+                data?.errors
+                && typeof data.errors
+                    === 'object'
+            ) {
+
+                const messages = [];
+
+
+                Object
+                    .values(
+                        data.errors
+                    )
+                    .forEach(
+                        function (errors) {
+
+                            if (
+                                Array.isArray(
+                                    errors
+                                )
+                            ) {
+
+                                errors.forEach(
+                                    function (error) {
+
+                                        messages.push(
+                                            error
+                                        );
+
+                                    }
+                                );
+
+                            }
+
+                        }
+                    );
+
+
+                if (
+                    messages.length > 0
+                ) {
+
+                    return messages.join(
+                        ' '
+                    );
+
+                }
+
+            }
+
+
+            return (
+                data?.message
+                ?? 'Something went wrong.'
+            );
+
+        }
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | RECIPIENT FIELDS
+        |--------------------------------------------------------------------------
+        */
+
+        function updateRecipientFields() {
+
+            const value =
+                recipientType.value;
+
+
+            collegeField
+                .classList
+                .add(
+                    'hidden'
+                );
+
+
+            yearField
+                .classList
+                .add(
+                    'hidden'
+                );
+
+
+            specificStudentsField
+                .classList
+                .add(
+                    'hidden'
+                );
+
+
+            collegeSelect.required =
+                false;
+
+
+            yearSelect.required =
+                false;
+
+
+            if (
+                value === 'college'
+            ) {
+
+                collegeField
+                    .classList
+                    .remove(
+                        'hidden'
+                    );
+
+
+                collegeSelect.required =
+                    true;
+
+            }
+
+
+            if (
+                value === 'year'
+            ) {
+
+                yearField
+                    .classList
+                    .remove(
+                        'hidden'
+                    );
+
+
+                yearSelect.required =
+                    true;
+
+            }
+
+
+            if (
+                value === 'college_year'
+            ) {
+
+                collegeField
+                    .classList
+                    .remove(
+                        'hidden'
+                    );
+
+
+                yearField
+                    .classList
+                    .remove(
+                        'hidden'
+                    );
+
+
+                collegeSelect.required =
+                    true;
+
+
+                yearSelect.required =
+                    true;
+
+            }
+
+
+            if (
+                value === 'specific_students'
+            ) {
+
+                specificStudentsField
+                    .classList
+                    .remove(
+                        'hidden'
+                    );
+
+            }
+
+
+            schedulePreview();
+
+        }
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | BUILD PREVIEW PAYLOAD
+        |--------------------------------------------------------------------------
+        */
+
+        function previewPayload() {
+
+            const studentIds =
+                Array.from(
+                    specificStudents
+                        .selectedOptions
+                )
+                .map(
+                    function (option) {
+
+                        return Number(
+                            option.value
+                        );
+
+                    }
+                );
+
+
+            return {
+
+                event_id:
+                    eventSelect.value
+                        ? Number(
+                            eventSelect.value
+                        )
+                        : null,
+
+
+                recipient_type:
+                    recipientType.value,
+
+
+                college:
+                    collegeSelect.value
+                        || null,
+
+
+                year_level:
+                    yearSelect.value
+                        ? Number(
+                            yearSelect.value
+                        )
+                        : null,
+
+
+                specific_student_ids:
+                    studentIds,
+
+            };
+
+        }
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | CAN PREVIEW?
+        |--------------------------------------------------------------------------
+        */
+
+        function canPreview(
+            payload
+        ) {
+
+            if (
+                !payload.event_id
+                || !payload.recipient_type
+            ) {
+
+                return false;
+
+            }
+
+
+            if (
+                payload.recipient_type
+                === 'college'
+                && !payload.college
+            ) {
+
+                return false;
+
+            }
+
+
+            if (
+                payload.recipient_type
+                === 'year'
+                && !payload.year_level
+            ) {
+
+                return false;
+
+            }
+
+
+            if (
+                payload.recipient_type
+                === 'college_year'
+                &&
+                (
+                    !payload.college
+                    || !payload.year_level
+                )
+            ) {
+
+                return false;
+
+            }
+
+
+            if (
+                payload.recipient_type
+                === 'specific_students'
+                &&
+                payload
+                    .specific_student_ids
+                    .length === 0
+            ) {
+
+                return false;
+
+            }
+
+
+            return true;
+
+        }
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | RECIPIENT PREVIEW API
+        |--------------------------------------------------------------------------
+        */
+
+        async function loadRecipientPreview() {
+
+            const payload =
+                previewPayload();
+
+
+            if (
+                !canPreview(
+                    payload
+                )
+            ) {
+
+                recipientPreview
+                    .classList
+                    .add(
+                        'hidden'
+                    );
+
+
+                return;
+
+            }
+
+
+            recipientPreview
+                .classList
+                .remove(
+                    'hidden'
+                );
+
+
+            recipientPreviewCount
+                .textContent =
+                    'Checking recipients...';
+
+
+            recipientPreviewList
+                .classList
+                .add(
+                    'hidden'
+                );
+
+
+            previewLoading
+                .classList
+                .remove(
+                    'hidden'
+                );
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        '/api/announcements/preview-recipients',
+                        {
+
+                            method:
+                                'POST',
+
+                            credentials:
+                                'same-origin',
+
+                            headers: {
+
+                                'Content-Type':
+                                    'application/json',
+
+                                'Accept':
+                                    'application/json',
+
+                                'X-Requested-With':
+                                    'XMLHttpRequest',
+
+                                'X-CSRF-TOKEN':
+                                    csrfToken,
+
+                            },
+
+                            body:
+                                JSON.stringify(
+                                    payload
+                                ),
+
+                        }
+                    );
+
+
+                const data =
+                    await response.json();
+
+
+                previewLoading
+                    .classList
+                    .add(
+                        'hidden'
+                    );
+
+
+                if (
+                    !response.ok
+                    || !data.success
+                ) {
+
+                    recipientPreviewCount
+                        .textContent =
+                            validationMessage(
+                                data
+                            );
+
+
+                    recipientPreviewList
+                        .classList
+                        .add(
+                            'hidden'
+                        );
+
+
+                    return;
+
+                }
+
+
+                recipientPreviewCount
+                    .textContent =
+                        `${data.count} recipient${data.count === 1 ? '' : 's'} will receive this announcement.`;
+
+
+                if (
+                    Array.isArray(
+                        data.recipients
+                    )
+                    && data.recipients.length > 0
+                ) {
+
+                    recipientPreviewList
+                        .innerHTML =
+                            data.recipients
+                                .slice(
+                                    0,
+                                    10
+                                )
+                                .map(
+                                    function (
+                                        recipient
+                                    ) {
+
+                                        const name =
+                                            escapeHtml(
+                                                recipient.name
+                                                ?? 'Recipient'
+                                            );
+
+
+                                        const email =
+                                            escapeHtml(
+                                                recipient.email
+                                                ?? ''
+                                            );
+
+
+                                        return `
+                                            <div
+                                                class="
+                                                    flex
+                                                    items-center
+                                                    justify-between
+                                                    gap-4
+                                                "
+                                            >
+                                                <span>
+                                                    ${name}
+                                                </span>
+
+                                                <span
+                                                    class="
+                                                        text-gray-400
+                                                    "
+                                                >
+                                                    ${email}
+                                                </span>
+                                            </div>
+                                        `;
+
+                                    }
+                                )
+                                .join(
+                                    ''
+                                );
+
+
+                    if (
+                        data.recipients.length > 10
+                    ) {
+
+                        recipientPreviewList
+                            .insertAdjacentHTML(
+                                'beforeend',
+                                `
+                                    <p
+                                        class="
+                                            pt-2
+                                            font-medium
+                                            text-[#101064]
+                                        "
+                                    >
+                                        + ${
+                                            data.recipients.length
+                                            - 10
+                                        } more recipient(s)
+                                    </p>
+                                `
+                            );
+
+                    }
+
+
+                    recipientPreviewList
+                        .classList
+                        .remove(
+                            'hidden'
+                        );
+
+                }
+
+            }
+            catch (
+                error
+            ) {
+
+                console.error(
+                    error
+                );
+
+
+                previewLoading
+                    .classList
+                    .add(
+                        'hidden'
+                    );
+
+
+                recipientPreviewCount
+                    .textContent =
+                        'Unable to preview recipients.';
+
+
+                recipientPreviewList
+                    .classList
+                    .add(
+                        'hidden'
+                    );
+
+            }
+
+        }
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | PREVIEW DEBOUNCE
+        |--------------------------------------------------------------------------
+        */
+
+        function schedulePreview() {
+
+            clearTimeout(
+                previewTimer
+            );
+
+
+            previewTimer =
+                setTimeout(
+                    loadRecipientPreview,
+                    300
+                );
+
+        }
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | ATTACHMENT PREVIEW
+        |--------------------------------------------------------------------------
+        */
+
+        attachmentInput
+            .addEventListener(
+                'change',
+                function () {
+
+                    selectedFiles.innerHTML =
+                        '';
+
+
+                    const files =
+                        Array.from(
+                            attachmentInput.files
+                        );
+
+
+                    if (
+                        files.length === 0
+                    ) {
+
+                        selectedFiles
+                            .classList
+                            .add(
+                                'hidden'
+                            );
+
+
+                        return;
+
+                    }
+
+
+                    selectedFiles
+                        .classList
+                        .remove(
+                            'hidden'
+                        );
+
+
+                    files.forEach(
+                        function (
+                            file
+                        ) {
+
+                            const item =
+                                document
+                                    .createElement(
+                                        'div'
+                                    );
+
+
+                            const sizeMb =
+                                (
+                                    file.size
+                                    / 1024
+                                    / 1024
+                                )
+                                .toFixed(
+                                    2
+                                );
+
+
+                            item.className =
+                                'flex items-center justify-between gap-4 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-600';
+
+
+                            item.innerHTML =
+                                `
+                                    <span>
+                                        ${escapeHtml(
+                                            file.name
+                                        )}
+                                    </span>
+
+                                    <span
+                                        class="
+                                            shrink-0
+                                            text-gray-400
+                                        "
+                                    >
+                                        ${sizeMb} MB
+                                    </span>
+                                `;
+
+
+                            selectedFiles
+                                .appendChild(
+                                    item
+                                );
+
+                        }
+                    );
+
+                }
+            );
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | SUBMIT ANNOUNCEMENT THROUGH REST API
+        |--------------------------------------------------------------------------
+        */
+
+        form.addEventListener(
+            'submit',
+            async function (
+                event
+            ) {
+
+                event.preventDefault();
+
+
+                hideAlerts();
+
+
+                if (
+                    !form.checkValidity()
+                ) {
+
+                    form.reportValidity();
+
+                    return;
+
+                }
+
+
+                const type =
+                    recipientType.value;
+
+
+                if (
+                    type
+                    === 'specific_students'
+                    &&
+                    specificStudents
+                        .selectedOptions
+                        .length === 0
+                ) {
+
+                    showError(
+                        'Please select at least one student.'
+                    );
+
+
+                    return;
+
+                }
+
+
+                sendButton.disabled =
+                    true;
+
+
+                sendButtonText.textContent =
+                    'Publishing...';
+
+
+                try {
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | FormData automatically includes:
+                    |
+                    | event_id
+                    | recipient_type
+                    | college
+                    | year_level
+                    | specific_student_ids[]
+                    | subject
+                    | message
+                    | attachments[]
+                    |--------------------------------------------------------------------------
+                    */
+
+                    const formData =
+                        new FormData(
+                            form
+                        );
+
+
+                    const response =
+                        await fetch(
+                            '/api/announcements',
+                            {
+
+                                method:
+                                    'POST',
+
+                                credentials:
+                                    'same-origin',
+
+                                headers: {
+
+                                    'Accept':
+                                        'application/json',
+
+                                    'X-Requested-With':
+                                        'XMLHttpRequest',
+
+                                    'X-CSRF-TOKEN':
+                                        csrfToken,
+
+                                },
+
+                                body:
+                                    formData,
+
+                            }
+                        );
+
+
+                    const data =
+                        await response.json();
+
+
+                    if (
+                        !response.ok
+                        || !data.success
+                    ) {
+
+                        throw new Error(
+                            validationMessage(
+                                data
+                            )
+                        );
+
+                    }
+
+
+                    showSuccess(
+                        data.message
+                        ?? 'Announcement published successfully. Email delivery has been queued.'
+                    );
+
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | RESET FORM
+                    |--------------------------------------------------------------------------
+                    */
+
+                    form.reset();
+
+
+                    selectedFiles.innerHTML =
+                        '';
+
+
+                    selectedFiles
+                        .classList
+                        .add(
+                            'hidden'
+                        );
+
+
+                    recipientPreview
+                        .classList
+                        .add(
+                            'hidden'
+                        );
+
+
+                    updateRecipientFields();
+
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Reload after a short delay so summary and history
+                    | show the newly created announcement.
+                    |--------------------------------------------------------------------------
+                    */
+
+                    setTimeout(
+                        function () {
+
+                            window.location.reload();
+
+                        },
+                        900
+                    );
+
+                }
+                catch (
+                    error
+                ) {
+
+                    console.error(
+                        error
+                    );
+
+
+                    showError(
+                        error.message
+                        ?? 'Unable to publish announcement.'
+                    );
+
+                }
+                finally {
+
+                    sendButton.disabled =
+                        false;
+
+
+                    sendButtonText.textContent =
+                        'Publish Announcement';
+
+                }
+
+            }
+        );
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | HTML ESCAPING
+        |--------------------------------------------------------------------------
+        */
+
+        function escapeHtml(
+            value
+        ) {
+
+            return String(
+                value ?? ''
+            )
+            .replaceAll(
+                '&',
+                '&amp;'
+            )
+            .replaceAll(
+                '<',
+                '&lt;'
+            )
+            .replaceAll(
+                '>',
+                '&gt;'
+            )
+            .replaceAll(
+                '"',
+                '&quot;'
+            )
+            .replaceAll(
+                "'",
+                '&#039;'
+            );
+
+        }
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | LISTENERS
+        |--------------------------------------------------------------------------
+        */
+
+        recipientType
+            .addEventListener(
+                'change',
+                updateRecipientFields
+            );
+
+
+        eventSelect
+            .addEventListener(
+                'change',
+                schedulePreview
+            );
+
+
+        collegeSelect
+            .addEventListener(
+                'change',
+                schedulePreview
+            );
+
+
+        yearSelect
+            .addEventListener(
+                'change',
+                schedulePreview
+            );
+
+
+        specificStudents
+            .addEventListener(
+                'change',
+                schedulePreview
+            );
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | INITIAL STATE
+        |--------------------------------------------------------------------------
+        */
+
+        updateRecipientFields();
+
+    }
+);
+
+</script>
 
 </x-admin-layout>

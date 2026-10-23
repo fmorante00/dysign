@@ -22,6 +22,17 @@ use App\Http\Controllers\EventEligibilityController;
 use App\Http\Controllers\EventPersonnelAssignmentController;
 use App\Http\Controllers\PersonnelAvailabilityController;
 use App\Http\Controllers\PersonnelDutyController;
+use App\Http\Controllers\Api\AnnouncementApiController;
+use App\Http\Controllers\Api\StudentAnnouncementApiController;
+use App\Http\Controllers\StudentAnnouncementController;
+use App\Http\Controllers\Api\StudentExcuseRequestApiController;
+use App\Http\Controllers\StudentExcuseRequestController;
+use App\Http\Controllers\Api\DepartmentExcuseRequestApiController;
+use App\Http\Controllers\DepartmentExcuseRequestController;
+use App\Http\Controllers\Api\StaffEvaluationFormApiController;
+use App\Http\Controllers\DepartmentEvaluationFormController;
+use App\Http\Controllers\Api\StudentEvaluationApiController;
+use App\Http\Controllers\StudentEvaluationController;
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
@@ -1017,50 +1028,208 @@ Route::middleware([
 |--------------------------------------------------------------------------
 */
 
+/*
+|--------------------------------------------------------------------------
+| Module #8 - Event Announcement & Publication Management Page
+|--------------------------------------------------------------------------
+|
+| Department Staff user interface.
+| Creation and recipient processing are handled by the REST API.
+|
+*/
+
 Route::middleware([
     'auth',
-    'role:Administrator'
+    'role:Department Staff',
 ])
 ->group(function () {
-
 
     Route::get(
         '/announcements',
         [
             AnnouncementController::class,
-            'index'
+            'index',
         ]
     )
     ->name(
         'announcements.index'
     );
 
+});
 
-    Route::post(
-        '/announcements',
+/*
+|--------------------------------------------------------------------------
+| Module #8 - Event Announcement & Publication Management API
+|--------------------------------------------------------------------------
+|
+| Session-authenticated REST API for Department Staff.
+|
+*/
+
+Route::prefix('api/announcements')
+    ->middleware([
+        'auth',
+        'role:Department Staff',
+    ])
+    ->name('api.announcements.')
+    ->group(function () {
+
+        /*
+        |--------------------------------------------------------------------------
+        | List Announcements
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/',
+            [
+                AnnouncementApiController::class,
+                'index',
+            ]
+        )
+        ->name('index');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Preview Automatically Resolved Recipients
+        |--------------------------------------------------------------------------
+        */
+
+        Route::post(
+            '/preview-recipients',
+            [
+                AnnouncementApiController::class,
+                'previewRecipients',
+            ]
+        )
+        ->name('preview-recipients');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Create / Publish Announcement
+        |--------------------------------------------------------------------------
+        */
+
+        Route::post(
+            '/',
+            [
+                AnnouncementApiController::class,
+                'store',
+            ]
+        )
+        ->name('store');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Show Announcement
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/{announcement}',
+            [
+                AnnouncementApiController::class,
+                'show',
+            ]
+        )
+        ->whereNumber('announcement')
+        ->name('show');
+
+    });
+
+/*
+|--------------------------------------------------------------------------
+| Module #8 - Student Announcement API
+|--------------------------------------------------------------------------
+|
+| Allows Student Accounts to retrieve announcements
+| specifically addressed to them.
+|
+*/
+
+Route::prefix('api/student/announcements')
+    ->middleware([
+        'auth',
+        'role:Student Account',
+    ])
+    ->name('api.student.announcements.')
+    ->group(function () {
+
+        /*
+        |--------------------------------------------------------------------------
+        | Student Announcement List
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/',
+            [
+                StudentAnnouncementApiController::class,
+                'index',
+            ]
+        )
+        ->name('index');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | View One Announcement
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/{announcement}',
+            [
+                StudentAnnouncementApiController::class,
+                'show',
+            ]
+        )
+        ->whereNumber('announcement')
+        ->name('show');
+
+    });
+
+/*
+|--------------------------------------------------------------------------
+| Student Announcements Page
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware([
+    'auth',
+    'role:Student Account',
+])
+->group(function () {
+
+
+    Route::get(
+        '/student/announcements/{announcement}/attachments/{attachment}',
         [
-            AnnouncementController::class,
-            'store'
+            StudentAnnouncementApiController::class,
+            'attachment',
         ]
     )
+    ->whereNumber('announcement')
+    ->whereNumber('attachment')
     ->name(
-        'announcements.store'
+        'student.announcements.attachments.show'
     );
 
-
-    Route::post(
-        '/announcements/preview-recipients',
+    Route::get(
+        '/student/announcements',
         [
-            AnnouncementController::class,
-            'previewRecipients'
+            StudentAnnouncementController::class,
+            'index',
         ]
     )
     ->name(
-        'announcements.preview-recipients'
+        'student.announcements.index'
     );
 
 });
-
 
 /*
 |--------------------------------------------------------------------------
@@ -1099,6 +1268,494 @@ Route::middleware([
 
 });
 
+/*
+|--------------------------------------------------------------------------
+| Module #11
+| Student Excuse Request & Document Submission REST API
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix(
+    'api/student/excuse-requests'
+)
+->middleware([
+    'auth',
+    'role:Student Account',
+])
+->name(
+    'api.student.excuse-requests.'
+)
+->group(function () {
+
+    /*
+    |--------------------------------------------------------------------------
+    | List Student Requests
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/',
+        [
+            StudentExcuseRequestApiController::class,
+            'index',
+        ]
+    )
+    ->name(
+        'index'
+    );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Submit Request
+    |--------------------------------------------------------------------------
+    */
+
+    Route::post(
+        '/',
+        [
+            StudentExcuseRequestApiController::class,
+            'store',
+        ]
+    )
+    ->name(
+        'store'
+    );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | View Supporting Document
+    |--------------------------------------------------------------------------
+    |
+    | This MUST be above /{excuseRequest}.
+    |
+    */
+
+    Route::get(
+        '/{excuseRequest}/documents/{document}',
+        [
+            StudentExcuseRequestApiController::class,
+            'document',
+        ]
+    )
+    ->whereNumber(
+        'excuseRequest'
+    )
+    ->whereNumber(
+        'document'
+    )
+    ->name(
+        'documents.show'
+    );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | View Individual Request
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/{excuseRequest}',
+        [
+            StudentExcuseRequestApiController::class,
+            'show',
+        ]
+    )
+    ->whereNumber(
+        'excuseRequest'
+    )
+    ->name(
+        'show'
+    );
+
+});
+
+/*
+|--------------------------------------------------------------------------
+| Module #11
+| Student Excuse Request Page
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware([
+    'auth',
+    'role:Student Account',
+])
+->group(function () {
+
+    Route::get(
+        '/student/excuse-requests',
+        [
+            StudentExcuseRequestController::class,
+            'index',
+        ]
+    )
+    ->name(
+        'student.excuse-requests.index'
+    );
+
+});
+
+/*
+|--------------------------------------------------------------------------
+| Module #12
+| Department Staff Excuse Review REST API
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix(
+    'api/staff/excuse-requests'
+)
+->middleware([
+    'auth',
+    'role:Department Staff',
+])
+->name(
+    'api.staff.excuse-requests.'
+)
+->group(function () {
+
+    Route::get(
+        '/',
+        [
+            DepartmentExcuseRequestApiController::class,
+            'index',
+        ]
+    )
+    ->name(
+        'index'
+    );
+
+
+    Route::get(
+        '/{excuseRequest}/documents/{document}',
+        [
+            DepartmentExcuseRequestApiController::class,
+            'document',
+        ]
+    )
+    ->whereNumber(
+        'excuseRequest'
+    )
+    ->whereNumber(
+        'document'
+    )
+    ->name(
+        'documents.show'
+    );
+
+
+    Route::patch(
+        '/{excuseRequest}/review',
+        [
+            DepartmentExcuseRequestApiController::class,
+            'review',
+        ]
+    )
+    ->whereNumber(
+        'excuseRequest'
+    )
+    ->name(
+        'review'
+    );
+
+
+    Route::get(
+        '/{excuseRequest}',
+        [
+            DepartmentExcuseRequestApiController::class,
+            'show',
+        ]
+    )
+    ->whereNumber(
+        'excuseRequest'
+    )
+    ->name(
+        'show'
+    );
+
+});
+
+/*
+|--------------------------------------------------------------------------
+| Module #12
+| Department Staff Excuse Review Page
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware([
+    'auth',
+    'role:Department Staff',
+])
+->group(function () {
+
+    Route::get(
+        '/staff/excuse-requests',
+        [
+            DepartmentExcuseRequestController::class,
+            'index',
+        ]
+    )
+    ->name(
+        'staff.excuse-requests.index'
+    );
+
+});
+
+/*
+|--------------------------------------------------------------------------
+| Module #16
+| Event Evaluation Form Management REST API
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix(
+    'api/staff/evaluation-forms'
+)
+->middleware([
+    'auth',
+    'role:Department Staff',
+])
+->name(
+    'api.staff.evaluation-forms.'
+)
+->group(function () {
+
+    /*
+    |--------------------------------------------------------------------------
+    | List Evaluation Forms
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/',
+        [
+            StaffEvaluationFormApiController::class,
+            'index',
+        ]
+    )
+    ->name(
+        'index'
+    );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Import Word Evaluation Form
+    |--------------------------------------------------------------------------
+    */
+
+    Route::post(
+        '/import',
+        [
+            StaffEvaluationFormApiController::class,
+            'import',
+        ]
+    )
+    ->name(
+        'import'
+    );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Publish Evaluation Form
+    |--------------------------------------------------------------------------
+    */
+
+    Route::patch(
+        '/{evaluationForm}/publish',
+        [
+            StaffEvaluationFormApiController::class,
+            'publish',
+        ]
+    )
+    ->whereNumber(
+        'evaluationForm'
+    )
+    ->name(
+        'publish'
+    );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | View One Evaluation Form
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/{evaluationForm}',
+        [
+            StaffEvaluationFormApiController::class,
+            'show',
+        ]
+    )
+    ->whereNumber(
+        'evaluationForm'
+    )
+    ->name(
+        'show'
+    );
+
+});
+
+/*
+|--------------------------------------------------------------------------
+| Module #16
+| Department Staff Evaluation Form Page
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware([
+    'auth',
+    'role:Department Staff',
+])
+->group(function () {
+
+    Route::get(
+        '/staff/evaluation-forms',
+        [
+            DepartmentEvaluationFormController::class,
+            'index',
+        ]
+    )
+    ->name(
+        'staff.evaluation-forms.index'
+    );
+
+});
+
+/*
+|--------------------------------------------------------------------------
+| Module #17
+| Student Event Evaluation Response REST API
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix(
+    'api/student/evaluations'
+)
+->middleware([
+    'auth',
+    'role:Student Account',
+])
+->name(
+    'api.student.evaluations.'
+)
+->group(function () {
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Available Evaluations
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/',
+        [
+            StudentEvaluationApiController::class,
+            'index',
+        ]
+    )
+    ->name(
+        'index'
+    );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | View My Submitted Response
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/{evaluationForm}/response',
+        [
+            StudentEvaluationApiController::class,
+            'response',
+        ]
+    )
+    ->whereNumber(
+        'evaluationForm'
+    )
+    ->name(
+        'response'
+    );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Submit Evaluation
+    |--------------------------------------------------------------------------
+    */
+
+    Route::post(
+        '/{evaluationForm}/responses',
+        [
+            StudentEvaluationApiController::class,
+            'store',
+        ]
+    )
+    ->whereNumber(
+        'evaluationForm'
+    )
+    ->name(
+        'responses.store'
+    );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | View Evaluation
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/{evaluationForm}',
+        [
+            StudentEvaluationApiController::class,
+            'show',
+        ]
+    )
+    ->whereNumber(
+        'evaluationForm'
+    )
+    ->name(
+        'show'
+    );
+
+});
+
+
+/*
+|--------------------------------------------------------------------------
+| Module #17
+| Student Event Evaluation Page
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware([
+    'auth',
+    'role:Student Account',
+])
+->group(function () {
+
+    Route::get(
+        '/student/evaluations',
+        [
+            StudentEvaluationController::class,
+            'index',
+        ]
+    )
+    ->name(
+        'student.evaluations.index'
+    );
+
+});
 
 /*
 |--------------------------------------------------------------------------
