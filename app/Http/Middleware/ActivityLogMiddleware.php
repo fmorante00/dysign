@@ -79,6 +79,8 @@ class ActivityLogMiddleware
                 );
 
 
+                [$subjectType, $subjectId] = $this->resolveAuditSubject($request);
+
                 ActivityLog::record(
                     $action,
                     $module,
@@ -86,7 +88,9 @@ class ActivityLogMiddleware
                     $response->isSuccessful()
                         || $response->isRedirection()
                             ? 'Success'
-                            : 'Failed'
+                            : 'Failed',
+                    $subjectType,
+                    $subjectId
                 );
 
             }
@@ -116,11 +120,15 @@ class ActivityLogMiddleware
                     );
 
 
+                    [$subjectType, $subjectId] = $this->resolveAuditSubject($request);
+
                     ActivityLog::record(
                         $action,
                         $module,
                         $description,
-                        'Failed'
+                        'Failed',
+                        $subjectType,
+                        $subjectId
                     );
 
                 } catch (Throwable $ignored) {
@@ -444,6 +452,35 @@ class ActivityLogMiddleware
 
         /*
         |--------------------------------------------------------------------------
+        | RFID Card Lifecycle Management (Module 23)
+        |--------------------------------------------------------------------------
+        */
+
+        if (str_starts_with($routeName, 'rfid-cards.')) {
+            $action = match ($routeName) {
+                'rfid-cards.lost' => 'Reported RFID card as lost',
+                'rfid-cards.replace' => 'Replaced RFID card',
+                'rfid-cards.approve' => 'Approved imported RFID card',
+                default => 'Updated RFID card information',
+            };
+
+            // Routes use {student}, which may be a bound Student model or a raw ID.
+            $student = $request->route('student');
+            $studentId = $student instanceof \Illuminate\Database\Eloquent\Model
+                ? $student->getKey()
+                : $student;
+
+            return [
+                'RFID',
+                $action,
+                $studentId !== null && $studentId !== ''
+                    ? "Student record #{$studentId}"
+                    : $this->routeDescription($request),
+            ];
+        }
+
+        /*
+        |--------------------------------------------------------------------------
         | Fallback
         |--------------------------------------------------------------------------
         */
@@ -457,6 +494,30 @@ class ActivityLogMiddleware
         ];
     }
 
+
+    /**
+     * Identify the affected record without exposing RFID UIDs or student data.
+     * Other routes retain their existing logging behavior.
+     */
+    private function resolveAuditSubject(Request $request): array
+    {
+        if ($request->routeIs(
+            'rfid-cards.lost',
+            'rfid-cards.replace',
+            'rfid-cards.approve'
+        )) {
+            $student = $request->route('student');
+            $studentId = $student instanceof \Illuminate\Database\Eloquent\Model
+                ? $student->getKey()
+                : $student;
+
+            if (is_scalar($studentId) && (string) $studentId !== '') {
+                return ['Student', (string) $studentId];
+            }
+        }
+
+        return [null, null];
+    }
 
     private function routeDescription(
         Request $request

@@ -311,6 +311,51 @@ Route::middleware([
 
 /*
 |--------------------------------------------------------------------------
+| Module 23 - RFID Card Lifecycle Management
+|--------------------------------------------------------------------------
+|
+| System Administrator only: lost cards, replacements, and imported UID review.
+|
+*/
+
+Route::middleware([
+    'auth',
+    'role:Administrator'
+])
+->group(function () {
+
+    Route::get(
+        '/rfid-cards',
+        [RfidCardLifecycleController::class, 'index']
+    )
+    ->name('rfid-cards.index');
+
+    Route::post(
+        '/rfid-cards/{student}/lost',
+        [RfidCardLifecycleController::class, 'reportLost']
+    )
+    ->whereNumber('student')
+    ->name('rfid-cards.lost');
+
+    Route::post(
+        '/rfid-cards/{student}/replace',
+        [RfidCardLifecycleController::class, 'replace']
+    )
+    ->whereNumber('student')
+    ->name('rfid-cards.replace');
+
+    Route::post(
+        '/rfid-cards/{student}/approve-imported',
+        [RfidCardLifecycleController::class, 'approveImported']
+    )
+    ->whereNumber('student')
+    ->name('rfid-cards.approve');
+
+});
+
+
+/*
+|--------------------------------------------------------------------------
 | Event Management
 |--------------------------------------------------------------------------
 */
@@ -1986,39 +2031,6 @@ Route::middleware(['auth', 'role:Department Staff'])->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| Module #23 - RFID Card Lifecycle Management
-|--------------------------------------------------------------------------
-*/
-
-Route::middleware(['auth', 'role:Administrator'])->group(function () {
-
-    // View RFID Cards
-    Route::get('/rfid-cards',
-        [RfidCardLifecycleController::class, 'index'])
-        ->name('rfid-cards.index');
-
-    // Report Lost RFID Card
-    Route::post('/rfid-cards/{student}/lost',
-        [RfidCardLifecycleController::class, 'reportLost'])
-        ->whereNumber('student')
-        ->name('rfid-cards.lost');
-
-    // Replace RFID Card
-    Route::post('/rfid-cards/{student}/replace',
-        [RfidCardLifecycleController::class, 'replace'])
-        ->whereNumber('student')
-        ->name('rfid-cards.replace');
-
-    // Approve Imported RFID Card
-    Route::post('/rfid-cards/{student}/approve-imported',
-        [RfidCardLifecycleController::class, 'approveImported'])
-        ->whereNumber('student')
-        ->name('rfid-cards.approve');
-
-});
-
-/*
-|--------------------------------------------------------------------------
 | Module #9 - Student Attendance History
 |--------------------------------------------------------------------------
 */
@@ -2145,6 +2157,34 @@ Route::post(
 ->name(
     'account.setup.store'
 );
+
+
+/*
+|--------------------------------------------------------------------------
+| Module 22 - Student Attendance Discrepancy Request Management
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['auth', 'role:Student Account'])->group(function () {
+    Route::get('/student/attendance-discrepancy-requests',
+        [\App\Http\Controllers\StudentAttendanceDiscrepancyController::class, 'index'])
+        ->name('attendance-discrepancies.student.index');
+
+    Route::post('/student/attendance-discrepancy-requests',
+        [\App\Http\Controllers\StudentAttendanceDiscrepancyController::class, 'store'])
+        ->name('attendance-discrepancies.student.store');
+});
+
+Route::middleware(['auth', 'role:Attendance Personnel'])->group(function () {
+    Route::get('/attendance-discrepancies',
+        [\App\Http\Controllers\PersonnelAttendanceDiscrepancyController::class, 'index'])
+        ->name('attendance-discrepancies.staff.index');
+
+    Route::post('/attendance-discrepancies/{discrepancyRequest}/review',
+        [\App\Http\Controllers\PersonnelAttendanceDiscrepancyController::class, 'review'])
+        ->whereNumber('discrepancyRequest')
+        ->name('attendance-discrepancies.staff.review');
+});
 
 
 /*
