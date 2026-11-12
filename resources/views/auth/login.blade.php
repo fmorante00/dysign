@@ -1,118 +1,129 @@
 <x-guest-layout>
     {{--
-        DySign login • Dr. Yanga's Colleges, Inc. / Elida Campus
-        Keeps the existing Laravel authentication routes, CSRF protection,
-        validation components, session messages, and remember-me behavior.
-        Uses the image assets already referenced in the existing project.
+        DySign full-screen university login.
+        Only the presentation is redesigned. Existing authentication form,
+        CSRF, Laravel validation, remember-me, password visibility and routes
+        are retained from the previous login view.
     --}}
     <style>
         [x-cloak] { display: none !important; }
+
+        .dysign-login-shell { min-height: 100vh; min-height: 100dvh; }
+        .dysign-login-photo {
+            position: absolute; inset: 0; width: 100%; height: 100%;
+            object-fit: cover; opacity: 0;
+            transform: scale(1.055);
+            transition: opacity 1.35s ease, transform 6.5s ease;
+        }
+        .dysign-login-photo.is-active { opacity: 1; transform: scale(1); }
+        .dysign-login-glass {
+            background: rgba(250, 250, 255, .84);
+            -webkit-backdrop-filter: blur(29px) saturate(1.25);
+            backdrop-filter: blur(29px) saturate(1.25);
+        }
+        .dysign-login-card {
+            background: rgba(255,255,255,.56);
+            -webkit-backdrop-filter: blur(15px);
+            backdrop-filter: blur(15px);
+        }
+        @media (max-width: 1023px) {
+            .dysign-login-glass { background: rgba(249,250,255,.91); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .dysign-login-photo { transition: none; transform: none; }
+            .dysign-login-photo.is-active { transform: none; }
+        }
     </style>
 
-    {{-- The centering classes let this page fill the viewport even if the
-         guest layout uses a narrow, centered content wrapper. --}}
-    <div class="relative left-1/2 w-screen -translate-x-1/2 overflow-x-hidden bg-[#F1F3F8] text-[#161943] antialiased">
-        <main class="mx-auto flex min-h-screen w-full max-w-[1700px] flex-col bg-white shadow-[0_20px_90px_rgba(10,17,69,0.08)] lg:min-h-[100dvh] lg:flex-row">
+    {{-- Fixed shell intentionally escapes the default Breeze guest layout's
+         centered, max-width card to fill the browser viewport edge to edge. --}}
+    <div class="dysign-login-shell fixed inset-0 z-[100] overflow-y-auto overflow-x-hidden bg-[#0C0E49] text-[#161943] antialiased">
+        <div class="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true" id="dysignLoginSlides">
+            <img src="{{ asset('images/dyci1.jpg') }}" alt="" class="dysign-login-photo is-active" fetchpriority="high">
+            <img src="{{ asset('images/dyci2.jpg') }}" alt="" class="dysign-login-photo" loading="lazy">
+            <img src="{{ asset('images/dyci3.jpg') }}" alt="" class="dysign-login-photo" loading="lazy">
+            <img src="{{ asset('images/dyci4.jpg') }}" alt="" class="dysign-login-photo" loading="lazy">
+            <img src="{{ asset('images/dyci5.jpg') }}" alt="" class="dysign-login-photo" loading="lazy">
+            <div class="absolute inset-0 bg-gradient-to-r from-[#050831]/80 via-[#101064]/60 to-[#101064]/35"></div>
+        </div>
 
-            {{-- LEFT: UNIVERSITY IDENTITY --}}
-            <section class="relative isolate hidden min-h-[760px] overflow-hidden bg-[#101064] text-white lg:flex lg:w-[53%]">
-                <img
-                    src="{{ asset('images/school.jpg') }}"
-                    alt="Dr. Yanga's Colleges campus community"
-                    class="absolute inset-0 h-full w-full object-cover"
-                >
+        <main class="relative z-10 grid min-h-full w-full grid-cols-1 lg:min-h-[100dvh] lg:grid-cols-[53%_47%]">
+            {{-- LEFT: editorial university identity, same message as the existing page. --}}
+            <section class="relative hidden min-h-[100dvh] flex-col justify-between overflow-hidden border-r border-white/10 bg-gradient-to-r from-[#070B42]/70 via-[#101064]/45 to-transparent px-10 py-10 text-white lg:flex xl:px-[6.5vw] xl:py-12">
+                <div class="pointer-events-none absolute -right-28 -top-44 h-[540px] w-[540px] rounded-full border border-white/15"></div>
+                <div class="pointer-events-none absolute -right-10 -top-20 h-[390px] w-[390px] rounded-full border border-white/10"></div>
 
-                <div class="absolute inset-0 bg-gradient-to-r from-[#090944]/95 via-[#101064]/83 to-[#11146A]/58"></div>
-                <div class="absolute inset-0 bg-gradient-to-t from-[#07073D]/90 via-transparent to-[#08083E]/30"></div>
-
-                {{-- A quiet geometric motif inspired by the school's editorial design. --}}
-                <div class="pointer-events-none absolute -right-36 -top-40 h-[520px] w-[520px] rounded-full border border-white/15"></div>
-                <div class="pointer-events-none absolute -right-20 -top-24 h-[400px] w-[400px] rounded-full border border-white/10"></div>
-                <div class="pointer-events-none absolute bottom-0 right-16 h-28 w-px bg-gradient-to-t from-[#D4A017]/80 to-transparent"></div>
-
-                <div class="relative z-10 flex w-full flex-col justify-between px-12 py-11 xl:px-16 xl:py-14">
-                    <div class="flex items-center justify-between gap-5">
-                        <div class="flex items-center gap-3">
-                            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/95 p-1.5 shadow-lg shadow-[#04032D]/20">
-                                <img src="{{ asset('images/logo.png') }}" alt="Dr. Yanga's Colleges logo" class="h-full w-full object-contain">
-                            </div>
-                            <div class="leading-tight">
-                                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-white">Dr. Yanga's Colleges, Inc.</p>
-                                <p class="mt-1 text-[11px] tracking-[0.13em] text-blue-100/80">ELIDA CAMPUS</p>
-                            </div>
-                        </div>
-                        <span class="rounded-full border border-white/25 bg-white/10 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/90 backdrop-blur-sm">
-                            DySign Portal
+                <header class="relative flex items-center justify-between gap-5">
+                    <a href="{{ route('landing') }}" class="flex items-center gap-4 text-white no-underline" aria-label="Go to DySign home">
+                        <span class="flex h-[58px] w-[58px] shrink-0 items-center justify-center rounded-full border border-white/50 bg-white/95 p-2 shadow-xl">
+                            <img src="{{ asset('images/logo.png') }}" alt="DYCI seal" class="h-full w-full object-contain">
                         </span>
+                        <span class="leading-tight">
+                            <span class="block text-[11px] font-bold uppercase tracking-[0.16em] sm:text-xs">Dr. Yanga's Colleges, Inc.</span>
+                            <span class="mt-1 block text-[10px] font-semibold uppercase tracking-[0.23em] text-[#E9BE44]">Elida Campus · Bulacan</span>
+                        </span>
+                    </a>
+                    <span class="hidden rounded-full border border-white/30 bg-white/10 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-white backdrop-blur-xl xl:inline">DySign Portal</span>
+                </header>
+
+                <div class="relative max-w-[760px] py-14">
+                    <div class="mb-8 flex items-center gap-3 text-[11px] font-bold uppercase tracking-[0.24em] text-[#E9BE44]">
+                        <span class="h-[2px] w-10 bg-[#D4A017]"></span>
+                        A more connected campus
                     </div>
-
-                    <div class="max-w-[650px] pb-10 pt-20">
-                        <div class="mb-7 flex items-center gap-3">
-                            <span class="h-px w-10 bg-[#E0AF33]"></span>
-                            <span class="text-xs font-semibold uppercase tracking-[0.24em] text-[#F0C35B]">A more connected campus</span>
-                        </div>
-
-                        <h1 class="text-5xl leading-[1.12] tracking-[-0.035em] xl:text-[clamp(3.5rem,4.6vw,5.8rem)]" style="font-family: Georgia, 'Times New Roman', serif;">
-                            Every event.<br>
-                            Every presence.<br>
-                            <span class="italic text-[#E0AF33]">Every DYCIan.</span>
-                        </h1>
-
-                        <p class="mt-8 max-w-md text-base leading-8 text-[#E0E4FF] xl:text-lg">
-                            One digital space for student event attendance, participation, and meaningful campus experiences.
-                        </p>
-                    </div>
-
-                    <div class="flex items-end justify-between gap-6 border-t border-white/20 pt-6">
-                        <div>
-                            <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#E0AF33]">DySign</p>
-                            <p class="mt-2 max-w-[320px] text-xs leading-6 text-blue-100/80">
-                                Event Participation Management System
-                            </p>
-                        </div>
-                        <span class="whitespace-nowrap text-[11px] tracking-[0.15em] text-white/65">ELIDA · BULACAN</span>
-                    </div>
+                    <h1 class="text-[clamp(3.5rem,5.1vw,6.7rem)] leading-[1.11] tracking-[-0.047em] drop-shadow-lg" style="font-family: Georgia, 'Times New Roman', serif;">
+                        Every event.<br>
+                        Every presence.<br>
+                        <span class="italic text-[#E9BE44]">Every DYCIan.</span>
+                    </h1>
+                    <p class="mt-9 max-w-lg text-base leading-8 text-white/85 xl:text-lg">
+                        One digital space for student event attendance, participation, and meaningful campus experiences.
+                    </p>
+                    <div class="mt-10 h-[2px] w-[74px] bg-[#D4A017]"></div>
                 </div>
+
+                <footer class="relative flex items-end justify-between gap-5 border-t border-white/25 pt-6">
+                    <div>
+                        <div class="text-xs font-extrabold tracking-[0.18em] text-[#E9BE44]">DYSIGN</div>
+                        <div class="mt-2 text-xs text-white/70">Digital Identity & Event Participation Management</div>
+                    </div>
+                    <span class="shrink-0 text-[10px] font-semibold uppercase tracking-[0.15em] text-white/65">DYCI · ELIDA CAMPUS</span>
+                </footer>
             </section>
 
-            {{-- RIGHT: SECURE LOGIN --}}
-            <section class="relative flex min-h-screen w-full flex-col bg-white lg:min-h-[760px] lg:w-[47%]">
-                {{-- Mobile brand header --}}
-                <div class="flex items-center justify-between bg-[#101064] px-6 py-5 text-white sm:px-10 lg:hidden">
-                    <div class="flex items-center gap-3">
-                        <img src="{{ asset('images/logo.png') }}" alt="Dr. Yanga's Colleges logo" class="h-11 w-11 rounded-full bg-white p-1 object-contain">
-                        <div>
-                            <p class="text-lg font-extrabold tracking-tight">Dy<span class="text-[#E0AF33]">Sign</span></p>
-                            <p class="text-[10px] tracking-wide text-blue-100">Dr. Yanga's Colleges, Inc.</p>
-                        </div>
-                    </div>
-                    <span class="rounded-full border border-white/25 px-3 py-1 text-[10px] font-semibold uppercase tracking-widest">Elida</span>
+            {{-- RIGHT: full-height frosted glass sign-in panel. --}}
+            <section class="dysign-login-glass relative flex min-h-[100dvh] flex-col border-l border-white/30 shadow-[-20px_0_80px_rgba(4,9,46,.14)]">
+                {{-- Compact school branding on smaller screens --}}
+                <div class="flex items-center justify-between border-b border-white/65 px-6 py-5 sm:px-10 lg:hidden">
+                    <a href="{{ route('landing') }}" class="flex items-center gap-3 no-underline">
+                        <img src="{{ asset('images/logo.png') }}" alt="DYCI seal" class="h-11 w-11 rounded-full bg-white p-1 object-contain shadow-md">
+                        <span>
+                            <span class="block text-xl font-extrabold tracking-tight text-[#101064]">Dy<span class="text-[#D4A017]">Sign</span></span>
+                            <span class="block text-[10px] font-medium text-[#5E6686]">Dr. Yanga's Colleges, Inc.</span>
+                        </span>
+                    </a>
+                    <span class="text-[10px] font-bold uppercase tracking-[0.18em] text-[#8E6F18]">Elida Campus</span>
                 </div>
 
-                <div class="hidden items-center justify-end px-10 pt-10 lg:flex xl:px-16 xl:pt-12">
-                    <div class="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.15em] text-[#59627D]">
-                        <svg class="h-4 w-4 text-[#B38824]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                            <rect x="5" y="10" width="14" height="11" rx="2"></rect>
-                            <path d="M8 10V7a4 4 0 0 1 8 0v3"></path>
-                        </svg>
-                        Secure account access
-                    </div>
+                <div class="hidden items-center justify-end gap-3 px-7 pt-9 text-[11px] font-bold uppercase tracking-[0.16em] text-[#59627D] lg:flex xl:px-14 xl:pt-11">
+                    <svg class="h-4 w-4 text-[#B38824]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                        <rect x="5" y="10" width="14" height="11" rx="2"></rect>
+                        <path d="M8 10V7a4 4 0 0 1 8 0v3"></path>
+                    </svg>
+                    Secure account access
                 </div>
 
-                <div class="flex flex-1 items-center justify-center px-6 py-12 sm:px-10 lg:px-10 lg:py-16 xl:px-16">
-                    <div class="w-full max-w-[435px]">
-                        <div class="mb-9">
-                            <div class="mb-6 flex items-center gap-2.5">
-                                <span class="h-1.5 w-7 rounded-full bg-[#D4A017]"></span>
-                                <p class="text-[11px] font-bold uppercase tracking-[0.21em] text-[#A27813]">DySign · Member Portal</p>
+                <div class="flex flex-1 items-center justify-center px-5 py-8 sm:px-8 sm:py-12 lg:px-8 lg:py-6 xl:px-14">
+                    <div class="dysign-login-card w-full max-w-[510px] rounded-[28px] border border-white/85 px-6 py-7 shadow-[0_22px_65px_rgba(15,19,76,.13)] sm:px-9 sm:py-9 xl:px-10">
+                        <div class="mb-7">
+                            <div class="mb-4 flex items-center gap-3">
+                                <span class="h-[3px] w-8 rounded-full bg-[#D4A017]"></span>
+                                <p class="text-[10px] font-extrabold uppercase tracking-[0.22em] text-[#9D7411]">DySign · Member Portal</p>
                             </div>
-
-                            <h2 class="text-[clamp(2.65rem,4vw,3.7rem)] leading-[1.08] tracking-[-0.035em] text-[#101064]" style="font-family: Georgia, 'Times New Roman', serif;">
+                            <h2 class="text-[clamp(2.4rem,3.7vw,3.6rem)] leading-[1.13] tracking-[-0.035em] text-[#101064]" style="font-family: Georgia, 'Times New Roman', serif;">
                                 Welcome back<span class="text-[#D4A017]">.</span>
                             </h2>
-                            <p class="mt-4 text-sm leading-7 text-[#667087]">
-                                Sign in to continue to your event participation portal.
-                            </p>
+                            <p class="mt-3 text-sm leading-6 text-[#667087]">Sign in to continue to your event participation portal.</p>
                         </div>
 
                         {{-- Preserve Laravel's status and validation behavior. --}}
@@ -131,13 +142,12 @@
                                 <p>We couldn't sign you in. Please check the details below.</p>
                             </div>
                         @endif
-
                         <form
                             method="POST"
                             action="{{ route('login') }}"
                             x-data="{ showPassword: false, submitting: false }"
                             x-on:submit="submitting = true"
-                            class="space-y-6"
+                            class="space-y-5"
                         >
                             @csrf
 
@@ -159,7 +169,7 @@
                                         autofocus
                                         placeholder="name@example.com"
                                         @class([
-                                            'block w-full rounded-xl border bg-[#F8F9FC] py-3.5 pl-12 pr-4 text-sm text-[#171B43] placeholder:text-[#9CA2B4] transition focus:border-[#101064] focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#101064]/10',
+                                            'block w-full rounded-xl border bg-white/80 py-3.5 pl-12 pr-4 text-sm text-[#171B43] placeholder:text-[#9CA2B4] transition focus:border-[#101064] focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#101064]/10',
                                             'border-red-300' => $errors->has('email'),
                                             'border-[#E0E3EC]' => ! $errors->has('email'),
                                         ])
@@ -190,7 +200,7 @@
                                         required
                                         placeholder="Enter your password"
                                         @class([
-                                            'block w-full rounded-xl border bg-[#F8F9FC] py-3.5 pl-12 pr-14 text-sm text-[#171B43] placeholder:text-[#9CA2B4] transition focus:border-[#101064] focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#101064]/10',
+                                            'block w-full rounded-xl border bg-white/80 py-3.5 pl-12 pr-14 text-sm text-[#171B43] placeholder:text-[#9CA2B4] transition focus:border-[#101064] focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#101064]/10',
                                             'border-red-300' => $errors->has('password'),
                                             'border-[#E0E3EC]' => ! $errors->has('password'),
                                         ])
@@ -244,7 +254,7 @@
                             <button
                                 type="submit"
                                 x-bind:disabled="submitting"
-                                class="group flex w-full items-center justify-center gap-3 rounded-xl bg-[#101064] px-6 py-4 text-sm font-semibold tracking-wide text-white shadow-[0_14px_30px_rgba(16,16,100,0.18)] transition hover:bg-[#191981] hover:shadow-[0_16px_35px_rgba(16,16,100,0.23)] focus:outline-none focus:ring-4 focus:ring-[#D4A017]/30 disabled:cursor-wait disabled:opacity-75"
+                                class="group flex w-full items-center justify-center gap-3 rounded-xl bg-[#101064] px-6 py-4 text-sm font-semibold tracking-wide text-white shadow-[0_14px_30px_rgba(16,16,100,0.18)] transition hover:bg-[#22228B] hover:-translate-y-0.5 hover:shadow-[0_16px_35px_rgba(16,16,100,0.23)] focus:outline-none focus:ring-4 focus:ring-[#D4A017]/30 disabled:cursor-wait disabled:opacity-75"
                             >
                                 <svg x-show="submitting" x-cloak class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                                     <circle class="opacity-30" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle>
@@ -257,25 +267,49 @@
                             </button>
                         </form>
 
-                        <div class="mt-8 border-t border-[#EAECF2] pt-6">
-                            <div class="flex items-start gap-3 rounded-xl bg-[#F7F8FC] px-4 py-3.5">
+                        <div class="mt-7 border-t border-[#D9DBE8] pt-5">
+                            <div class="flex items-start gap-3 rounded-xl border border-white/85 bg-white/65 px-4 py-3.5">
                                 <svg class="mt-0.5 h-4 w-4 shrink-0 text-[#A27813]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                                    <circle cx="12" cy="12" r="9"></circle>
-                                    <path d="M12 11v5M12 8h.01"></path>
+                                    <circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path>
                                 </svg>
-                                <p class="text-xs leading-6 text-[#616B80]">
-                                    Don't have access yet? Student accounts are created by the Administrator. Check your invitation email to activate your account.
-                                </p>
+                                <p class="text-xs leading-5 text-[#616B80]">Don't have access yet? Student accounts are created by the Administrator. Check your invitation email to activate your account.</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <footer class="flex flex-wrap items-center justify-between gap-2 border-t border-[#F0F1F5] px-6 py-5 text-[11px] text-[#858BA0] sm:px-10 xl:px-16">
-                    <span>© {{ date('Y') }} DySign · Dr. Yanga's Colleges, Inc.</span>
-                    <span>Elida Campus</span>
+                <footer class="flex flex-wrap items-center justify-between gap-2 border-t border-white/60 px-6 py-4 text-[11px] text-[#747E95] sm:px-10 xl:px-14">
+                    <span>&copy; {{ date('Y') }} DySign · Dr. Yanga's Colleges, Inc.</span>
+                    <a href="{{ route('landing') }}" class="font-semibold text-[#101064] underline decoration-[#D4A017]/60 underline-offset-4 hover:text-[#A27813]">Back to Home</a>
                 </footer>
             </section>
         </main>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const slides = Array.from(document.querySelectorAll('#dysignLoginSlides .dysign-login-photo'));
+            if (slides.length < 2) return;
+
+            let activeIndex = 0;
+            let timer = null;
+            const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+            function renderSlide(index) {
+                activeIndex = (index + slides.length) % slides.length;
+                slides.forEach((slide, i) => slide.classList.toggle('is-active', i === activeIndex));
+            }
+            function stop() {
+                if (timer !== null) { clearInterval(timer); timer = null; }
+            }
+            function start() {
+                stop();
+                if (document.hidden || motionQuery.matches) return;
+                timer = window.setInterval(() => renderSlide(activeIndex + 1), 5000);
+            }
+            document.addEventListener('visibilitychange', start);
+            motionQuery.addEventListener?.('change', start);
+            start();
+        });
+    </script>
 </x-guest-layout>

@@ -6,6 +6,7 @@ use App\Models\Department;
 use App\Models\Event;
 use App\Models\EventAssignment;
 use App\Models\Personnel;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -226,8 +227,7 @@ class EventController extends Controller
 
             'event_date' => [
                 'required',
-                'date',
-                'after_or_equal:today',
+                'date_format:Y-m-d',
             ],
 
             'start_time' => [
@@ -248,6 +248,14 @@ class EventController extends Controller
             ],
 
         ]);
+
+
+        /*
+         * One server-side rule for creation and editing:
+         * future schedules, valid time order, and venue availability.
+         */
+        $this->validateEventSchedule($validated);
+
 
 
         /*
@@ -345,18 +353,20 @@ class EventController extends Controller
         $this->ensureDepartmentStaffHasDepartment();
 
 
-        if ($event->status === 'Cancelled') {
 
+        if (in_array(
+            $event->status,
+            ['Completed', 'Cancelled'],
+            true
+        )) {
             return redirect()
-                ->route(
-                    'events.show',
-                    $event->event_id
-                )
+                ->route('events.show', $event->event_id)
                 ->with(
                     'error',
-                    'Cancelled events can no longer be edited.'
+                    'Completed or cancelled events can no longer be edited.'
                 );
         }
+
 
 
         return view(
@@ -387,16 +397,16 @@ class EventController extends Controller
         $this->ensureDepartmentStaffHasDepartment();
 
 
-        if ($event->status === 'Cancelled') {
-
+        if (in_array(
+            $event->status,
+            ['Completed', 'Cancelled'],
+            true
+        )) {
             return redirect()
-                ->route(
-                    'events.show',
-                    $event->event_id
-                )
+                ->route('events.show', $event->event_id)
                 ->with(
                     'error',
-                    'Cancelled events can no longer be edited.'
+                    'Completed or cancelled events can no longer be edited.'
                 );
         }
 
@@ -416,7 +426,7 @@ class EventController extends Controller
 
             'event_date' => [
                 'required',
-                'date',
+                'date_format:Y-m-d',
             ],
 
             'start_time' => [
@@ -437,6 +447,14 @@ class EventController extends Controller
             ],
 
         ]);
+
+
+        /*
+         * Existing event is passed so unchanged schedules may be retained,
+         * while edits to live/attended events remain protected.
+         */
+        $this->validateEventSchedule($validated, $event);
+
 
 
         /*
@@ -471,6 +489,128 @@ class EventController extends Controller
                 'success',
                 'Event updated successfully.'
             );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Validate Event Schedule and Venue
+    |--------------------------------------------------------------------------
+    |
+    | Rules are enforced on the SERVER, even if browser checks are bypassed.
+    | All date/time comparisons use the school's Asia/Manila timezone.
+    | Separate events may be scheduled back-to-back at the same venue.
+    |
+    */
+
+    private function validateEventSchedule(
+        array $validated,
+        ?Event $existingEvent = null
+    ): void {
+        $timezone = 'Asia/Manila';
+
+        $date = $validated['event_date'];
+        $startTime = $validated['start_time'];
+        $endTime = $validated['end_time'];
+        $venue = trim($validated['location']);
+
+        // The validated date and times use Y-m-d / H:i formats.
+        $startsAt = Carbon::createFromFormat(
+            'Y-m-d H:i:s',
+            $date . ' ' . $startTime . ':00',
+            $timezone
+        );
+
+        $endsAt = Carbon::createFromFormat(
+            'Y-m-d H:i:s',
+            $date . ' ' . $endTime . ':00',
+            $timezone
+        );
+
+        if ($endsAt->lessThanOrEqualTo($startsAt)) {
+            throw ValidationException::withMessages([
+                'end_time' => 'The end time must be later than the start time.',
+            ]);
+        }
+
+        // When the staff changes only event name/description, do not
+        // invalidate an already-started event's unchanged schedule.
+        $scheduleChanged = $existingEvent === null;
+
+        if ($existingEvent !== null) {
+            $previousDate = Carbon::parse(
+                $existingEvent->event_date
+            )->format('Y-m-d');
+
+            $previousStart = Carbon::parse(
+                $existingEvent->start_time
+            )->format('H:i');
+
+            $previousEnd = Carbon::parse(
+                $existingEvent->end_time
+            )->format('H:i');
+
+            $previousVenue = trim((string) $existingEvent->location);
+
+            $scheduleChanged =
+                $date !== $previousDate
+                || $startTime !== $previousStart
+                || $endTime !== $previousEnd
+                || $venue !== $previousVenue;
+        }
+
+        if (!$scheduleChanged) {
+            return;
+        }
+
+        // Changes to an ongoing event's date, time, or venue can
+        // disrupt a live attendance-scanning session.
+        if ($existingEvent !== null && $existingEvent->status === 'Ongoing') {
+            throw ValidationException::withMessages([
+                'event_date' => 'The date, time, and venue of an ongoing event cannot be changed.',
+            ]);
+        }
+
+        // Historical attendance must remain attached to the original
+        // schedule and venue; other descriptive edits can still be made.
+        if (
+            $existingEvent !== null
+            && $existingEvent->attendanceRecords()->exists()
+        ) {
+            throw ValidationException::withMessages([
+                'event_date' => 'This event already has attendance records. Its date, time, and venue cannot be changed.',
+            ]);
+        }
+
+        if ($startsAt->lessThanOrEqualTo(Carbon::now($timezone))) {
+            throw ValidationException::withMessages([
+                'event_date' => 'Choose a future event start date and time (Philippine time).',
+            ]);
+        }
+
+        // Venue is school-wide: overlapping events at the same named
+        // location are blocked regardless of organizing department.
+        // Adjacent schedules (one ends as another starts) are allowed.
+        $conflictQuery = Event::query()
+            ->whereDate('event_date', $date)
+            ->where('status', '!=', 'Cancelled')
+            ->whereRaw('LOWER(TRIM(location)) = LOWER(?)', [$venue])
+            ->whereTime('start_time', '<', $endTime)
+            ->whereTime('end_time', '>', $startTime);
+
+        if ($existingEvent !== null) {
+            $conflictQuery->where(
+                'event_id',
+                '!=',
+                $existingEvent->event_id
+            );
+        }
+
+        if ($conflictQuery->exists()) {
+            throw ValidationException::withMessages([
+                'location' => 'Another event already uses this venue during the selected time. Please choose a different venue or schedule.',
+            ]);
+        }
     }
 
 

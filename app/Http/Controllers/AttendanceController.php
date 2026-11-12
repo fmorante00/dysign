@@ -304,6 +304,28 @@ class AttendanceController extends Controller
 
                 /*
                 |--------------------------------------------------------------------------
+                | RFID Card Lifecycle Security
+                |--------------------------------------------------------------------------
+                | Allow attendance only when the student's RFID card is Active.
+                | Lost, Replaced, and unactivated cards are rejected.
+                */
+
+                $activeRfidAssignment = DB::table('rfid_card_assignments')
+                    ->where('student_id', $student->student_id)
+                    ->where('rfid_identifier', $rfid)
+                    ->where('status', 'Active')
+                    ->exists();
+
+                if (!$activeRfidAssignment) {
+                    return response()->json([
+                        'success' => false,
+                        'code' => 'rfid_card_inactive',
+                        'message' => 'This RFID card is lost, replaced, or not activated.',
+                    ], 403);
+                }
+
+                /*
+                |--------------------------------------------------------------------------
                 | Inactive Student
                 |--------------------------------------------------------------------------
                 */

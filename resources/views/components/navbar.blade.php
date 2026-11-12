@@ -81,40 +81,274 @@ Digital Identity Management System
 
 
 
-<!-- NOTIFICATION -->
 
-<button
-class="
-relative
-text-[#101064]
-hover:text-[#D4A017]
-transition
-"
+<!-- DYNAMIC NOTIFICATIONS -->
+
+@php
+    $currentUser = auth()->user();
+
+    $unreadNotificationCount = $currentUser
+        ->unreadNotifications()
+        ->count();
+
+    $recentNotifications = $currentUser
+        ->notifications()
+        ->latest()
+        ->limit(10)
+        ->get();
+@endphp
+
+<div
+    class="relative"
+    x-data="{ notificationsOpen: false }"
+    @click.outside="notificationsOpen = false"
 >
 
+    <!-- Notification Bell -->
+    <button
+        type="button"
+        @click="notificationsOpen = !notificationsOpen"
+        :aria-expanded="notificationsOpen.toString()"
+        aria-label="Toggle notifications"
+        class="relative text-[#101064] transition hover:text-[#D4A017]"
+    >
 
-<svg
-xmlns="http://www.w3.org/2000/svg"
-width="22"
-height="22"
-fill="none"
-stroke="currentColor"
-stroke-width="2"
-stroke-linecap="round"
-stroke-linejoin="round"
->
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="22"
+            height="22"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+        >
+            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
 
-<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9">
-</path>
+        <!-- Unread Counter -->
+        @if ($unreadNotificationCount > 0)
+            <span
+                class="absolute -right-3 -top-3 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white"
+            >
+                {{ $unreadNotificationCount > 99 ? '99+' : $unreadNotificationCount }}
+            </span>
+        @endif
 
-<path d="M13.73 21a2 2 0 0 1-3.46 0">
-</path>
+    </button>
 
+    <!-- Notification Dropdown -->
+    <div
+        x-cloak
+        x-show="notificationsOpen"
+        x-transition
+        class="absolute right-0 z-[100] mt-5 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl sm:w-96"
+    >
 
-</svg>
+        <!-- Dropdown Header -->
+        <div class="flex items-center justify-between border-b border-gray-100 bg-[#101064] px-5 py-4">
 
+            <div>
+                <h3 class="text-base font-bold text-white">
+                    Notifications
+                </h3>
 
-</button>
+                <p class="mt-1 text-xs text-white/70">
+                    Your recent DySign activities
+                </p>
+            </div>
+
+            @if ($unreadNotificationCount > 0)
+                <span class="rounded-full bg-[#D4A017] px-3 py-1 text-xs font-bold text-[#101064]">
+                    {{ $unreadNotificationCount }} Unread
+                </span>
+            @endif
+
+        </div>
+
+        <!-- Notification List -->
+        <div class="max-h-96 overflow-y-auto">
+
+            @forelse ($recentNotifications as $notification)
+
+                @php
+                    $notificationData = $notification->data;
+
+                    $notificationTitle = data_get(
+                        $notificationData,
+                        'title',
+                        'System Notification'
+                    );
+
+                    $notificationMessage = data_get(
+                        $notificationData,
+                        'message',
+                        ''
+                    );
+
+                    $notificationCategory = data_get(
+                        $notificationData,
+                        'category',
+                        'System'
+                    );
+
+                    $notificationUrl = data_get(
+                        $notificationData,
+                        'url',
+                        '/dashboard'
+                    );
+
+                    // Only allow internal application paths.
+                    if (
+                        !is_string($notificationUrl) ||
+                        !str_starts_with($notificationUrl, '/') ||
+                        str_starts_with($notificationUrl, '//')
+                    ) {
+                        $notificationUrl = route('dashboard');
+                    }
+
+                    $isUnread = is_null($notification->read_at);
+                @endphp
+
+                <a
+                    href="{{ $notificationUrl }}"
+                    class="block border-b border-gray-100 px-5 py-4 transition hover:bg-gray-50 {{ $isUnread ? 'bg-indigo-50/60' : 'bg-white' }}"
+                >
+
+                    <div class="flex items-start gap-3">
+
+                        <!-- Status Indicator -->
+                        <div class="mt-1.5 shrink-0">
+
+                            <span
+                                class="block h-2.5 w-2.5 rounded-full {{ $isUnread ? 'bg-[#D4A017]' : 'bg-gray-300' }}"
+                            ></span>
+
+                        </div>
+
+                        <!-- Notification Content -->
+                        <div class="min-w-0 flex-1">
+
+                            <div class="flex items-start justify-between gap-2">
+
+                                <p class="text-sm font-bold text-[#101064]">
+                                    {{ $notificationTitle }}
+                                </p>
+
+                                @if ($isUnread)
+                                    <span class="shrink-0 rounded-full bg-[#101064] px-2 py-0.5 text-[10px] font-semibold text-white">
+                                        New
+                                    </span>
+                                @endif
+
+                            </div>
+
+                            <p class="mt-1 text-xs leading-5 text-gray-600">
+                                {{ $notificationMessage }}
+                            </p>
+
+                            <div class="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-gray-400">
+
+                                <span class="font-semibold text-[#D4A017]">
+                                    {{ $notificationCategory }}
+                                </span>
+
+                                <span>•</span>
+
+                                <span>
+                                    {{ $notification->created_at?->diffForHumans() }}
+                                </span>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </a>
+
+                {{-- Mark this notification as read (outside the link) --}}
+                @if ($isUnread)
+                    <form
+                        method="POST"
+                        action="{{ route('notifications.read', $notification->id) }}"
+                        class="border-b border-gray-100 bg-indigo-50/30 px-5 pb-3 text-right"
+                    >
+                        @csrf
+                        <button
+                            type="submit"
+                            class="text-xs font-semibold text-[#101064] transition hover:text-[#D4A017]"
+                        >
+                            ✓ Mark as Read
+                        </button>
+                    </form>
+                @endif
+
+            @empty
+
+                <!-- Empty State -->
+                <div class="px-6 py-12 text-center">
+
+                    <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-indigo-50 text-[#101064]">
+
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                        >
+                            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                        </svg>
+
+                    </div>
+
+                    <p class="mt-4 text-sm font-bold text-[#101064]">
+                        No Notifications Yet
+                    </p>
+
+                    <p class="mt-2 text-xs text-gray-500">
+                        Your system updates will appear here.
+                    </p>
+
+                </div>
+
+            @endforelse
+
+        </div>
+
+        <!-- Dropdown Footer -->
+        <div class="border-t border-gray-100 bg-gray-50 px-5 py-3">
+
+            @if ($unreadNotificationCount > 0)
+                <form method="POST" action="{{ route('notifications.read-all') }}">
+                    @csrf
+                    <button
+                        type="submit"
+                        class="w-full rounded-xl bg-[#101064] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#202080]"
+                    >
+                        ✓ Mark All as Read
+                    </button>
+                </form>
+            @else
+                <p class="text-center text-xs font-medium text-green-700">
+                    ✓ You're all caught up!
+                </p>
+            @endif
+
+            <p class="mt-2 text-center text-[11px] text-gray-400">
+                Showing your 10 most recent notifications
+            </p>
+
+        </div>
+
+    </div>
+
+</div>
+
 
 
 
@@ -296,7 +530,7 @@ py-2
 
 <a
 
-href="#"
+href="{{ route('my-profile.show') }}"
 
 class="
 block

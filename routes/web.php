@@ -33,23 +33,34 @@ use App\Http\Controllers\Api\StaffEvaluationFormApiController;
 use App\Http\Controllers\DepartmentEvaluationFormController;
 use App\Http\Controllers\Api\StudentEvaluationApiController;
 use App\Http\Controllers\StudentEvaluationController;
+use App\Http\Controllers\ActivityPointController;
+use App\Http\Controllers\EventRegistrationController;
+use App\Http\Controllers\EventEvaluationAnalysisController;
+use App\Http\Controllers\AttendanceExceptionController;
+use App\Http\Controllers\AttendanceDiscrepancyController;
+use App\Http\Controllers\RfidCardLifecycleController;
+use App\Http\Controllers\StudentParticipationProgressController;
+use App\Http\Controllers\StudentParticipationClassificationController;
+use App\Http\Controllers\StaffAttendanceParticipationReportController;
+use App\Http\Controllers\StaffParticipationProgressController;
+use App\Http\Controllers\StudentAttendanceHistoryController;
+use App\Http\Controllers\NotificationController;
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 
 
+
 /*
 |--------------------------------------------------------------------------
-| Root
+| DySign Public Landing Page
 |--------------------------------------------------------------------------
 */
 
 Route::get('/', function () {
+    return view('landing');
+})->name('landing');
 
-    return redirect()
-        ->route('login');
-
-});
 
 
 /*
@@ -466,6 +477,38 @@ Route::middleware([
 
 /*
 |--------------------------------------------------------------------------
+| Module #7 - Event Registration & Participant Management
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['auth', 'role:Student Account'])->group(function () {
+    Route::get('/student/event-registrations', [EventRegistrationController::class, 'studentIndex'])
+        ->name('student.registrations.index');
+
+    Route::post('/student/event-registrations/{event}', [EventRegistrationController::class, 'studentStore'])
+        ->whereNumber('event')->name('student.registrations.store');
+
+    Route::delete('/student/event-registrations/{event}', [EventRegistrationController::class, 'studentCancel'])
+        ->whereNumber('event')->name('student.registrations.cancel');
+});
+
+Route::middleware(['auth', 'role:Department Staff'])->group(function () {
+    Route::get('/event-registrations', [EventRegistrationController::class, 'staffIndex'])
+        ->name('events.registrations.index');
+
+    Route::get('/event-registrations/{event}', [EventRegistrationController::class, 'staffShow'])
+        ->whereNumber('event')->name('events.registrations.show');
+
+    Route::post('/event-registrations/{event}', [EventRegistrationController::class, 'staffStore'])
+        ->whereNumber('event')->name('events.registrations.store');
+
+    Route::delete('/event-registrations/{event}/participants/{registration}', [EventRegistrationController::class, 'staffCancel'])
+        ->whereNumber('event')->whereNumber('registration')->name('events.registrations.cancel');
+});
+
+
+/*
+|--------------------------------------------------------------------------
 | Administrator Attendance Monitoring
 |--------------------------------------------------------------------------
 */
@@ -770,6 +813,74 @@ Route::middleware([
     );
 
 });
+
+
+/*
+|--------------------------------------------------------------------------
+| Module #13 - Activity Point Management
+|--------------------------------------------------------------------------
+|
+| Department Staff can configure activity point rules
+| and view awarded student participation points.
+|
+*/
+
+Route::middleware([
+    'auth',
+    'role:Department Staff'
+])
+->prefix('staff')
+->name('staff.')
+->group(function () {
+
+
+
+    // Activity Point Management - Event Selection
+    Route::get(
+        '/activity-points',
+        [
+            ActivityPointController::class,
+            'index'
+        ]
+    )
+    ->name('activity-points.index');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | View Activity Points
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/activity-points/{eventId}',
+        [
+            ActivityPointController::class,
+            'show'
+        ]
+    )
+    ->whereNumber('eventId')
+    ->name('activity-points.show');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Create or Update Activity Point Rules
+    |--------------------------------------------------------------------------
+    */
+
+    Route::put(
+        '/activity-points/{eventId}/rules',
+        [
+            ActivityPointController::class,
+            'updateRule'
+        ]
+    )
+    ->whereNumber('eventId')
+    ->name('activity-points.rules.update');
+
+});
+
 
 /*
 |--------------------------------------------------------------------------
@@ -1251,42 +1362,35 @@ Route::middleware([
 
 });
 
+
 /*
 |--------------------------------------------------------------------------
 | Profile Management
 |--------------------------------------------------------------------------
 */
 
-Route::middleware([
-    'auth'
-])
-->group(function () {
+Route::middleware(['auth'])->group(function () {
 
+    // Existing Profile Edit
+    Route::get('/profile', [
+        ProfileController::class,
+        'edit'
+    ])->name('profile.edit');
 
-    Route::get(
-        '/profile',
-        [
-            ProfileController::class,
-            'edit'
-        ]
-    )
-    ->name(
-        'profile.edit'
-    );
+    // Existing Profile Update
+    Route::patch('/profile', [
+        ProfileController::class,
+        'update'
+    ])->name('profile.update');
 
-
-    Route::patch(
-        '/profile',
-        [
-            ProfileController::class,
-            'update'
-        ]
-    )
-    ->name(
-        'profile.update'
-    );
+    // NEW: View Profile for All User Roles
+    Route::get('/my-profile', [
+        \App\Http\Controllers\MyProfileController::class,
+        'show'
+    ])->name('my-profile.show');
 
 });
+
 
 /*
 |--------------------------------------------------------------------------
@@ -1774,6 +1878,242 @@ Route::middleware([
     ->name(
         'student.evaluations.index'
     );
+
+});
+
+
+/*
+|--------------------------------------------------------------------------
+| Module #18 - Event Evaluation Analysis Management
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['auth', 'role:Department Staff'])->group(function () {
+
+    Route::get('/staff/evaluation-analysis',
+        [EventEvaluationAnalysisController::class, 'index'])
+        ->name('staff.evaluation-analysis.index');
+
+    Route::get('/staff/evaluation-analysis/{evaluationForm}',
+        [EventEvaluationAnalysisController::class, 'show'])
+        ->whereNumber('evaluationForm')
+        ->name('staff.evaluation-analysis.show');
+
+});
+
+
+/*
+|--------------------------------------------------------------------------
+| Module #10 - Attendance Exception & Manual Verification
+|--------------------------------------------------------------------------
+*/
+
+// Attendance Personnel
+Route::middleware(['auth', 'role:Attendance Personnel'])->group(function () {
+
+    Route::get('/my-attendance-exceptions',
+        [AttendanceExceptionController::class, 'personnelIndex'])
+        ->name('personnel.attendance-exceptions.index');
+
+    Route::post('/my-attendance-exceptions',
+        [AttendanceExceptionController::class, 'personnelStore'])
+        ->name('personnel.attendance-exceptions.store');
+
+});
+
+// Department Staff
+Route::middleware(['auth', 'role:Department Staff'])->group(function () {
+
+    Route::get('/staff/attendance-exceptions',
+        [AttendanceExceptionController::class, 'staffIndex'])
+        ->name('staff.attendance-exceptions.index');
+
+    Route::patch('/staff/attendance-exceptions/{attendanceException}/review',
+        [AttendanceExceptionController::class, 'staffReview'])
+        ->whereNumber('attendanceException')
+        ->name('staff.attendance-exceptions.review');
+
+});
+
+
+/*
+|--------------------------------------------------------------------------
+| Module #22 - Student Attendance Discrepancy Requests
+|--------------------------------------------------------------------------
+*/
+
+// Student Account
+Route::middleware(['auth', 'role:Student Account'])->group(function () {
+
+    Route::get('/student/attendance-discrepancies',
+        [AttendanceDiscrepancyController::class, 'studentIndex'])
+        ->name('student.attendance-discrepancies.index');
+
+    Route::post('/student/attendance-discrepancies',
+        [AttendanceDiscrepancyController::class, 'studentStore'])
+        ->name('student.attendance-discrepancies.store');
+
+});
+
+// Attendance Personnel
+Route::middleware(['auth', 'role:Attendance Personnel'])->group(function () {
+
+    Route::get('/my-attendance-discrepancies',
+        [AttendanceDiscrepancyController::class, 'personnelIndex'])
+        ->name('personnel.attendance-discrepancies.index');
+
+    Route::patch('/my-attendance-discrepancies/{attendanceDiscrepancy}/verify',
+        [AttendanceDiscrepancyController::class, 'personnelVerify'])
+        ->whereNumber('attendanceDiscrepancy')
+        ->name('personnel.attendance-discrepancies.verify');
+
+});
+
+// Department Staff
+Route::middleware(['auth', 'role:Department Staff'])->group(function () {
+
+    Route::get('/staff/attendance-discrepancies',
+        [AttendanceDiscrepancyController::class, 'staffIndex'])
+        ->name('staff.attendance-discrepancies.index');
+
+    Route::patch('/staff/attendance-discrepancies/{attendanceDiscrepancy}/review',
+        [AttendanceDiscrepancyController::class, 'staffReview'])
+        ->whereNumber('attendanceDiscrepancy')
+        ->name('staff.attendance-discrepancies.review');
+
+});
+
+
+/*
+|--------------------------------------------------------------------------
+| Module #23 - RFID Card Lifecycle Management
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['auth', 'role:Administrator'])->group(function () {
+
+    // View RFID Cards
+    Route::get('/rfid-cards',
+        [RfidCardLifecycleController::class, 'index'])
+        ->name('rfid-cards.index');
+
+    // Report Lost RFID Card
+    Route::post('/rfid-cards/{student}/lost',
+        [RfidCardLifecycleController::class, 'reportLost'])
+        ->whereNumber('student')
+        ->name('rfid-cards.lost');
+
+    // Replace RFID Card
+    Route::post('/rfid-cards/{student}/replace',
+        [RfidCardLifecycleController::class, 'replace'])
+        ->whereNumber('student')
+        ->name('rfid-cards.replace');
+
+    // Approve Imported RFID Card
+    Route::post('/rfid-cards/{student}/approve-imported',
+        [RfidCardLifecycleController::class, 'approveImported'])
+        ->whereNumber('student')
+        ->name('rfid-cards.approve');
+
+});
+
+/*
+|--------------------------------------------------------------------------
+| Module #9 - Student Attendance History
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['auth', 'role:Student Account'])->group(function () {
+
+    Route::get(
+        '/student/attendance-history',
+        [StudentAttendanceHistoryController::class, 'index']
+    )->name('student.attendance-history.index');
+
+});
+
+/*
+|--------------------------------------------------------------------------
+| Module #14 - Student Participation Progress Management
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['auth', 'role:Student Account'])->group(function () {
+
+    Route::get('/student/participation-progress',
+        [StudentParticipationProgressController::class, 'index'])
+        ->name('student.participation-progress.index');
+
+});
+
+/*
+|--------------------------------------------------------------------------
+| Module #15 - Student Participation Classification Management
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['auth', 'role:Department Staff'])->group(function () {
+
+    Route::get(
+        '/staff/participation-classifications',
+        [StudentParticipationClassificationController::class, 'index']
+    )->name('staff.participation-classifications.index');
+
+});
+
+/*
+|--------------------------------------------------------------------------
+| Module #19 - Attendance & Participation Reporting
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['auth', 'role:Department Staff'])->group(function () {
+
+    Route::get(
+        '/staff/reports',
+        [StaffAttendanceParticipationReportController::class, 'index']
+    )->name('staff.reports.index');
+
+});
+
+
+/*
+|--------------------------------------------------------------------------
+| Module #14 - Department Staff Participation Progress
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['auth', 'role:Department Staff'])->group(function () {
+
+    Route::get(
+        '/staff/participation-progress',
+        [StaffParticipationProgressController::class, 'index']
+    )->name('staff.participation-progress.index');
+
+});
+
+
+/*
+|--------------------------------------------------------------------------
+| DySign - Notification Management
+|--------------------------------------------------------------------------
+| Available to all authenticated user roles.
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['auth'])->group(function () {
+
+    // Mark a single notification as read.
+    Route::post(
+        '/notifications/{notification}/read',
+        [NotificationController::class, 'markAsRead']
+    )->name('notifications.read');
+
+    // Mark all notifications as read.
+    Route::post(
+        '/notifications/read-all',
+        [NotificationController::class, 'markAllAsRead']
+    )->name('notifications.read-all');
 
 });
 

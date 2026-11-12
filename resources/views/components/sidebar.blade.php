@@ -43,12 +43,14 @@
             x-data="{
                 user: {{
                     request()->routeIs('personnel.*')
+                    || request()->routeIs('roles.*')
                         ? 'true'
                         : 'false'
                 }},
 
                 student: {{
                     request()->routeIs('students.*')
+                    || request()->routeIs('rfid.cards.*')
                         ? 'true'
                         : 'false'
                 }},
@@ -58,6 +60,7 @@
                     || request()->routeIs('announcements.*')
                     || request()->routeIs('staff.excuse-requests.*')
                     || request()->routeIs('staff.evaluation-forms.*')
+                    || request()->routeIs('staff.evaluation-analysis.*')
                         ? 'true'
                         : 'false'
                 }},
@@ -87,10 +90,15 @@
 
             @php
 
-                $role =
-                    auth()->user()
-                        ->role
-                        ->role_name;
+                $currentUser = auth()->user();
+                $role = $currentUser?->role?->role_name;
+
+                // Optional future permission-aware student/attendance dual access.
+                // Do not use these links until matching backend middleware is implemented.
+                $showStudentNavigation = $role === 'Student Account'
+                    || (method_exists($currentUser, 'canAccessStudentPortal') && $currentUser->canAccessStudentPortal());
+                $showAttendanceNavigation = $role === 'Attendance Personnel'
+                    || (method_exists($currentUser, 'canAccessAttendancePortal') && $currentUser->canAccessAttendancePortal());
 
                 $link =
                     'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition hover:bg-white/10';
@@ -100,6 +108,44 @@
 
                 $active =
                     'bg-[#D4A017]/20 text-[#D4A017]';
+
+                // This is the permanent sidebar route contract for all four roles.
+                // Routes that do not exist yet are displayed as disabled "Soon" items.
+                // When the named GET route is implemented, the item automatically becomes clickable.
+                $sidebarExtras = [
+                    'admin_user' => [
+                        ['label' => 'Roles & Permissions', 'route' => 'roles.index', 'active' => 'roles.*', 'permission' => 'manage_personnel_accounts'], // #1
+                    ],
+
+                    'admin_student' => [
+                        ['label' => 'RFID Card Lifecycle', 'route' => 'rfid-cards.index', 'active' => 'rfid-cards.*'], // #23
+                    ],
+                    'staff_events' => [
+                        ['label' => 'Participant Registration', 'route' => 'events.registrations.index', 'active' => 'events.registrations.*'], // #7
+                        ['label' => 'Evaluation Analysis', 'route' => 'staff.evaluation-analysis.index', 'active' => 'staff.evaluation-analysis.*'], // #18
+                    ],
+                    'staff_attendance' => [
+                        ['label' => 'Attendance Exceptions', 'route' => 'staff.attendance-exceptions.index', 'active' => 'staff.attendance-exceptions.*'], // #10
+                        ['label' => 'Discrepancy Reviews', 'route' => 'staff.attendance-discrepancies.index', 'active' => 'staff.attendance-discrepancies.*'], // #22
+                    ],
+                    'staff_participation' => [
+                        ['label' => 'Participation Progress', 'route' => 'staff.participation-progress.index', 'active' => 'staff.participation-progress.*'], // #14
+                        ['label' => 'Participation Classification', 'route' => 'staff.participation-classifications.index', 'active' => 'staff.participation-classifications.*'], // #15
+                        ['label' => 'Attendance & Participation Reports', 'route' => 'staff.reports.index', 'active' => 'staff.reports.*'], // #19
+                    ],
+                    'personnel_attendance' => [
+                        ['label' => 'Attendance Exceptions', 'route' => 'personnel.attendance-exceptions.index', 'active' => 'personnel.attendance-exceptions.*'], // #10
+                        ['label' => 'Discrepancy Verification', 'route' => 'personnel.attendance-discrepancies.index', 'active' => 'personnel.attendance-discrepancies.*'], // #22
+                    ],
+                    'student_registration' => [
+                        ['label' => 'My Event Registrations', 'route' => 'student.registrations.index', 'active' => 'student.registrations.*'], // #7
+                    ],
+                    'student_progress' => [
+                        ['label' => 'My Attendance History', 'route' => 'student.attendance-history.index', 'active' => 'student.attendance-history.*'], // #9
+                        ['label' => 'My Participation Progress', 'route' => 'student.participation-progress.index', 'active' => 'student.participation-progress.*'], // #14
+                        ['label' => 'Attendance Discrepancies', 'route' => 'student.attendance-discrepancies.index', 'active' => 'student.attendance-discrepancies.*'], // #22
+                    ],
+                ];
 
             @endphp
 
@@ -218,6 +264,32 @@
 
 
 
+                    <!-- BEGIN planned module links: admin_user -->
+                    @foreach ($sidebarExtras['admin_user'] as $item)
+                        @if (!isset($item['permission']) || auth()->user()->hasPermission($item['permission']))
+                            @php
+                                $ready = \Illuminate\Support\Facades\Route::has($item['route']);
+                                $isActive = $ready && request()->routeIs($item['active']);
+                                $extraClass = $child;
+                            @endphp
+                            @if ($ready)
+                                <a href="{{ route($item['route']) }}"
+                                   class="{{ $extraClass }} {{ $isActive ? $active : '' }}">
+                                    <span class="text-[#D4A017]" aria-hidden="true">•</span>
+                                    <span class="flex-1">{{ $item['label'] }}</span>
+                                </a>
+                            @else
+                                <div class="{{ $extraClass }} cursor-not-allowed text-white/50 hover:bg-transparent"
+                                     title="This DySign module is not installed yet" aria-disabled="true">
+                                    <span class="text-[#D4A017]/60" aria-hidden="true">•</span>
+                                    <span class="flex-1">{{ $item['label'] }}</span>
+                                    <span class="rounded bg-white/10 px-2 py-0.5 text-[10px] font-medium">Soon</span>
+                                </div>
+                            @endif
+                        @endif
+                    @endforeach
+                    <!-- END planned module links: admin_user -->
+
                 </div>
 
 
@@ -295,6 +367,32 @@
                         Account Provisioning
 
                     </a>
+
+                    <!-- BEGIN planned module links: admin_student -->
+                    @foreach ($sidebarExtras['admin_student'] as $item)
+                        @if (!isset($item['permission']) || auth()->user()->hasPermission($item['permission']))
+                            @php
+                                $ready = \Illuminate\Support\Facades\Route::has($item['route']);
+                                $isActive = $ready && request()->routeIs($item['active']);
+                                $extraClass = $child;
+                            @endphp
+                            @if ($ready)
+                                <a href="{{ route($item['route']) }}"
+                                   class="{{ $extraClass }} {{ $isActive ? $active : '' }}">
+                                    <span class="text-[#D4A017]" aria-hidden="true">•</span>
+                                    <span class="flex-1">{{ $item['label'] }}</span>
+                                </a>
+                            @else
+                                <div class="{{ $extraClass }} cursor-not-allowed text-white/50 hover:bg-transparent"
+                                     title="This DySign module is not installed yet" aria-disabled="true">
+                                    <span class="text-[#D4A017]/60" aria-hidden="true">•</span>
+                                    <span class="flex-1">{{ $item['label'] }}</span>
+                                    <span class="rounded bg-white/10 px-2 py-0.5 text-[10px] font-medium">Soon</span>
+                                </div>
+                            @endif
+                        @endif
+                    @endforeach
+                    <!-- END planned module links: admin_student -->
 
                 </div>
 
@@ -442,28 +540,6 @@
 
                         </a>
 
-
-                        <a
-                            href="{{ route('attendance.alerts') }}"
-                            class="
-                                {{ $child }}
-                                {{
-                                    request()->routeIs(
-                                        'attendance.alerts'
-                                    )
-                                        ? $active
-                                        : ''
-                                }}
-                            "
-                        >
-
-                            <span class="text-[#D4A017]">
-                                •
-                            </span>
-
-                            Attendance Alerts
-
-                        </a>
 
                     @endif
 
@@ -929,9 +1005,125 @@
                     </a>
 
 
+                    <!-- BEGIN planned module links: staff_events -->
+                    @foreach ($sidebarExtras['staff_events'] as $item)
+                        @if (!isset($item['permission']) || auth()->user()->hasPermission($item['permission']))
+                            @php
+                                $ready = \Illuminate\Support\Facades\Route::has($item['route']);
+                                $isActive = $ready && request()->routeIs($item['active']);
+                                $extraClass = $child;
+                            @endphp
+                            @if ($ready)
+                                <a href="{{ route($item['route']) }}"
+                                   class="{{ $extraClass }} {{ $isActive ? $active : '' }}">
+                                    <span class="text-[#D4A017]" aria-hidden="true">•</span>
+                                    <span class="flex-1">{{ $item['label'] }}</span>
+                                </a>
+                            @else
+                                <div class="{{ $extraClass }} cursor-not-allowed text-white/50 hover:bg-transparent"
+                                     title="This DySign module is not installed yet" aria-disabled="true">
+                                    <span class="text-[#D4A017]/60" aria-hidden="true">•</span>
+                                    <span class="flex-1">{{ $item['label'] }}</span>
+                                    <span class="rounded bg-white/10 px-2 py-0.5 text-[10px] font-medium">Soon</span>
+                                </div>
+                            @endif
+                        @endif
+                    @endforeach
+                    <!-- END planned module links: staff_events -->
+
                 </div>
 
 
+
+                <!-- ================================================= -->
+                <!-- ACTIVITY POINT MANAGEMENT - MODULE #13 -->
+                <!-- ================================================= -->
+
+                <a
+                    href="{{ route('staff.activity-points.index') }}"
+                    class="
+                        {{ $link }}
+                        mt-3
+                        {{
+                            request()->routeIs('staff.activity-points.*')
+                                ? $active
+                                : ''
+                        }}
+                    "
+                >
+
+                    <svg
+                        class="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M8 21h8m-4-4v4M7 4h10v6a5 5 0 0 1-10 0V4zm10 1h4v3a4 4 0 0 1-4 4M7 5H3v3a4 4 0 0 0 4 4"
+                        />
+                    </svg>
+
+                    <span>
+                        Activity Point Management
+                    </span>
+
+                </a>
+
+
+                <!-- BEGIN planned module links: staff_attendance -->
+                @foreach ($sidebarExtras['staff_attendance'] as $item)
+                    @if (!isset($item['permission']) || auth()->user()->hasPermission($item['permission']))
+                        @php
+                            $ready = \Illuminate\Support\Facades\Route::has($item['route']);
+                            $isActive = $ready && request()->routeIs($item['active']);
+                            $extraClass = $link . ' mt-3';
+                        @endphp
+                        @if ($ready)
+                            <a href="{{ route($item['route']) }}"
+                               class="{{ $extraClass }} {{ $isActive ? $active : '' }}">
+                                <svg class="h-5 w-5 shrink-0 text-[#D4A017]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" /></svg>
+                                <span class="flex-1">{{ $item['label'] }}</span>
+                            </a>
+                        @else
+                            <div class="{{ $extraClass }} cursor-not-allowed text-white/50 hover:bg-transparent"
+                                 title="This DySign module is not installed yet" aria-disabled="true">
+                                <svg class="h-5 w-5 shrink-0 text-[#D4A017]/60" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" /></svg>
+                                <span class="flex-1">{{ $item['label'] }}</span>
+                                <span class="rounded bg-white/10 px-2 py-0.5 text-[10px] font-medium">Soon</span>
+                            </div>
+                        @endif
+                    @endif
+                @endforeach
+                <!-- END planned module links: staff_attendance -->
+
+                <!-- BEGIN planned module links: staff_participation -->
+                @foreach ($sidebarExtras['staff_participation'] as $item)
+                    @if (!isset($item['permission']) || auth()->user()->hasPermission($item['permission']))
+                        @php
+                            $ready = \Illuminate\Support\Facades\Route::has($item['route']);
+                            $isActive = $ready && request()->routeIs($item['active']);
+                            $extraClass = $link . ' mt-3';
+                        @endphp
+                        @if ($ready)
+                            <a href="{{ route($item['route']) }}"
+                               class="{{ $extraClass }} {{ $isActive ? $active : '' }}">
+                                <svg class="h-5 w-5 shrink-0 text-[#D4A017]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" /></svg>
+                                <span class="flex-1">{{ $item['label'] }}</span>
+                            </a>
+                        @else
+                            <div class="{{ $extraClass }} cursor-not-allowed text-white/50 hover:bg-transparent"
+                                 title="This DySign module is not installed yet" aria-disabled="true">
+                                <svg class="h-5 w-5 shrink-0 text-[#D4A017]/60" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" /></svg>
+                                <span class="flex-1">{{ $item['label'] }}</span>
+                                <span class="rounded bg-white/10 px-2 py-0.5 text-[10px] font-medium">Soon</span>
+                            </div>
+                        @endif
+                    @endif
+                @endforeach
+                <!-- END planned module links: staff_participation -->
 
                 <!-- ================================================= -->
                 <!-- PERSONNEL AVAILABILITY -->
@@ -1019,7 +1211,6 @@
 
                 </a>
 
-
             @endif
 
 
@@ -1028,7 +1219,7 @@
             <!-- ATTENDANCE PERSONNEL -->
             <!-- ================================================= -->
 
-            @if($role === 'Attendance Personnel')
+            @if($showAttendanceNavigation)
 
 
                 <!-- DASHBOARD -->
@@ -1105,12 +1296,38 @@
                     </svg>
 
                     <span>
-                        My Assigned Events
+                        My Assigned Events / RFID Scanning
                     </span>
 
                 </a>
 
 
+
+                <!-- BEGIN planned module links: personnel_attendance -->
+                @foreach ($sidebarExtras['personnel_attendance'] as $item)
+                    @if (!isset($item['permission']) || auth()->user()->hasPermission($item['permission']))
+                        @php
+                            $ready = \Illuminate\Support\Facades\Route::has($item['route']);
+                            $isActive = $ready && request()->routeIs($item['active']);
+                            $extraClass = $link . ' mt-3';
+                        @endphp
+                        @if ($ready)
+                            <a href="{{ route($item['route']) }}"
+                               class="{{ $extraClass }} {{ $isActive ? $active : '' }}">
+                                <svg class="h-5 w-5 shrink-0 text-[#D4A017]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" /></svg>
+                                <span class="flex-1">{{ $item['label'] }}</span>
+                            </a>
+                        @else
+                            <div class="{{ $extraClass }} cursor-not-allowed text-white/50 hover:bg-transparent"
+                                 title="This DySign module is not installed yet" aria-disabled="true">
+                                <svg class="h-5 w-5 shrink-0 text-[#D4A017]/60" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" /></svg>
+                                <span class="flex-1">{{ $item['label'] }}</span>
+                                <span class="rounded bg-white/10 px-2 py-0.5 text-[10px] font-medium">Soon</span>
+                            </div>
+                        @endif
+                    @endif
+                @endforeach
+                <!-- END planned module links: personnel_attendance -->
 
                 <!-- ================================================= -->
                 <!-- MY AVAILABILITY -->
@@ -1213,7 +1430,7 @@
             <!-- STUDENT ACCOUNT -->
             <!-- ================================================= -->
 
-            @if($role === 'Student Account')
+            @if($showStudentNavigation)
 
 
                 <!-- ================================================= -->
@@ -1253,6 +1470,32 @@
                 </a>
 
 
+
+                <!-- BEGIN planned module links: student_registration -->
+                @foreach ($sidebarExtras['student_registration'] as $item)
+                    @if (!isset($item['permission']) || auth()->user()->hasPermission($item['permission']))
+                        @php
+                            $ready = \Illuminate\Support\Facades\Route::has($item['route']);
+                            $isActive = $ready && request()->routeIs($item['active']);
+                            $extraClass = $link . ' mt-3';
+                        @endphp
+                        @if ($ready)
+                            <a href="{{ route($item['route']) }}"
+                               class="{{ $extraClass }} {{ $isActive ? $active : '' }}">
+                                <svg class="h-5 w-5 shrink-0 text-[#D4A017]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" /></svg>
+                                <span class="flex-1">{{ $item['label'] }}</span>
+                            </a>
+                        @else
+                            <div class="{{ $extraClass }} cursor-not-allowed text-white/50 hover:bg-transparent"
+                                 title="This DySign module is not installed yet" aria-disabled="true">
+                                <svg class="h-5 w-5 shrink-0 text-[#D4A017]/60" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" /></svg>
+                                <span class="flex-1">{{ $item['label'] }}</span>
+                                <span class="rounded bg-white/10 px-2 py-0.5 text-[10px] font-medium">Soon</span>
+                            </div>
+                        @endif
+                    @endif
+                @endforeach
+                <!-- END planned module links: student_registration -->
 
                 <!-- ================================================= -->
                 <!-- MY ANNOUNCEMENTS -->
@@ -1307,6 +1550,32 @@
                 </a>
 
 
+
+                <!-- BEGIN planned module links: student_progress -->
+                @foreach ($sidebarExtras['student_progress'] as $item)
+                    @if (!isset($item['permission']) || auth()->user()->hasPermission($item['permission']))
+                        @php
+                            $ready = \Illuminate\Support\Facades\Route::has($item['route']);
+                            $isActive = $ready && request()->routeIs($item['active']);
+                            $extraClass = $link . ' mt-3';
+                        @endphp
+                        @if ($ready)
+                            <a href="{{ route($item['route']) }}"
+                               class="{{ $extraClass }} {{ $isActive ? $active : '' }}">
+                                <svg class="h-5 w-5 shrink-0 text-[#D4A017]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" /></svg>
+                                <span class="flex-1">{{ $item['label'] }}</span>
+                            </a>
+                        @else
+                            <div class="{{ $extraClass }} cursor-not-allowed text-white/50 hover:bg-transparent"
+                                 title="This DySign module is not installed yet" aria-disabled="true">
+                                <svg class="h-5 w-5 shrink-0 text-[#D4A017]/60" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" /></svg>
+                                <span class="flex-1">{{ $item['label'] }}</span>
+                                <span class="rounded bg-white/10 px-2 py-0.5 text-[10px] font-medium">Soon</span>
+                            </div>
+                        @endif
+                    @endif
+                @endforeach
+                <!-- END planned module links: student_progress -->
 
                 <!-- ================================================= -->
                 <!-- MY EXCUSE REQUESTS -->
