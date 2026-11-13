@@ -76,8 +76,10 @@ class AttendanceExceptionController extends Controller
             throw ValidationException::withMessages(['student_number' => 'Active student not found.']);
         }
 
-        if (!EventEligibleStudent::where('event_id', $event->event_id)->where('student_id', $student->student_id)->exists()) {
-            throw ValidationException::withMessages(['student_number' => 'This student is not on the event eligibility list.']);
+        if (!$this->isExpectedParticipant((int) $event->event_id, (int) $student->student_id)) {
+            throw ValidationException::withMessages([
+                'student_number' => 'Student must be Required or actively registered for this Optional event.',
+            ]);
         }
 
         // Lock the student so two concurrent personnel requests cannot create duplicate pending claims.
@@ -146,8 +148,12 @@ class AttendanceExceptionController extends Controller
 
         $data = $request->validate([
             'decision' => ['required', Rule::in(['Approved', 'Rejected'])],
-            'attendance_status' => ['required_if:decision,Approved', Rule::in(['Present', 'Late'])],
-            'review_notes' => ['required_if:decision,Rejected', 'nullable', 'string', 'max:2000'],
+            // A real, staff-verified checkout time is required for a final attendance status.
+            'verified_time_out' => ['required_if:decision,Approved', 'nullable', 'date'],
+            'review_notes' => [
+                'required', 'string', 'max:2000',
+                ...($request->input('decision') === 'Approved' ? ['min:10'] : []),
+            ],
         ]);
 
         DB::transaction(function () use ($attendanceException, $departmentId, $data, $request) {
@@ -163,26 +169,44 @@ class AttendanceExceptionController extends Controller
 
             if ($data['decision'] === 'Approved') {
                 $event->syncScheduledStatus();
-                $this->validateObservedAt($event, $exception->observed_at);
+                // Eloquent may interpret stored DATETIME values in app timezone;
+                // treat the previously recorded local observation as a PH wall-clock time.
+                $observedAt = Carbon::parse(
+                    $exception->observed_at->format('Y-m-d H:i:s'),
+                    self::TZ
+                );
+                $this->validateObservedAt($event, $observedAt);
+
+                // Approval requires independently verified checkout evidence.
+                $verifiedTimeOut = Carbon::parse($data['verified_time_out'], self::TZ);
+                $this->validateVerifiedTimeOut($event, $observedAt, $verifiedTimeOut);
 
                 $student = Student::where('student_id', $exception->student_id)->lockForUpdate()->firstOrFail();
                 if ($student->status !== 'Active') {
                     throw ValidationException::withMessages(['decision' => 'The student is no longer active.']);
                 }
-                if (!EventEligibleStudent::where('event_id', $event->event_id)->where('student_id', $student->student_id)->exists()) {
-                    throw ValidationException::withMessages(['decision' => 'Student is no longer eligible for this event.']);
+                if (!$this->isExpectedParticipant((int) $event->event_id, (int) $student->student_id)) {
+                    throw ValidationException::withMessages([
+                        'decision' => 'Student must be Required or actively registered for this Optional event.',
+                    ]);
                 }
                 if (AttendanceRecord::where('event_id', $event->event_id)->where('student_id', $student->student_id)->exists()) {
                     throw ValidationException::withMessages(['decision' => 'An RFID/manual attendance record already exists. Reject this request if it is no longer needed.']);
                 }
 
+                [$startsAt] = $this->eventWindow($event);
+                $finalStatus = $observedAt->greaterThan($startsAt) ? 'Late' : 'Present';
+
+                // A clearly identified manual record, not a fabricated RFID scan.
+                // The approving staff member is recorded on attendance_exceptions.reviewed_by.
                 $attendance = AttendanceRecord::create([
                     'event_id' => $event->event_id,
                     'student_id' => $student->student_id,
                     'rfid_identifier' => 'MANUAL-EXCEPTION-' . $exception->exception_id,
-                    'time_in' => $exception->observed_at,
-                    'status' => $data['attendance_status'],
-                    'scanned_by' => $request->user()->user_id,
+                    'time_in' => $observedAt,
+                    'time_out' => $verifiedTimeOut,
+                    'status' => $finalStatus,
+                    'scanned_by' => null,
                 ]);
                 $attendanceId = $attendance->attendance_id;
             }
@@ -199,21 +223,86 @@ class AttendanceExceptionController extends Controller
         return back()->with('success', 'Exception reviewed. ' . ($data['decision'] === 'Approved' ? 'Manual attendance was recorded.' : 'Request was rejected.'));
     }
 
-    /** The observation must be within the event schedule and cannot be in the future. */
+    /**
+     * A personnel observation is evidence of Time In, not an RFID scan.
+     * Time In is valid from 1 hour before event start through scheduled event end.
+     */
     private function validateObservedAt(Event $event, Carbon $observedAt): void
     {
-        if ($event->status === 'Cancelled') {
-            throw ValidationException::withMessages(['observed_at' => 'Cancelled events cannot be manually verified.']);
-        }
-
-        $date = Carbon::parse($event->event_date)->format('Y-m-d');
-        $start = Carbon::parse($date . ' ' . $event->start_time, self::TZ);
-        $end = Carbon::parse($date . ' ' . $event->end_time, self::TZ);
-
-        if ($observedAt->lt($start) || $observedAt->gt($end) || $observedAt->gt(Carbon::now(self::TZ))) {
+        if (strtolower((string) $event->status) === 'cancelled' || strtolower((string) $event->status) === 'canceled') {
             throw ValidationException::withMessages([
-                'observed_at' => 'Observation time must be during the event schedule and must not be in the future.',
+                'observed_at' => 'Cancelled events cannot be manually verified.',
             ]);
         }
+
+        [$startsAt, $endsAt] = $this->eventWindow($event);
+        $checkInOpens = $startsAt->copy()->subHour();
+
+        if ($observedAt->lt($checkInOpens)
+            || $observedAt->gt($endsAt)
+            || $observedAt->gt(Carbon::now(self::TZ))) {
+            throw ValidationException::withMessages([
+                'observed_at' => 'Verified Time In must be between 1 hour before event start and event end, and not in the future (PH time).',
+            ]);
+        }
+    }
+
+    /** Staff must verify Time Out within event end through 1 hour after end. */
+    private function validateVerifiedTimeOut(Event $event, Carbon $timeIn, Carbon $timeOut): void
+    {
+        [, $endsAt] = $this->eventWindow($event);
+        $checkOutCloses = $endsAt->copy()->addHour();
+
+        if ($timeOut->lte($timeIn)
+            || $timeOut->lt($endsAt)
+            || $timeOut->gt($checkOutCloses)
+            || $timeOut->gt(Carbon::now(self::TZ))) {
+            throw ValidationException::withMessages([
+                'verified_time_out' => 'Verified Time Out must be after Time In, between event end and 1 hour after event end, and not in the future (PH time).',
+            ]);
+        }
+    }
+
+    /** @return array{0: Carbon, 1: Carbon} Scheduled event start/end (supports overnight events). */
+    private function eventWindow(Event $event): array
+    {
+        $date = Carbon::parse($event->event_date, self::TZ)->format('Y-m-d');
+        $startTime = Carbon::parse($event->start_time, self::TZ)->format('H:i:s');
+        $endTime = Carbon::parse($event->end_time, self::TZ)->format('H:i:s');
+
+        $startsAt = Carbon::parse("{$date} {$startTime}", self::TZ);
+        $endsAt = Carbon::parse("{$date} {$endTime}", self::TZ);
+        if ($endsAt->lessThan($startsAt)) {
+            $endsAt->addDay();
+        }
+
+        return [$startsAt, $endsAt];
+    }
+
+    /** Expected = Required, or Optional with active registration. */
+    private function isExpectedParticipant(int $eventId, int $studentId): bool
+    {
+        $eligibility = EventEligibleStudent::query()
+            ->where('event_id', $eventId)
+            ->where('student_id', $studentId)
+            ->first();
+
+        if (!$eligibility) {
+            return false;
+        }
+
+        if ($eligibility->participation_type === 'Required') {
+            return true;
+        }
+
+        if ($eligibility->participation_type !== 'Optional') {
+            return false;
+        }
+
+        return DB::table('event_registrations')
+            ->where('event_id', $eventId)
+            ->where('student_id', $studentId)
+            ->where('status', 'Registered')
+            ->exists();
     }
 }

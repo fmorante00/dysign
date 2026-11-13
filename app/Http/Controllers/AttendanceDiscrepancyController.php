@@ -207,8 +207,50 @@ class AttendanceDiscrepancyController extends Controller
             $afterStatus = null;
             $afterTime = null;
             $attendanceId = $item->attendance_id;
+
             if ($data['decision'] === 'Approved') {
+
+                // Require confirmation from Attendance Personnel.
+                if ($item->verification_status !== 'Confirmed') {
+                    throw ValidationException::withMessages([
+                        'decision' => 'Attendance Personnel must confirm this discrepancy before approval.',
+                    ]);
+                }
+
+
+                // Temporarily block corrections that could create
+                // Present or Late without a verified Time Out.
+                if ($item->request_type === 'Missing Attendance') {
+                    throw ValidationException::withMessages([
+                        'decision' => 'Missing Attendance approval requires verified Time In and Time Out. This correction workflow is not yet enabled.',
+                    ]);
+                }
+
+                if ($item->request_type === 'Incorrect Status') {
+                    $existingAttendance = AttendanceRecord::query()
+                        ->where('event_id', $item->event_id)
+                        ->where('student_id', $item->student_id)
+                        ->first();
+
+                    if (!$existingAttendance || !$existingAttendance->time_out) {
+                        throw ValidationException::withMessages([
+                            'decision' => 'Cannot approve Present or Late without a recorded Time Out.',
+                        ]);
+                    }
+                }
+
+
+                // Temporarily prevent unsafe Time In corrections.
+                // Verified Time In/Time Out correction will be
+                // implemented in a separate workflow.
+                if ($item->request_type === 'Incorrect Time') {
+                    throw ValidationException::withMessages([
+                        'decision' => 'Incorrect Time approval is temporarily disabled until verified Time In and Time Out correction is supported.',
+                    ]);
+                }
+
                 $event->syncScheduledStatus();
+  
                 if ($event->status !== 'Completed') {
                     throw ValidationException::withMessages(['decision' => 'Only completed events can be corrected.']);
                 }

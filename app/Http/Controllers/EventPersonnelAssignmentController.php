@@ -883,13 +883,7 @@ class EventPersonnelAssignmentController extends Controller
                             ) {
 
                                 $departmentQuery
-                                    ->where(
-                                        'department_id',
-                                        $departmentId
-                                    )
-                                    ->orWhereNull(
-                                        'department_id'
-                                    );
+                                    ->where('department_id', $departmentId);
 
                             }
                         );

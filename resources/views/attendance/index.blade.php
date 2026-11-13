@@ -66,6 +66,27 @@
             )
             ->take(5);
 
+        $latestStatus = $latestAttendance?->status;
+        $latestHasTimeOut = (bool) $latestAttendance?->time_out;
+        $latestStatusLabel = match (true) {
+            $latestStatus === 'Checked In' => 'Checked In — Awaiting Time Out',
+            $latestStatus === 'Present' && $latestHasTimeOut => 'Time Out Confirmed — Present',
+            $latestStatus === 'Late' && $latestHasTimeOut => 'Time Out Confirmed — Late',
+            $latestStatus === 'Present' => 'Present — Time Out Not Recorded (Legacy)',
+            $latestStatus === 'Late' => 'Late — Time Out Not Recorded (Legacy)',
+            $latestStatus === 'Incomplete' => 'Incomplete Attendance',
+            $latestStatus === 'Absent' => 'Absent',
+            $latestStatus === 'Excused' => 'Excused',
+            default => 'Attendance Recorded',
+        };
+        $latestStatusColor = match ($latestStatus) {
+            'Present', 'Excused' => '#008A36',
+            'Late' => '#B45309',
+            'Incomplete', 'Absent' => '#B91C1C',
+            'Checked In' => '#101064',
+            default => '#64748B',
+        };
+
     @endphp
 
 
@@ -1117,6 +1138,62 @@
         }
 
 
+        /* RFID lifecycle labels and transient scan feedback */
+        .scan-notice {
+            display: none;
+            margin: 0 0 14px;
+            padding: 12px 16px;
+            border: 1px solid #CBD5E1;
+            border-radius: 14px;
+            background: #F1F5F9;
+            color: #101064;
+            font-size: 14px;
+            font-weight: 600;
+            line-height: 1.5;
+        }
+        .scan-notice.show { display: block; }
+        .scan-notice[data-tone="success"] {
+            background: #ECFDF5; border-color: #A7F3D0; color: #047857;
+        }
+        .scan-notice[data-tone="warning"] {
+            background: #FFFBEB; border-color: #FDE68A; color: #92400E;
+        }
+        .scan-notice[data-tone="error"] {
+            background: #FEF2F2; border-color: #FECACA; color: #B91C1C;
+        }
+        .scan-time-details {
+            margin-top: 9px;
+            color: #64748B;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .arrival-details {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            flex-shrink: 0;
+            gap: 4px;
+            text-align: right;
+        }
+        .arrival-status {
+            display: inline-block;
+            padding: 3px 9px;
+            border: 1px solid #E2E8F0;
+            border-radius: 999px;
+            background: #F8FAFC;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .arrival-time-extra {
+            color: #64748B;
+            font-size: 11px;
+        }
+        @media (max-width: 480px) {
+            .arrival-row { padding: 15px 13px; gap: 10px; }
+            .arrival-name { max-width: 140px; }
+            .arrival-details { max-width: 132px; }
+        }
+
         .waiting {
 
             width:
@@ -2038,7 +2115,7 @@
                     <div>
 
                         <div class="section-label">
-                            Latest Check-In
+                            Latest RFID Scan
                         </div>
 
                         <h2 class="section-title">
@@ -2060,6 +2137,13 @@
 
                 </div>
 
+
+                <div
+                    id="scan_notice"
+                    class="scan-notice"
+                    role="status"
+                    aria-live="polite"
+                ></div>
 
                 <div
                     id="latest_scan"
@@ -2135,7 +2219,7 @@
                             <div class="min-w-0">
 
                                 <div class="student-kicker">
-                                    Checked In Student
+                                    Latest RFID Activity
                                 </div>
 
 
@@ -2167,8 +2251,13 @@
                                 </div>
 
 
-                                <div class="attendance-confirmed">
-                                    ✓ Attendance Confirmed
+                                <div class="attendance-confirmed" style="color: {{ $latestStatusColor }}">
+                                    {{ $latestStatusLabel }}
+                                </div>
+                                <div class="scan-time-details">
+                                    Time In: {{ $latestAttendance->time_in ? \Carbon\Carbon::parse($latestAttendance->time_in)->format('h:i A') : '—' }}
+                                    &nbsp; • &nbsp;
+                                    Time Out: {{ $latestAttendance->time_out ? \Carbon\Carbon::parse($latestAttendance->time_out)->format('h:i A') : 'Not recorded' }}
                                 </div>
 
                             </div>
@@ -2207,7 +2296,7 @@
                 <div class="arrivals-heading">
 
                     <div class="section-label">
-                        Recent Arrivals
+                        Recent Attendance
                     </div>
 
                     <h2 class="section-title">
@@ -2303,16 +2392,20 @@
                             </div>
 
 
-                            <div class="arrival-time">
-
-                                {{
-                                    $record->time_in
-                                        ? \Carbon\Carbon::parse(
-                                            $record->time_in
-                                        )->format('h:i A')
-                                        : '—'
-                                }}
-
+                            <div class="arrival-details">
+                                <span class="arrival-status" style="color: {{ $record->status === 'Present' ? '#047857' : ($record->status === 'Late' ? '#B45309' : ($record->status === 'Checked In' ? '#101064' : '#B91C1C')) }}">
+                                    {{ $record->status }}
+                                </span>
+                                <div class="arrival-time">
+                                    In: {{ $record->time_in ? \Carbon\Carbon::parse($record->time_in)->format('h:i A') : '—' }}
+                                </div>
+                                @if($record->time_out)
+                                    <div class="arrival-time-extra">
+                                        Out: {{ \Carbon\Carbon::parse($record->time_out)->format('h:i A') }}
+                                    </div>
+                                @else
+                                    <div class="arrival-time-extra">No Time Out</div>
+                                @endif
                             </div>
 
                         </div>
@@ -2396,8 +2489,8 @@
 
 
         <div class="closed-text">
-            The scheduled event has ended.
-            No additional RFID attendance records can be accepted.
+            The RFID Time In and Time Out windows are now closed.
+            No additional scans are accepted.
             Returning to the event page...
         </div>
 
@@ -2651,6 +2744,53 @@ document.addEventListener(
 
         }
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | STATUS FROM DATABASE — NEVER ASSUME FIRST SCAN IS PRESENT
+        |--------------------------------------------------------------------------
+        */
+        function statusPresentation(record) {
+            const status = String(record?.status ?? 'Unknown');
+            const hasTimeOut = Boolean(record?.time_out);
+            if (status === 'Checked In') {
+                return { label: 'Checked In — Awaiting Time Out', shortLabel: 'Checked In', color: '#101064' };
+            }
+            if (status === 'Present') {
+                return hasTimeOut
+                    ? { label: 'Time Out Confirmed — Present', shortLabel: 'Present', color: '#047857' }
+                    : { label: 'Present — Time Out Not Recorded (Legacy)', shortLabel: 'Present (Legacy)', color: '#B45309' };
+            }
+            if (status === 'Late') {
+                return hasTimeOut
+                    ? { label: 'Time Out Confirmed — Late', shortLabel: 'Late', color: '#B45309' }
+                    : { label: 'Late — Time Out Not Recorded (Legacy)', shortLabel: 'Late (Legacy)', color: '#B45309' };
+            }
+            if (status === 'Incomplete') {
+                return { label: 'Incomplete Attendance', shortLabel: 'Incomplete', color: '#B91C1C' };
+            }
+            if (status === 'Absent') {
+                return { label: 'Absent', shortLabel: 'Absent', color: '#B91C1C' };
+            }
+            if (status === 'Excused') {
+                return { label: 'Excused', shortLabel: 'Excused', color: '#047857' };
+            }
+            return { label: status, shortLabel: status, color: '#64748B' };
+        }
+
+        let noticeTimer = null;
+        let lastDirectScanAt = 0;
+        function showScanNotice(message, tone = 'warning') {
+            const el = document.getElementById('scan_notice');
+            if (!el) return;
+            el.textContent = String(message ?? 'Scan could not be processed.');
+            el.dataset.tone = tone;
+            el.classList.add('show');
+            clearTimeout(noticeTimer);
+            noticeTimer = setTimeout(() => {
+                el.classList.remove('show');
+            }, 8000);
+        }
 
         /*
         |--------------------------------------------------------------------------
@@ -2923,17 +3063,9 @@ document.addEventListener(
                 |--------------------------------------------------------------------------
                 */
 
-                if (
-                    response.status
-                    === 401
-                    || response.status
-                    === 403
-                ) {
-
+                if (response.status === 401) {
                     window.location.reload();
-
                     return;
-
                 }
 
 
@@ -2973,24 +3105,27 @@ document.addEventListener(
                 }
 
 
-                if (
-                    data.record
-                ) {
-
-                    updateLatest(
-                        data.record
-                    );
-
+                if (data.record) {
+                    updateLatest(data.record);
                 }
 
-
-                if (
-                    response.ok
-                    && data.success
-                ) {
-
+                if (response.ok && data.success) {
+                    lastDirectScanAt = Date.now();
+                    const label = data.code === 'checkout_recorded'
+                        ? 'Time Out Recorded'
+                        : 'Time In Recorded';
+                    showScanNotice(label + ' — ' + (data.message ?? 'Scan successful.'), 'success');
                     await refreshAttendance();
-
+                } else {
+                    const knownWarning = [
+                        'checkout_not_open',
+                        'already_recorded',
+                        'checkin_missing'
+                    ].includes(data.code);
+                    showScanNotice(
+                        data.message ?? 'RFID scan was not accepted.',
+                        knownWarning ? 'warning' : 'error'
+                    );
                 }
 
             }
@@ -3133,20 +3268,14 @@ document.addEventListener(
                 }
 
 
-                if (
-                    data.records
-                    && data.records.length
-                ) {
-
-                    updateLatest(
-                        data.records[0]
-                    );
-
-
-                    updateFeed(
-                        data.records
-                    );
-
+                if (Array.isArray(data.records)) {
+                    if (data.records.length) {
+                        // Leave direct check-in / check-out feedback visible briefly.
+                        if (Date.now() - lastDirectScanAt > 15000) {
+                            updateLatest(data.records[0]);
+                        }
+                    }
+                    updateFeed(data.records);
                 }
 
             }
@@ -3214,6 +3343,10 @@ document.addEventListener(
                     ? `Year ${record.year_level}`
                     : '';
 
+            const presentation = statusPresentation(record);
+            const timeInLabel = record.time_display ?? '—';
+            const timeOutLabel = record.time_out_display ?? 'Not recorded';
+
 
             const photoMarkup =
                 record.photo_url
@@ -3268,7 +3401,7 @@ document.addEventListener(
                         <div class="min-w-0">
 
                             <div class="student-kicker">
-                                Checked In Student
+                                Latest RFID Activity
                             </div>
 
 
@@ -3303,8 +3436,12 @@ document.addEventListener(
                             </div>
 
 
-                            <div class="attendance-confirmed">
-                                ✓ Attendance Confirmed
+                            <div class="attendance-confirmed" style="color: ${presentation.color}">
+                                ${escapeHtml(presentation.label)}
+                            </div>
+                            <div class="scan-time-details">
+                                Time In: ${escapeHtml(timeInLabel)} &nbsp; • &nbsp;
+                                Time Out: ${escapeHtml(timeOutLabel)}
                             </div>
 
                         </div>
@@ -3351,6 +3488,10 @@ document.addEventListener(
             container.innerHTML =
                 '';
 
+            if (recent.length === 0) {
+                container.innerHTML = '<div class="arrivals-empty">No attendance scans yet.</div>';
+                return;
+            }
 
             recent.forEach(
                 function (
@@ -3366,6 +3507,7 @@ document.addEventListener(
                         record.last_name
                         ?? '';
 
+                    const presentation = statusPresentation(record);
 
                     const initial =
                         firstName
@@ -3429,13 +3571,16 @@ document.addEventListener(
                                 </div>
 
 
-                                <div class="arrival-time">
-
-                                    ${escapeHtml(
-                                        record.time_display
-                                        ?? '—'
-                                    )}
-
+                                <div class="arrival-details">
+                                    <span class="arrival-status" style="color: ${presentation.color}">
+                                        ${escapeHtml(presentation.shortLabel)}
+                                    </span>
+                                    <div class="arrival-time">
+                                        In: ${escapeHtml(record.time_display ?? '—')}
+                                    </div>
+                                    <div class="arrival-time-extra">
+                                        ${record.time_out ? 'Out: ' + escapeHtml(record.time_out_display ?? '—') : 'No Time Out'}
+                                    </div>
                                 </div>
 
                             </div>

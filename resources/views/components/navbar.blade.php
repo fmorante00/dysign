@@ -47,7 +47,7 @@
     text-[#101064]
 ">
 
-DySign Administration Portal
+{{ auth()->user()?->role?->role_name === 'Student Account' ? 'DySign Student Portal' : 'DySign Administration Portal' }}
 
 </h1>
 

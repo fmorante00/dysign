@@ -9,14 +9,13 @@ use Illuminate\View\View;
 
 class StudentAttendanceHistoryController extends Controller
 {
+    /**
+     * Student attendance history: read-only view of persisted attendance records.
+     * Absent and Excused records must be created by the appropriate official
+     * finalization/approval workflow, never inferred by this controller.
+     */
     public function index(Request $request): View
     {
-        /*
-        |--------------------------------------------------------------------------
-        | Authenticated Student
-        |--------------------------------------------------------------------------
-        */
-
         $student = $request->user()->student;
 
         abort_unless(
@@ -27,87 +26,86 @@ class StudentAttendanceHistoryController extends Controller
 
         $studentId = $student->student_id;
 
-        /*
-        |--------------------------------------------------------------------------
-        | Attendance Status Filter
-        |--------------------------------------------------------------------------
-        */
+        // Match the six statuses supported by the attendance_records migration.
+        $statuses = [
+            'Checked In',
+            'Present',
+            'Late',
+            'Incomplete',
+            'Absent',
+            'Excused',
+        ];
 
         $validated = $request->validate([
             'status' => [
                 'nullable',
-                Rule::in(['all', 'Present', 'Late']),
+                Rule::in(array_merge(['all'], $statuses)),
             ],
         ]);
 
         $selectedStatus = $validated['status'] ?? 'all';
 
-        /*
-        |--------------------------------------------------------------------------
-        | Attendance Summary
-        |--------------------------------------------------------------------------
-        */
+        // Aggregate by status in one query, independent of the selected filter.
+        $statusCounts = array_fill_keys($statuses, 0);
 
+        $rows = AttendanceRecord::query()
+            ->where('student_id', $studentId)
+            ->select('status')
+            ->selectRaw('COUNT(*) AS total')
+            ->groupBy('status')
+            ->get();
+
+        foreach ($rows as $row) {
+            if (array_key_exists($row->status, $statusCounts)) {
+                $statusCounts[$row->status] = (int) $row->total;
+            }
+        }
+
+        // The number of saved rows, NOT the number of events the student
+        // was expected to attend. Missing scans are not made Absent here.
         $totalAttendance = AttendanceRecord::query()
             ->where('student_id', $studentId)
             ->count();
 
-        $totalPresent = AttendanceRecord::query()
-            ->where('student_id', $studentId)
-            ->where('status', 'Present')
-            ->count();
+        $totalCheckedIn = $statusCounts['Checked In'];
+        $totalPresent = $statusCounts['Present'];
+        $totalLate = $statusCounts['Late'];
+        $totalIncomplete = $statusCounts['Incomplete'];
+        $totalAbsent = $statusCounts['Absent'];
+        $totalExcused = $statusCounts['Excused'];
 
-        $totalLate = AttendanceRecord::query()
-            ->where('student_id', $studentId)
-            ->where('status', 'Late')
-            ->count();
-
-        $onTimeRate = $totalAttendance > 0
-            ? round(
-                ($totalPresent / $totalAttendance) * 100,
-                1
-            )
+        // Count the share marked Present among records finalized as Present/Late.
+        // Do not include temporary Checked In or Incomplete/Absent/Excused rows.
+        $completedCount = $totalPresent + $totalLate;
+        $onTimeRate = $completedCount > 0
+            ? round(($totalPresent / $completedCount) * 100, 1)
             : 0;
-
-        /*
-        |--------------------------------------------------------------------------
-        | Student Attendance History
-        |--------------------------------------------------------------------------
-        |
-        | Students can only view their own attendance records.
-        |
-        */
 
         $attendanceRecords = AttendanceRecord::query()
             ->with('event')
             ->where('student_id', $studentId)
             ->when(
                 $selectedStatus !== 'all',
-                function ($query) use ($selectedStatus) {
-                    $query->where('status', $selectedStatus);
-                }
+                fn ($query) => $query->where('status', $selectedStatus)
             )
             ->orderByDesc('time_in')
+            ->orderByDesc('attendance_id')
             ->paginate(10)
             ->withQueryString();
 
-        /*
-        |--------------------------------------------------------------------------
-        | Return View
-        |--------------------------------------------------------------------------
-        */
-
-        return view(
-            'student.attendance-history.index',
-            compact(
-                'student',
-                'attendanceRecords',
-                'selectedStatus',
-                'totalAttendance',
-                'totalPresent',
-                'totalLate',
-                'onTimeRate'
-            )
-        );
+        return view('student.attendance-history.index', compact(
+            'student',
+            'attendanceRecords',
+            'selectedStatus',
+            'statusCounts',
+            'totalAttendance',
+            'totalCheckedIn',
+            'totalPresent',
+            'totalLate',
+            'totalIncomplete',
+            'totalAbsent',
+            'totalExcused',
+            'onTimeRate'
+        ));
     }
 }

@@ -1,4 +1,14 @@
 <x-admin-layout>
+    {{-- Student-only campus photo hero: matches DySign event pages. --}}
+    <style>
+        .dy-student-campus-hero {
+            background-image:
+                linear-gradient(100deg, rgba(12, 13, 79, .96) 0%, rgba(16, 16, 100, .90) 54%, rgba(16, 16, 100, .73) 100%),
+                url('{{ asset('images/school.jpg') }}');
+            background-size: cover;
+            background-position: center;
+        }
+    </style>
     @php
         $fullName = trim(collect([
             $student->first_name,
@@ -15,7 +25,7 @@
     <div class="min-w-0 space-y-7 pb-8">
 
         {{-- Welcome / Identity Banner --}}
-        <section class="relative overflow-hidden rounded-[28px] bg-[#101064] px-6 py-8 text-white shadow-sm sm:px-9 sm:py-10">
+        <section class="dy-student-campus-hero relative overflow-hidden rounded-[28px] bg-[#101064] px-6 py-8 text-white shadow-sm sm:px-9 sm:py-10">
             <div class="pointer-events-none absolute -right-16 -top-24 h-80 w-80 rounded-full border border-white/10"></div>
             <div class="pointer-events-none absolute -right-4 -top-12 h-60 w-60 rounded-full border border-white/10"></div>
             <div class="pointer-events-none absolute bottom-0 right-0 h-28 w-80 bg-gradient-to-l from-[#D4A017]/20 to-transparent"></div>
@@ -29,7 +39,7 @@
                         Welcome, {{ $student->first_name }}!
                     </h1>
                     <p class="mt-3 max-w-xl text-sm leading-6 text-white/75">
-                        Your personal overview of your student information and recorded event attendance.
+                        Your calendar, student information, and event attendance at a glance.
                     </p>
                     <div class="mt-6 inline-flex max-w-full items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-medium text-white/90">
                         <svg class="h-4 w-4 shrink-0 text-[#E7C75B]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -115,6 +125,9 @@
                 <p class="mt-4 text-xs text-slate-500">RFID enrollment status for event check-in</p>
             </div>
         </section>
+
+        {{-- Student event calendar: displays current student's eligible and recorded events --}}
+        <x-student-event-calendar :student="$student" />
 
         <div class="grid min-w-0 gap-6 xl:grid-cols-3">
             {{-- Personal Info --}}

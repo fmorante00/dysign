@@ -39,9 +39,9 @@ class AttendanceController extends Controller
         if (!$this->canScan($event)) {
 
             $message =
-                $event->status === 'Upcoming'
-                    ? 'Attendance scanning will open automatically at the scheduled event start time.'
-                    : 'Attendance scanning is no longer available for this event.';
+                $event->status === 'Cancelled'
+                    ? 'Attendance scanning is not available for a cancelled event.'
+                    : 'Scanner access opens one hour before the event and ends one hour after event completion.';
 
 
             return redirect()
@@ -111,402 +111,189 @@ class AttendanceController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    public function scan(
-        Request $request,
-        $event
-    ) {
+    /**
+     * RFID scan policy:
+     * - First scan: from start minus 1 hour until strictly before event end.
+     * - Second scan: from event end until end plus 1 hour (inclusive).
+     * - Required students: automatically eligible, no registration row needed.
+     * - Optional students: must have an active registration for the event.
+     * - The first scan is NEVER Present/Late; it remains Checked In.
+     */
+    public function scan(Request $request, $event)
+    {
+        $event = $this->assignedEvent($event);
+        $rfid = trim((string) $request->input('rfid_identifier', ''));
 
-        $event =
-            $this->assignedEvent(
-                $event
-            );
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Event Status Check
-        |--------------------------------------------------------------------------
-        */
-
-        if (!$this->canScan($event)) {
-
-            return response()->json([
-
-                'success' =>
-                    false,
-
-                'code' =>
-                    'event_closed',
-
-                'message' =>
-                    $event->status === 'Upcoming'
-                        ? 'Attendance has not opened yet.'
-                        : 'The event has ended. Attendance scanning is now closed.',
-
-                'event_status' =>
-                    $event->status,
-
-            ], 409);
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | RFID Validation
-        |--------------------------------------------------------------------------
-        |
-        | The current reader returns exactly 10 numeric characters.
-        | RFID is treated as a string so leading zeroes are preserved.
-        |
-        */
-
-        $rfid = trim(
-
-            (string) $request->input(
-                'rfid_identifier',
-                ''
-            )
-
+        $validator = Validator::make(
+            ['rfid_identifier' => $rfid],
+            ['rfid_identifier' => ['required', 'string', 'regex:/^\\d{10}$/']],
+            ['rfid_identifier.regex' => 'The RFID must contain exactly 10 digits.']
         );
-
-
-        $validator =
-            Validator::make(
-
-                [
-                    'rfid_identifier' =>
-                        $rfid,
-                ],
-
-                [
-                    'rfid_identifier' => [
-                        'required',
-                        'string',
-                        'regex:/^\d{10}$/',
-                    ],
-                ],
-
-                [
-                    'rfid_identifier.regex' =>
-                        'The RFID must contain exactly 10 digits.',
-                ]
-
-            );
-
-
         if ($validator->fails()) {
-
             return response()->json([
-
-                'success' =>
-                    false,
-
-                'code' =>
-                    'invalid_rfid',
-
-                'message' =>
-                    $validator
-                        ->errors()
-                        ->first(
-                            'rfid_identifier'
-                        ),
-
+                'success' => false,
+                'code' => 'invalid_rfid',
+                'message' => $validator->errors()->first('rfid_identifier'),
             ], 422);
         }
 
+        return DB::transaction(function () use ($event, $rfid) {
+            // Serialize status/attendance mutations and retain event assignment authorization.
+            $event = Event::where('event_id', $event->event_id)->lockForUpdate()->firstOrFail();
+            $event = $this->syncEventStatus($event);
+            $now = Carbon::now('Asia/Manila');
+            $window = $this->attendanceWindow($event);
+            $phase = $this->scanPhase($event, $now);
 
-        /*
-        |--------------------------------------------------------------------------
-        | Record Attendance
-        |--------------------------------------------------------------------------
-        |
-        | The student row is locked while checking/creating attendance.
-        | This helps prevent two scanner requests for the same student
-        | from creating duplicate records at the same time.
-        |
-        */
+            if (!$window || $phase === 'closed') {
+                return response()->json([
+                    'success' => false,
+                    'code' => 'event_closed',
+                    'message' => 'RFID attendance is not available. Check the event time and check-in / check-out window.',
+                    'event_status' => $event->status,
+                ], 409);
+            }
 
-        return DB::transaction(
-            function () use (
-                $event,
-                $rfid
-            ) {
+            $student = Student::where('rfid_identifier', $rfid)->lockForUpdate()->first();
+            if (!$student) {
+                return response()->json([
+                    'success' => false,
+                    'code' => 'student_not_found',
+                    'message' => 'Student not found.',
+                ], 404);
+            }
 
-                /*
-                |--------------------------------------------------------------------------
-                | Re-check Event Time Before Saving
-                |--------------------------------------------------------------------------
-                |
-                | This prevents a scan from being accepted if the event ends
-                | between the first request check and the database insert.
-                |
-                */
+            if (!\App\Support\DepartmentAccess::studentBelongsToDepartment($student, $event->department)) {
+                return response()->json([
+                    'success' => false,
+                    'code' => 'student_outside_event_department',
+                    'message' => 'This student is not authorized for the organizing department.',
+                ], 403);
+            }
+            // Preserve the existing active-card lifecycle check (lost/replaced cards stay invalid).
+            $hasActiveCard = DB::table('rfid_card_assignments')
+                ->where('student_id', $student->student_id)
+                ->where('rfid_identifier', $rfid)
+                ->where('status', 'Active')
+                ->exists();
+            if (!$hasActiveCard) {
+                return response()->json([
+                    'success' => false,
+                    'code' => 'rfid_card_inactive',
+                    'message' => 'This RFID card is lost, replaced, or not activated.',
+                ], 403);
+            }
 
-                $event->refresh();
+            if ($student->status !== 'Active') {
+                return response()->json([
+                    'success' => false,
+                    'code' => 'student_inactive',
+                    'message' => 'This student account is inactive.',
+                ], 422);
+            }
 
-                $event =
-                    $this->syncEventStatus(
-                        $event
-                    );
+            $existing = AttendanceRecord::with('student')
+                ->where('event_id', $event->event_id)
+                ->where('student_id', $student->student_id)
+                ->lockForUpdate()
+                ->first();
 
-
-                if (!$this->canScan($event)) {
-
-                    return response()->json([
-
-                        'success' =>
-                            false,
-
-                        'code' =>
-                            'event_closed',
-
-                        'message' =>
-                            'The event has ended. Attendance scanning is now closed.',
-
-                        'event_status' =>
-                            $event->status,
-
-                    ], 409);
-                }
-
-
-                $student =
-                    Student::where(
-                        'rfid_identifier',
-                        $rfid
-                    )
-                    ->lockForUpdate()
-                    ->first();
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | RFID Not Registered
-                |--------------------------------------------------------------------------
-                */
-
-                if (!$student) {
-
-                    return response()->json([
-
-                        'success' =>
-                            false,
-
-                        'code' =>
-                            'student_not_found',
-
-                        'message' =>
-                            'Student not found.',
-
-                    ], 404);
-                }
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | RFID Card Lifecycle Security
-                |--------------------------------------------------------------------------
-                |
-                | The student's current RFID must have a matching Active card
-                | lifecycle assignment. Lost, replaced, unactivated, or imported
-                | cards without a matching assignment are rejected.
-                | The students table may retain an old RFID UID after a card is lost.
-                |
-                */
-
-                $activeRfidAssignment = DB::table('rfid_card_assignments')
-                    ->where('student_id', $student->student_id)
-                    ->where('rfid_identifier', $rfid)
-                    ->where('status', 'Active')
-                    ->exists();
-
-                if (!$activeRfidAssignment) {
+            // A second scan can finalize only a new Checked In record, during the checkout window.
+            if ($existing) {
+                if ($existing->status !== 'Checked In' || $existing->time_out !== null) {
                     return response()->json([
                         'success' => false,
-                        'code' => 'rfid_card_inactive',
-                        'message' => 'This RFID card is lost, replaced, or not activated.',
-                    ], 403);
+                        'code' => 'already_recorded',
+                        'message' => 'Attendance already has a final or historical status. Please use the discrepancy process for corrections.',
+                        'student' => $this->studentPayload($student),
+                        'attendance' => $this->attendancePayload($existing),
+                        'record' => $this->recordPayload($existing),
+                    ], 409);
                 }
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | Inactive Student
-                |--------------------------------------------------------------------------
-                */
-
-                if (
-                    $student->status
-                    !== 'Active'
-                ) {
-
+                if ($phase !== 'check_out') {
                     return response()->json([
-
-                        'success' =>
-                            false,
-
-                        'code' =>
-                            'student_inactive',
-
-                        'message' =>
-                            'This student account is inactive.',
-
-                    ], 422);
-                }
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | Duplicate Attendance Check
-                |--------------------------------------------------------------------------
-                */
-
-                $existing =
-                    AttendanceRecord::with(
-                        'student'
-                    )
-                    ->where(
-                        'event_id',
-                        $event->event_id
-                    )
-                    ->where(
-                        'student_id',
-                        $student->student_id
-                    )
-                    ->first();
-
-
-                if ($existing) {
-
-                    return response()->json([
-
-                        'success' =>
-                            false,
-
-                        'code' =>
-                            'already_recorded',
-
-                        'message' =>
-                            'Student already recorded.',
-
-                        'student' =>
-                            $this->studentPayload(
-                                $student
-                            ),
-
-                        'attendance' =>
-                            $this->attendancePayload(
-                                $existing
-                            ),
-
-                        'record' =>
-                            $this->recordPayload(
-                                $existing
-                            ),
-
+                        'success' => false,
+                        'code' => 'checkout_not_open',
+                        'message' => 'Time In is already recorded. Time Out starts at the scheduled event end.',
+                        'student' => $this->studentPayload($student),
+                        'attendance' => $this->attendancePayload($existing),
+                        'record' => $this->recordPayload($existing),
                     ], 409);
                 }
 
-
-                /*
-                |--------------------------------------------------------------------------
-                | Create Attendance Record
-                |--------------------------------------------------------------------------
-                */
-
-                $attendance =
-                    AttendanceRecord::create([
-
-                        'event_id' =>
-                            $event->event_id,
-
-                        'student_id' =>
-                            $student->student_id,
-
-                        'rfid_identifier' =>
-                            $rfid,
-
-                        'time_in' =>
-                            now(),
-
-                        'status' =>
-                            'Present',
-
-                        'scanned_by' =>
-                            auth()
-                                ->user()
-                                ->user_id,
-
-                    ]);
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | Attach Student For Response
-                |--------------------------------------------------------------------------
-                */
-
-                $attendance->setRelation(
-                    'student',
-                    $student
-                );
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | Updated Attendance Count
-                |--------------------------------------------------------------------------
-                */
-
-                $attendanceCount =
-                    AttendanceRecord::where(
-                        'event_id',
-                        $event->event_id
-                    )
-                    ->count();
-
+                $checkInAt = Carbon::parse($existing->time_in)->setTimezone('Asia/Manila');
+                $existing->time_out = $now;
+                $existing->status = $checkInAt->gt($window['start']) ? 'Late' : 'Present';
+                $existing->save();
+                $existing->setRelation('student', $student);
 
                 return response()->json([
-
-                    'success' =>
-                        true,
-
-                    'code' =>
-                        'attendance_recorded',
-
-                    'message' =>
-                        'Attendance recorded.',
-
-                    /*
-                     * Kept for compatibility with the current scanner page.
-                     */
-
-                    'student' =>
-                        $this->studentPayload(
-                            $student
-                        ),
-
-                    'attendance' =>
-                        $this->attendancePayload(
-                            $attendance
-                        ),
-
-                    /*
-                     * Normalized response used by the live feed.
-                     */
-
-                    'record' =>
-                        $this->recordPayload(
-                            $attendance
-                        ),
-
-                    'total_count' =>
-                        $attendanceCount,
-
-                ], 201);
-
+                    'success' => true,
+                    'code' => 'checkout_recorded',
+                    'message' => 'Time Out recorded. Attendance is now '.$existing->status.'.',
+                    'student' => $this->studentPayload($student),
+                    'attendance' => $this->attendancePayload($existing),
+                    'record' => $this->recordPayload($existing),
+                    'total_count' => AttendanceRecord::where('event_id', $event->event_id)->count(),
+                ]);
             }
-        );
+
+            if ($phase === 'check_out') {
+                return response()->json([
+                    'success' => false,
+                    'code' => 'checkin_missing',
+                    'message' => 'Time Out cannot be recorded without an earlier Time In.',
+                ], 422);
+            }
+
+            // Eligibility is checked for the first scan, before creating an attendance record.
+            $participationType = DB::table('event_eligible_students')
+                ->where('event_id', $event->event_id)
+                ->where('student_id', $student->student_id)
+                ->value('participation_type');
+            if (!in_array($participationType, ['Required', 'Optional'], true)) {
+                return response()->json([
+                    'success' => false,
+                    'code' => 'not_eligible',
+                    'message' => 'This student is not included in the eligible participants for this event.',
+                ], 403);
+            }
+
+            if ($participationType === 'Optional') {
+                $registered = DB::table('event_registrations')
+                    ->where('event_id', $event->event_id)
+                    ->where('student_id', $student->student_id)
+                    ->where('status', 'Registered')
+                    ->exists();
+                if (!$registered) {
+                    return response()->json([
+                        'success' => false,
+                        'code' => 'registration_required',
+                        'message' => 'Optional event: an active registration is required before check-in.',
+                    ], 403);
+                }
+            }
+
+            $attendance = AttendanceRecord::create([
+                'event_id' => $event->event_id,
+                'student_id' => $student->student_id,
+                'rfid_identifier' => $rfid,
+                'time_in' => $now,
+                'status' => 'Checked In',
+                'scanned_by' => auth()->user()->user_id,
+            ]);
+            $attendance->setRelation('student', $student);
+
+            return response()->json([
+                'success' => true,
+                'code' => 'checkin_recorded',
+                'message' => 'Time In recorded. Attendance is pending valid Time Out.',
+                'student' => $this->studentPayload($student),
+                'attendance' => $this->attendancePayload($attendance),
+                'record' => $this->recordPayload($attendance),
+                'total_count' => AttendanceRecord::where('event_id', $event->event_id)->count(),
+            ], 201);
+        });
     }
 
 
@@ -627,6 +414,7 @@ class AttendanceController extends Controller
                 'event_id',
                 $event
             )
+            ->where('department_id', $user->department_id)
             ->whereHas(
                 'assignments',
                 function ($query) use (
@@ -709,13 +497,55 @@ class AttendanceController extends Controller
     |
     */
 
-    private function canScan(
-        Event $event
-    ): bool {
+    /**
+     * A fixed, timezone-aware event attendance window (same date start/end).
+     * Event status may be Upcoming or Completed while scans are still valid.
+     */
+    private function attendanceWindow(Event $event): ?array
+    {
+        if ($event->status === 'Cancelled' || !$event->event_date || !$event->start_time || !$event->end_time) {
+            return null;
+        }
 
-        return
-            $event->status
-            === 'Ongoing';
+        $date = Carbon::parse($event->event_date)->format('Y-m-d');
+        $start = Carbon::createFromFormat(
+            'Y-m-d H:i:s',
+            $date.' '.Carbon::parse($event->start_time)->format('H:i:s'),
+            'Asia/Manila'
+        );
+        $end = Carbon::createFromFormat(
+            'Y-m-d H:i:s',
+            $date.' '.Carbon::parse($event->end_time)->format('H:i:s'),
+            'Asia/Manila'
+        );
+
+        // Do not silently invent an overnight attendance policy for invalid schedules.
+        if ($end->lte($start)) {
+            return null;
+        }
+        return [
+            'start' => $start,
+            'end' => $end,
+            'checkin_open' => $start->copy()->subHour(),
+            'checkout_close' => $end->copy()->addHour(),
+        ];
+    }
+
+    private function scanPhase(Event $event, Carbon $at): string
+    {
+        $window = $this->attendanceWindow($event);
+        if (!$window || $at->lt($window['checkin_open']) || $at->gt($window['checkout_close'])) {
+            return 'closed';
+        }
+        if ($at->lt($window['end'])) {
+            return 'check_in';
+        }
+        return 'check_out';
+    }
+
+    private function canScan(Event $event): bool
+    {
+        return $this->scanPhase($event, Carbon::now('Asia/Manila')) !== 'closed';
     }
 
 
@@ -806,6 +636,14 @@ class AttendanceController extends Controller
             'status' =>
                 $attendance->status,
 
+            'time_out' => $attendance->time_out
+                ? Carbon::parse($attendance->time_out)->toIso8601String()
+                : null,
+
+            'time_out_display' => $attendance->time_out
+                ? Carbon::parse($attendance->time_out)->format('h:i A')
+                : null,
+
         ];
     }
 
@@ -885,6 +723,14 @@ class AttendanceController extends Controller
 
             'status' =>
                 $record->status,
+
+            'time_out' => $record->time_out
+                ? Carbon::parse($record->time_out)->toIso8601String()
+                : null,
+
+            'time_out_display' => $record->time_out
+                ? Carbon::parse($record->time_out)->format('h:i A')
+                : null,
 
         ];
     }

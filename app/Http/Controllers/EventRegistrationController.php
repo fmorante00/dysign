@@ -202,16 +202,15 @@ class EventRegistrationController extends Controller
 
             $this->ensureRegistrationOpen($event);
 
-            $isEligible = EventEligibleStudent::query()
-                ->where('event_id', $event->event_id)
-                ->where('student_id', $student->student_id)
-                ->exists();
-
-            if ($student->status !== 'Active' || !$isEligible) {
+            if ($student->status !== 'Active') {
                 throw ValidationException::withMessages([
-                    'registration' => 'The selected student is not eligible for this event.',
+                    'registration' => 'Only active students can register for an event.',
                 ]);
             }
+
+            // Required participants already belong to the expected attendance roster.
+            // Only Optional participants may create an event registration record.
+            $this->ensureOptionalParticipation((int) $event->event_id, (int) $student->student_id);
 
             $registration = EventRegistration::firstOrNew([
                 'event_id' => $event->event_id,
@@ -237,6 +236,10 @@ class EventRegistrationController extends Controller
 
     private function cancelRegistration(Event $event, int $studentId): void
     {
+        // A Required student's eligibility is managed by staff, not by cancellation.
+        // Also prevents cancelling a legacy registration if participation became Required.
+        $this->ensureOptionalParticipation((int) $event->event_id, $studentId);
+
         // Do not erase a registration after attendance has been recorded.
         if (AttendanceRecord::query()
             ->where('event_id', $event->event_id)
@@ -263,6 +266,31 @@ class EventRegistrationController extends Controller
             'status' => 'Cancelled',
             'cancelled_at' => now(),
         ]);
+    }
+
+    /**
+     * Required = included by eligibility, without a registration row.
+     * Optional = may register/cancel, subject to the existing event-time rules.
+     * Attendance is NOT created here; the RFID workflow remains authoritative.
+     */
+    private function ensureOptionalParticipation(int $eventId, int $studentId): void
+    {
+        $eligibility = EventEligibleStudent::query()
+            ->where('event_id', $eventId)
+            ->where('student_id', $studentId)
+            ->first();
+
+        if (!$eligibility) {
+            throw ValidationException::withMessages([
+                'registration' => 'The selected student is not eligible for this event.',
+            ]);
+        }
+
+        if ($eligibility->participation_type !== 'Optional') {
+            throw ValidationException::withMessages([
+                'registration' => 'Attendance is required for this event. You are already included in the participant list; no registration or cancellation is needed.',
+            ]);
+        }
     }
 
     private function ensureRegistrationOpen(Event $event): void

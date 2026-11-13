@@ -243,6 +243,7 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 
 
+    @include('partials.student-mobile-support')
 </body>
 
 </html>
