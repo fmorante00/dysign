@@ -92,9 +92,14 @@
     |--------------------------------------------------------------------------
     */
 
+    $checkInOpensAt = $startsAt->copy()->subHour();
+    $checkOutClosesAt = $endsAt->copy()->addHour();
+
     $canScan =
-        $effectiveStatus
-        === 'Ongoing';
+        $effectiveStatus !== 'Cancelled'
+        && $now->greaterThanOrEqualTo($checkInOpensAt)
+        && $now->lessThanOrEqualTo($checkOutClosesAt);
+
 
 
     /*

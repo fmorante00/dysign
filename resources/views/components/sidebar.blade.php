@@ -1453,263 +1453,131 @@
 
 
             <!-- ================================================= -->
-            <!-- STUDENT ACCOUNT -->
+            <!-- STUDENT ACCOUNT - ORGANIZED NAVIGATION -->
             <!-- ================================================= -->
-
             @if($showStudentNavigation)
+                @php
+                    // Student-only presentation data. Backend routes/permissions stay unchanged.
+                    // Keep both discrepancy workflows visible until they are consolidated in the backend.
+                    $studentNavGroups = [
+                        [
+                            'heading' => null,
+                            'items' => [
+                                [
+                                    'label' => 'Dashboard',
+                                    'route' => 'dashboard',
+                                    'active' => 'dashboard',
+                                    'icon' => 'M3 12l9-9 9 9M5 10v10h14V10',
+                                ],
+                            ],
+                        ],
+                        [
+                            'heading' => 'EVENTS & ACTIVITIES',
+                            'items' => [
+                                [
+                                    'label' => 'My Event Registrations',
+                                    'route' => 'student.registrations.index',
+                                    'active' => 'student.registrations.*',
+                                    'icon' => 'M8 3v4m8-4v4M4 10h16M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zm4 10 2 2 4-4',
+                                ],
+                                [
+                                    'label' => 'My Evaluations',
+                                    'route' => 'student.evaluations.index',
+                                    'active' => 'student.evaluations.*',
+                                    'icon' => 'M9 3h6l1 2h3v16H5V5h3l1-2zm-1 11 3 3 5-6',
+                                ],
+                            ],
+                        ],
+                        [
+                            'heading' => 'ATTENDANCE & CONCERNS',
+                            'items' => [
+                                [
+                                    'label' => 'My Attendance History',
+                                    'route' => 'student.attendance-history.index',
+                                    'active' => 'student.attendance-history.*',
+                                    'icon' => 'M3 5h18v16H3zM7 3v4m10-4v4M3 10h18m-13 5 2 2 4-4',
+                                ],
+                                [
+                                    'label' => 'Attendance Discrepancies',
+                                    'route' => 'student.attendance-discrepancies.index',
+                                    'active' => 'student.attendance-discrepancies.*',
+                                    'icon' => 'M12 9v4m0 4h.01M10.3 3.9 2 18h19l-8-18a2 2 0 0 0-3.7 0z',
+                                ],
+                                [
+                                    'label' => 'Attendance Review Requests',
+                                    'route' => 'attendance-discrepancies.student.index',
+                                    'active' => 'attendance-discrepancies.student.*',
+                                    'icon' => 'M6 3h9l4 4v14H6zM14 3v5h5M9 12h7m-7 4h5',
+                                ],
+                                [
+                                    'label' => 'My Excuse Requests',
+                                    'route' => 'student.excuse-requests.index',
+                                    'active' => 'student.excuse-requests.*',
+                                    'icon' => 'M6 3h9l4 4v14H6zM14 3v5h5M9 12h6m-6 4h6',
+                                ],
+                            ],
+                        ],
+                        [
+                            'heading' => 'INFORMATION & PROGRESS',
+                            'items' => [
+                                [
+                                    'label' => 'My Announcements',
+                                    'route' => 'student.announcements.index',
+                                    'active' => 'student.announcements.*',
+                                    'icon' => 'M3 10v4h4l10 5V5L7 10H3zm4 4 2 6',
+                                ],
+                                [
+                                    'label' => 'My Participation Progress',
+                                    'route' => 'student.participation-progress.index',
+                                    'active' => 'student.participation-progress.*',
+                                    'icon' => 'M4 20V4M4 20h16M8 16v-4m4 4V8m4 8V5',
+                                ],
+                            ],
+                        ],
+                    ];
+                @endphp
 
-
-                <!-- ================================================= -->
-                <!-- DASHBOARD -->
-                <!-- ================================================= -->
-
-                <a
-                    href="{{ route('dashboard') }}"
-                    class="
-                        {{ $link }}
-                        {{
-                            request()->routeIs('dashboard')
-                                ? $active
-                                : ''
-                        }}
-                    "
-                >
-
-                    <svg
-                        class="h-5 w-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            d="M3 12l9-9 9 9M5 10v10h14V10"
-                        />
-                    </svg>
-
-                    <span>
-                        Dashboard
-                    </span>
-
-                </a>
-
-
-
-                <!-- BEGIN planned module links: student_registration -->
-                @foreach ($sidebarExtras['student_registration'] as $item)
-                    @if (!isset($item['permission']) || auth()->user()->hasPermission($item['permission']))
-                        @php
-                            $ready = \Illuminate\Support\Facades\Route::has($item['route']);
-                            $isActive = $ready && request()->routeIs($item['active']);
-                            $extraClass = $link . ' mt-3';
-                        @endphp
-                        @if ($ready)
-                            <a href="{{ route($item['route']) }}"
-                               class="{{ $extraClass }} {{ $isActive ? $active : '' }}">
-                                <svg class="h-5 w-5 shrink-0 text-[#D4A017]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" /></svg>
-                                <span class="flex-1">{{ $item['label'] }}</span>
-                            </a>
-                        @else
-                            <div class="{{ $extraClass }} cursor-not-allowed text-white/50 hover:bg-transparent"
-                                 title="This DySign module is not installed yet" aria-disabled="true">
-                                <svg class="h-5 w-5 shrink-0 text-[#D4A017]/60" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" /></svg>
-                                <span class="flex-1">{{ $item['label'] }}</span>
-                                <span class="rounded bg-white/10 px-2 py-0.5 text-[10px] font-medium">Soon</span>
-                            </div>
-                        @endif
+                @foreach($studentNavGroups as $group)
+                    @if($group['heading'])
+                        <div class="mt-6 mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.14em] text-white/55">
+                            {{ $group['heading'] }}
+                        </div>
                     @endif
+
+                    <div class="space-y-1">
+                        @foreach($group['items'] as $item)
+                            @php
+                                $studentRouteReady = \Illuminate\Support\Facades\Route::has($item['route']);
+                                $studentIsActive = $studentRouteReady && request()->routeIs($item['active']);
+                                $studentLinkClass = $link . ($studentIsActive ? ' ' . $active : '');
+                            @endphp
+                            @if($studentRouteReady)
+                                <a href="{{ route($item['route']) }}"
+                                   class="{{ $studentLinkClass }}"
+                                   @if($studentIsActive) aria-current="page" @endif>
+                                    <svg class="h-5 w-5 shrink-0 {{ $studentIsActive ? 'text-[#D4A017]' : 'text-white/75' }}"
+                                         fill="none" stroke="currentColor" stroke-width="1.8"
+                                         stroke-linecap="round" stroke-linejoin="round"
+                                         viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="{{ $item['icon'] }}" />
+                                    </svg>
+                                    <span class="min-w-0 flex-1 leading-snug">{{ $item['label'] }}</span>
+                                </a>
+                            @else
+                                <div class="{{ $link }} cursor-not-allowed text-white/45 hover:bg-transparent"
+                                     aria-disabled="true" title="This DySign module is not installed yet">
+                                    <svg class="h-5 w-5 shrink-0 text-white/35" fill="none" stroke="currentColor"
+                                         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                                         viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="{{ $item['icon'] }}" />
+                                    </svg>
+                                    <span class="min-w-0 flex-1 leading-snug">{{ $item['label'] }}</span>
+                                    <span class="rounded bg-white/10 px-1.5 py-0.5 text-[10px]">Soon</span>
+                                </div>
+                            @endif
+                        @endforeach
+                    </div>
                 @endforeach
-                <!-- END planned module links: student_registration -->
-
-                <!-- ================================================= -->
-                <!-- MY ANNOUNCEMENTS -->
-                <!-- ================================================= -->
-
-                <a
-                    href="{{ route('student.announcements.index') }}"
-                    class="
-                        {{ $link }}
-                        mt-3
-                        {{
-                            request()->routeIs(
-                                'student.announcements.*'
-                            )
-                                ? $active
-                                : ''
-                        }}
-                    "
-                >
-
-                    <svg
-                        class="h-5 w-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            d="
-                                M8 10h8
-                                m-8 4h5
-                                M5 5h14
-                                a2 2 0 012 2
-                                v10
-                                a2 2 0 01-2 2
-                                H9
-                                l-4 3
-                                v-3
-                                a2 2 0 01-2-2
-                                V7
-                                a2 2 0 012-2
-                            "
-                        />
-                    </svg>
-
-                    <span>
-                        My Announcements
-                    </span>
-
-                </a>
-
-
-
-                <!-- BEGIN planned module links: student_progress -->
-                @foreach ($sidebarExtras['student_progress'] as $item)
-                    @if (!isset($item['permission']) || auth()->user()->hasPermission($item['permission']))
-                        @php
-                            $ready = \Illuminate\Support\Facades\Route::has($item['route']);
-                            $isActive = $ready && request()->routeIs($item['active']);
-                            $extraClass = $link . ' mt-3';
-                        @endphp
-                        @if ($ready)
-                            <a href="{{ route($item['route']) }}"
-                               class="{{ $extraClass }} {{ $isActive ? $active : '' }}">
-                                <svg class="h-5 w-5 shrink-0 text-[#D4A017]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" /></svg>
-                                <span class="flex-1">{{ $item['label'] }}</span>
-                            </a>
-                        @else
-                            <div class="{{ $extraClass }} cursor-not-allowed text-white/50 hover:bg-transparent"
-                                 title="This DySign module is not installed yet" aria-disabled="true">
-                                <svg class="h-5 w-5 shrink-0 text-[#D4A017]/60" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" /></svg>
-                                <span class="flex-1">{{ $item['label'] }}</span>
-                                <span class="rounded bg-white/10 px-2 py-0.5 text-[10px] font-medium">Soon</span>
-                            </div>
-                        @endif
-                    @endif
-                @endforeach
-                <!-- END planned module links: student_progress -->
-
-                <!-- ================================================= -->
-                <!-- MY EXCUSE REQUESTS -->
-                <!-- ================================================= -->
-
-                <a
-                    href="{{ route('student.excuse-requests.index') }}"
-                    class="
-                        {{ $link }}
-                        mt-3
-                        {{
-                            request()->routeIs(
-                                'student.excuse-requests.*'
-                            )
-                                ? $active
-                                : ''
-                        }}
-                    "
-                >
-
-                    <svg
-                        class="h-5 w-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            d="M9 12h6m-6 4h6M9 8h2m-5-5h9l3 3v15H6V3z"
-                        />
-                    </svg>
-
-                    <span>
-                        My Excuse Requests
-                    </span>
-
-                </a>
-
-
-
-                <!-- ================================================= -->
-                <!-- MY EVALUATIONS -->
-                <!-- ================================================= -->
-
-                <a
-                    href="{{ route('student.evaluations.index') }}"
-                    class="
-                        {{ $link }}
-                        mt-3
-                        {{
-                            request()->routeIs(
-                                'student.evaluations.*'
-                            )
-                                ? $active
-                                : ''
-                        }}
-                    "
-                >
-
-                    <svg
-                        class="h-5 w-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"
-                        />
-                    </svg>
-
-                    <span>
-                        My Evaluations
-                    </span>
-
-                </a>
-
-
-                <!-- ================================================= -->
-                <!-- MODULE 22 - STUDENT ATTENDANCE DISCREPANCIES -->
-                <!-- ================================================= -->
-
-                <a
-                    href="{{ route('attendance-discrepancies.student.index') }}"
-                    class="{{ $link }} mt-3 {{ request()->routeIs('attendance-discrepancies.student.*') ? $active : '' }}"
-                >
-                    <svg
-                        class="h-5 w-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        aria-hidden="true"
-                    >
-                        <path
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            d="M9 12h6m-6 4h6M5 3h14v18H5V3z"
-                        />
-                    </svg>
-                    <span>Attendance Review Requests</span>
-                </a>
-
-
             @endif
 
 

@@ -8,21 +8,20 @@ class AttendanceRecord extends Model
 {
     protected $primaryKey = 'attendance_id';
 
-
     protected $fillable = [
         'event_id',
         'student_id',
         'rfid_identifier',
         'time_in',
+        'time_out',
         'status',
         'scanned_by',
     ];
 
-
     protected $casts = [
         'time_in' => 'datetime',
+        'time_out' => 'datetime',
     ];
-
 
     public function event()
     {
@@ -33,7 +32,6 @@ class AttendanceRecord extends Model
         );
     }
 
-
     public function student()
     {
         return $this->belongsTo(
@@ -42,7 +40,6 @@ class AttendanceRecord extends Model
             'student_id'
         );
     }
-
 
     public function scanner()
     {
