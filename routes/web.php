@@ -1160,6 +1160,10 @@ Route::middleware([
     |
     */
 
+    // Same Administrator-only group as the attendance report page.
+    Route::get('/reports/attendance/export', [AttendanceReportController::class, 'export'])
+        ->name('reports.attendance.export');
+
     Route::get(
         '/reports/participation',
         [
@@ -1170,6 +1174,13 @@ Route::middleware([
     ->name(
         'reports.participation'
     );
+
+
+    // Export the same filtered participation report with selectable CSV columns.
+    Route::get(
+        '/reports/participation/export',
+        [ParticipationReportController::class, 'export']
+    )->name('reports.participation.export');
 
 
     /*

@@ -24,6 +24,14 @@
 
     }
 
+    /* Student-inspired university portal finishes; no custom JS required. */
+    .pr-hero-ring { position:absolute; width:290px; height:290px; border:1px solid rgba(255,255,255,.16); border-radius:50%; pointer-events:none; }
+    .pr-summary-grid { gap:14px; border:0 !important; background:transparent !important; overflow:visible !important; }
+    .pr-summary-grid > div { border:1px solid #e2e8f0 !important; border-radius:18px; background:#fff; box-shadow:0 3px 12px rgba(15,23,42,.035); }
+    .pr-registry { border-radius:20px; box-shadow:0 6px 24px rgba(15,23,42,.035); }
+    .pr-filter-input { width:100%; min-height:42px; border:1px solid #dbe3f0; border-radius:11px; padding:0 13px; font-size:13px; color:#101064; background:#fff; outline:none; }
+    .pr-filter-input:focus { border-color:#D4A017; box-shadow:0 0 0 3px rgba(212,160,23,.13); }
+    .pr-filter-label { display:block; margin-bottom:7px; font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:#74829c; }
 </style>
 
 
@@ -61,6 +69,9 @@
             "
         ></div>
 
+
+        <div aria-hidden="true" class="pr-hero-ring -right-12 -top-44"></div>
+        <div aria-hidden="true" class="pr-hero-ring -right-40 -bottom-52"></div>
 
         <div
             class="
@@ -221,6 +232,7 @@
 
         <div
             class="
+                pr-summary-grid
                 grid
                 grid-cols-1
                 overflow-hidden
@@ -708,7 +720,7 @@
                     "
                 ></span>
 
-                Database Records
+                Live Database Records
 
             </div>
 
@@ -716,8 +728,84 @@
 
 
 
+        {{-- Server-side filters: values persist through pagination links. --}}
+        <form action="{{ route('participation.records') }}" method="GET"
+            class="mb-4 rounded-[20px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <div class="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                    <h3 class="text-sm font-bold text-[#101064]">Find Student Participation</h3>
+                    <p class="mt-1 text-xs text-slate-500">Search the complete active student registry, not only the current page.</p>
+                </div>
+                <p class="text-xs font-semibold text-[#101064]">{{ number_format($records->total()) }} matching {{ $records->total() === 1 ? 'student' : 'students' }}</p>
+            </div>
+
+            <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+                <label class="block xl:col-span-2">
+                    <span class="pr-filter-label">Search Student</span>
+                    <input class="pr-filter-input" type="search" name="search" value="{{ $search }}"
+                        maxlength="120" placeholder="Student number, full name, college or program..." />
+                </label>
+                <label class="block">
+                    <span class="pr-filter-label">College</span>
+                    <select class="pr-filter-input" name="college">
+                        <option value="">All Colleges</option>
+                        @foreach($colleges as $option)
+                            <option value="{{ $option }}" @selected($college === $option)>{{ $option }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label class="block">
+                    <span class="pr-filter-label">Program</span>
+                    <select class="pr-filter-input" name="program">
+                        <option value="">All Programs</option>
+                        @foreach($programs as $option)
+                            <option value="{{ $option }}" @selected($program === $option)>{{ $option }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label class="block">
+                    <span class="pr-filter-label">Year Level</span>
+                    <select class="pr-filter-input" name="year">
+                        <option value="">All Years</option>
+                        @foreach($years as $option)
+                            <option value="{{ $option }}" @selected((string) $year === (string) $option)>Year {{ $option }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label class="block">
+                    <span class="pr-filter-label">Participation</span>
+                    <select class="pr-filter-input" name="participation">
+                        <option value="all" @selected($participation === 'all')>All Active Students</option>
+                        <option value="with_records" @selected($participation === 'with_records')>With Attendance Records</option>
+                        <option value="without_records" @selected($participation === 'without_records')>Without Attendance Records</option>
+                    </select>
+                </label>
+                <label class="block">
+                    <span class="pr-filter-label">Sort By</span>
+                    <select class="pr-filter-input" name="sort">
+                        <option value="most_events" @selected($sort === 'most_events')>Most Events Attended</option>
+                        <option value="recent" @selected($sort === 'recent')>Recently Participated</option>
+                        <option value="name" @selected($sort === 'name')>Student Name A–Z</option>
+                    </select>
+                </label>
+                <label class="block">
+                    <span class="pr-filter-label">Rows Per Page</span>
+                    <select class="pr-filter-input" name="per_page">
+                        @foreach([10, 25, 50] as $size)
+                            <option value="{{ $size }}" @selected($perPage === $size)>{{ $size }} students</option>
+                        @endforeach
+                    </select>
+                </label>
+                <div class="flex items-end gap-2 md:col-span-2 xl:col-span-1">
+                    <button type="submit" class="min-h-[42px] flex-1 rounded-xl bg-[#101064] px-5 py-2.5 text-xs font-bold text-white transition hover:bg-[#0b0b4d]">Apply Filters</button>
+                    <a href="{{ route('participation.records') }}" class="inline-flex min-h-[42px] items-center rounded-xl border border-slate-200 px-4 text-xs font-semibold text-slate-600 hover:bg-slate-50">Clear</a>
+                </div>
+            </div>
+        </form>
+
         <div
             class="
+                pr-registry
                 overflow-hidden
                 border
                 border-gray-200
@@ -1222,7 +1310,7 @@
                                             text-[#101064]
                                         "
                                     >
-                                        No Student Records Found
+                                        No Matching Student Records
                                     </p>
 
 
@@ -1233,8 +1321,8 @@
                                             text-gray-400
                                         "
                                     >
-                                        There are currently no active students
-                                        available in the database.
+                                        Try adjusting your search or filters. If no filters are selected,
+                                        there may be no active student records.
                                     </p>
 
                                 </td>
@@ -1280,8 +1368,9 @@
                             text-gray-400
                         "
                     >
-                        Showing student participation records
-                        from the current DySign database.
+                        Showing <strong class="text-[#101064]">{{ $records->firstItem() ?? 0 }}–{{ $records->lastItem() ?? 0 }}</strong>
+                        of <strong class="text-[#101064]">{{ number_format($records->total()) }}</strong> matching students
+                        · Page {{ $records->currentPage() }} of {{ $records->lastPage() }}
                     </p>
 
 

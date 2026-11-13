@@ -192,7 +192,7 @@
 
                         @if ($exception->status === 'Pending')
                             <div class="grid gap-4 border-t border-slate-100 pt-5 xl:grid-cols-2">
-                                <form method="POST" action="{{ route('staff.attendance-exceptions.review', $exception->exception_id) }}" class="space-y-4 rounded-xl border border-emerald-200 bg-emerald-50/50 p-5">
+                                <form method="POST" action="{{ route('staff.attendance-exceptions.review', $exception->exception_id) }}" class="space-y-4 rounded-xl border border-emerald-200 bg-emerald-50/50 p-5" data-confirm data-confirm-title="Approve verified attendance?" data-confirm-message="Only approve if both the Time In and Time Out evidence have been verified." data-confirm-confirm-text="Approve Attendance" data-confirm-variant="warning">
                                     @csrf
                                     @method('PATCH')
                                     <input type="hidden" name="decision" value="Approved">
@@ -212,10 +212,10 @@
                                         <label for="exception-approve-note-{{ $exception->exception_id }}" class="mb-2 block text-xs font-semibold text-emerald-900">Evidence / Review Notes *</label>
                                         <textarea id="exception-approve-note-{{ $exception->exception_id }}" name="review_notes" rows="3" minlength="10" maxlength="2000" required class="dysign-exception-field" placeholder="State who verified the two times and the supporting evidence."></textarea>
                                     </div>
-                                    <button type="submit" onclick="return confirm('Approve only if the Time In and Time Out evidence has been verified. Continue?')" class="inline-flex min-h-[43px] items-center justify-center rounded-xl bg-emerald-700 px-5 text-sm font-bold text-white transition hover:bg-emerald-800">Approve Attendance</button>
+                                    <button type="submit" class="inline-flex min-h-[43px] items-center justify-center rounded-xl bg-emerald-700 px-5 text-sm font-bold text-white transition hover:bg-emerald-800">Approve Attendance</button>
                                 </form>
 
-                                <form method="POST" action="{{ route('staff.attendance-exceptions.review', $exception->exception_id) }}" class="space-y-4 rounded-xl border border-red-200 bg-red-50/50 p-5">
+                                <form method="POST" action="{{ route('staff.attendance-exceptions.review', $exception->exception_id) }}" class="space-y-4 rounded-xl border border-red-200 bg-red-50/50 p-5" data-confirm data-confirm-title="Reject attendance exception?" data-confirm-message="The report will be rejected. No manual attendance record will be created." data-confirm-confirm-text="Reject Report" data-confirm-variant="danger">
                                     @csrf
                                     @method('PATCH')
                                     <input type="hidden" name="decision" value="Rejected">
@@ -227,7 +227,7 @@
                                         <label for="exception-reject-note-{{ $exception->exception_id }}" class="mb-2 block text-xs font-semibold text-red-900">Reason for Rejection *</label>
                                         <textarea id="exception-reject-note-{{ $exception->exception_id }}" name="review_notes" rows="3" maxlength="2000" required class="dysign-exception-field" placeholder="Explain why the reported attendance could not be verified."></textarea>
                                     </div>
-                                    <button type="submit" onclick="return confirm('Reject this attendance exception report?')" class="inline-flex min-h-[43px] items-center justify-center rounded-xl bg-red-700 px-5 text-sm font-bold text-white transition hover:bg-red-800">Reject Report</button>
+                                    <button type="submit" class="inline-flex min-h-[43px] items-center justify-center rounded-xl bg-red-700 px-5 text-sm font-bold text-white transition hover:bg-red-800">Reject Report</button>
                                 </form>
                             </div>
                         @else

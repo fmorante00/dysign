@@ -3,7 +3,8 @@
 @php
 
     $canModify =
-        $event->status === 'Upcoming';
+        $event->status === 'Upcoming'
+        && auth()->user()?->role?->role_name === 'Department Staff';
 
     $requiredCount =
         $eligibleStudents
@@ -49,8 +50,34 @@
     }
 
     .module-card {
-        box-shadow:
-            0 1px 2px rgba(15, 23, 42, .03);
+        border-radius: 18px;
+        box-shadow: 0 8px 24px -22px rgba(16, 16, 100, .36);
+    }
+    .eligibility-hero { isolation: isolate; }
+    .dy-elig-ring {
+        position: absolute;
+        z-index: 0;
+        width: 330px;
+        height: 330px;
+        top: -116px;
+        right: -66px;
+        border: 1px solid rgba(255, 255, 255, .18);
+        border-radius: 9999px;
+        pointer-events: none;
+    }
+    .dy-elig-ring--inner {
+        width: 246px;
+        height: 246px;
+        top: -72px;
+        right: -23px;
+        border-color: rgba(255, 255, 255, .15);
+    }
+    .dy-elig-ring--small {
+        width: 162px;
+        height: 162px;
+        top: -29px;
+        right: 20px;
+        border-color: rgba(255, 255, 255, .12);
     }
 
 </style>
@@ -159,6 +186,9 @@
             text-white
         "
     >
+        <span class="dy-elig-ring" aria-hidden="true"></span>
+        <span class="dy-elig-ring dy-elig-ring--inner" aria-hidden="true"></span>
+        <span class="dy-elig-ring dy-elig-ring--small" aria-hidden="true"></span>
 
         <div
             class="
@@ -776,7 +806,7 @@
                             'events.eligibility.store',
                             $event->event_id
                         ) }}"
-                    >
+                     data-confirm data-confirm-title="Save eligibility rule?" data-confirm-message="The new eligibility rule will affect who can participate in this event." data-confirm-confirm-text="Save Rule" data-confirm-variant="warning">
 
                         @csrf
 
@@ -1128,7 +1158,7 @@
                             'events.eligibility.store',
                             $event->event_id
                         ) }}"
-                    >
+                     data-confirm data-confirm-title="Save eligibility rule?" data-confirm-message="Apply these eligibility criteria to this event." data-confirm-confirm-text="Save Rule" data-confirm-variant="warning">
 
                         @csrf
 
@@ -1607,7 +1637,7 @@
                         'events.eligibility.refresh',
                         $event->event_id
                     ) }}"
-                >
+                 data-confirm data-confirm-title="Refresh event eligibility?" data-confirm-message="Recalculate the eligible students using the current rules." data-confirm-confirm-text="Refresh" data-confirm-variant="warning">
 
                     @csrf
 
@@ -1880,12 +1910,7 @@
                                         $rule->eligibility_rule_id,
                                 ]
                             ) }}"
-                            onsubmit="
-                                return confirm(
-                                    'Remove this eligibility rule?'
-                                );
-                            "
-                        >
+                         data-confirm data-confirm-title="Remove eligibility rule?" data-confirm-message="This eligibility rule will be removed from the event." data-confirm-confirm-text="Remove Rule" data-confirm-variant="danger">
 
                             @csrf
                             @method('DELETE')

@@ -352,7 +352,7 @@
                                             $duty->assignment_id
                                         )
                                     }}"
-                                >
+                                 data-confirm data-confirm-title="Check in for this duty?" data-confirm-message="Your duty check-in time will be recorded." data-confirm-confirm-text="Check In" data-confirm-variant="default">
                                     @csrf
 
                                     <button
@@ -391,7 +391,7 @@
                                             $duty->assignment_id
                                         )
                                     }}"
-                                >
+                                 data-confirm data-confirm-title="Check out from this duty?" data-confirm-message="Your duty check-out time will be recorded." data-confirm-confirm-text="Check Out" data-confirm-variant="warning">
                                     @csrf
 
                                     <button

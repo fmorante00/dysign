@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
+use App\Models\Department;
 use App\Models\EventEligibilityRule;
 use App\Models\EventEligibleStudent;
 use App\Models\Student;
@@ -20,47 +21,72 @@ class EventEligibilityController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    public function events()
+    public function events(Request $request)
     {
         $this->authorizeEligibilityManagement();
-
         Event::syncScheduledStatuses();
 
-        $user =
-            auth()->user();
+        $user = auth()->user();
+        $isAdministrator = $user->role?->role_name === 'Administrator';
 
-        $events = Event::with([
-            'department',
-            'creator',
-        ])
-            ->withCount([
-                'eligibilityRules',
-                'eligibleStudents',
-            ])
-            ->when(
-    $user->role->role_name === 'Department Staff',
-    fn ($query) => $query->where(
-        'department_id',
-        $user->department_id
-    )
-)
-            ->where(
-                'status',
-                'Upcoming'
-            )
-            ->orderBy(
-                'event_date'
-            )
-            ->orderBy(
-                'start_time'
-            )
-            ->get();
+        // The administrator is a read-only observer of ALL event statuses.
+        // Department Staff may manage only their department's Upcoming events.
+        $baseQuery = Event::query()
+            ->when(!$isAdministrator, fn ($query) => $query
+                ->where('department_id', $user->department_id)
+                ->where('status', 'Upcoming'));
 
+        $statusCounts = (clone $baseQuery)
+            ->selectRaw('status, COUNT(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
 
-        return view(
-            'events.eligibility-events',
-            compact('events')
-        );
+        $eventTotals = [
+            'total' => (int) $statusCounts->sum(),
+            'Upcoming' => (int) ($statusCounts['Upcoming'] ?? 0),
+            'Ongoing' => (int) ($statusCounts['Ongoing'] ?? 0),
+            'Completed' => (int) ($statusCounts['Completed'] ?? 0),
+            'Cancelled' => (int) ($statusCounts['Cancelled'] ?? 0),
+        ];
+
+        $search = trim(substr((string) $request->query('search', ''), 0, 120));
+        $status = (string) $request->query('status', 'all');
+        if (!in_array($status, ['all', 'Upcoming', 'Ongoing', 'Completed', 'Cancelled'], true)) {
+            $status = 'all';
+        }
+        $departmentId = (string) $request->query('department_id', '');
+
+        $query = $baseQuery->with(['department'])
+            ->withCount(['eligibilityRules', 'eligibleStudents']);
+
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('event_name', 'like', '%'.$search.'%')
+                    ->orWhere('location', 'like', '%'.$search.'%');
+            });
+        }
+        if ($isAdministrator && $status !== 'all') {
+            $query->where('status', $status);
+        }
+        if ($isAdministrator && ctype_digit($departmentId) && (int) $departmentId > 0) {
+            $query->where('department_id', (int) $departmentId);
+        }
+
+        // Admin sees recent events first; staff sees the nearest upcoming event first.
+        $events = ($isAdministrator
+            ? $query->orderByDesc('event_date')->orderByDesc('start_time')
+            : $query->orderBy('event_date')->orderBy('start_time'))
+            ->paginate(10)
+            ->withQueryString();
+
+        $departments = $isAdministrator
+            ? Department::orderBy('department_name')->get()
+            : collect();
+
+        return view('events.eligibility-events', compact(
+            'events', 'eventTotals', 'departments', 'isAdministrator',
+            'search', 'status', 'departmentId'
+        ));
     }
 
 
@@ -71,6 +97,7 @@ class EventEligibilityController extends Controller
     */
 
     public function index(
+        Request $request,
         string $event
     ) {
 
@@ -79,6 +106,7 @@ class EventEligibilityController extends Controller
                 $event
             );
 
+        $isAdministrator = auth()->user()?->role?->role_name === 'Administrator';
 
         $rules =
             EventEligibilityRule::with([
@@ -92,6 +120,48 @@ class EventEligibilityController extends Controller
                     'eligibility_rule_id'
                 )
                 ->get();
+
+        if ($isAdministrator) {
+            // Admin only reads saved rules and generated participants.
+            // No form inputs, regeneration, or write permissions are exposed.
+            $participation = (string) $request->query('participation', 'all');
+            if (!in_array($participation, ['all', 'Required', 'Optional'], true)) {
+                $participation = 'all';
+            }
+            $search = trim(substr((string) $request->query('search', ''), 0, 120));
+
+            $eligibleQuery = EventEligibleStudent::with('student')
+                ->where('event_id', $event->event_id);
+
+            if ($participation !== 'all') {
+                $eligibleQuery->where('participation_type', $participation);
+            }
+            if ($search !== '') {
+                $eligibleQuery->whereHas('student', function ($q) use ($search) {
+                    $q->where(function ($studentQuery) use ($search) {
+                        $studentQuery->where('student_number', 'like', '%'.$search.'%')
+                            ->orWhere('first_name', 'like', '%'.$search.'%')
+                            ->orWhere('last_name', 'like', '%'.$search.'%');
+                    });
+                });
+            }
+
+            $eligibleStudents = $eligibleQuery
+                ->orderBy('student_id')
+                ->paginate(15)
+                ->withQueryString();
+
+            $participantCounts = EventEligibleStudent::query()
+                ->where('event_id', $event->event_id)
+                ->selectRaw('participation_type, COUNT(*) as total')
+                ->groupBy('participation_type')
+                ->pluck('total', 'participation_type');
+
+            return view('events.eligibility-readonly', compact(
+                'event', 'rules', 'eligibleStudents', 'participantCounts',
+                'participation', 'search'
+            ));
+        }
 
 
         $eligibleStudents =
@@ -1053,8 +1123,6 @@ class EventEligibilityController extends Controller
             Event::with([
                 'department',
                 'creator',
-                'eligibilityRules',
-                'eligibleStudents.student',
             ])
                 ->where(
                     'event_id',
@@ -1086,6 +1154,12 @@ class EventEligibilityController extends Controller
     private function ensureEligibilityCanBeModified(
         Event $event
     ): void {
+
+        // This guard applies to POST and DELETE endpoints as well as the UI.
+        // Even a forged request from an Administrator must be rejected.
+        if (auth()->user()?->role?->role_name !== 'Department Staff') {
+            abort(403, 'Only authorized Department Staff may modify participant eligibility.');
+        }
 
         if (
             $event->status

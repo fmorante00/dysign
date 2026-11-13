@@ -1406,7 +1406,7 @@
                 $event->event_id
             ) }}"
             class="space-y-8"
-        >
+         data-confirm data-confirm-title="Save personnel assignments?" data-confirm-message="Apply these assignment changes for this event." data-confirm-confirm-text="Save Assignments" data-confirm-variant="warning">
 
             @csrf
             @method('PUT')

@@ -180,7 +180,7 @@
                 <form
                     action="{{ route('staff.activity-points.rules.update', ['eventId' => $event->event_id]) }}"
                     method="POST"
-                    class="p-6">
+                    class="p-6" data-confirm data-confirm-title="Save activity point rules?" data-confirm-message="These changes will affect the points awarded for this event." data-confirm-confirm-text="Save Rules" data-confirm-variant="warning">
 
                     @csrf
                     @method('PUT')

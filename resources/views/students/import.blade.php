@@ -40,9 +40,11 @@
 
 </style>
 
+@include('partials.student-university-styles')
 
 
-<div class="min-w-0 space-y-8">
+
+<div class="dy-student-university min-w-0 space-y-8 pb-8">
 
 
     {{-- ====================================================== --}}
@@ -64,6 +66,11 @@
         "
     >
 
+
+                {{-- Matching the translucent circular motifs used in the Student Dashboard. --}}
+        <div class="dy-hero-circle dy-hero-circle--outer" aria-hidden="true"></div>
+        <div class="dy-hero-circle dy-hero-circle--inner" aria-hidden="true"></div>
+        <div class="dy-hero-glow" aria-hidden="true"></div>
 
         {{-- GOLD ACCENT --}}
 
@@ -345,6 +352,17 @@
 
 
 
+    <div class="flex flex-col gap-3 rounded-2xl border border-[#DCE2F1] bg-white px-5 py-4 text-sm text-slate-600 shadow-sm sm:flex-row sm:items-center sm:justify-between" role="note">
+        <div class="flex items-start gap-3">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#F0F1FF] text-[#101064]" aria-hidden="true">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 2 4 6v6c0 5 3.5 8.2 8 10 4.5-1.8 8-5 8-10V6l-8-4Z"/><path stroke-linecap="round" stroke-linejoin="round" d="m9 12 2 2 4-4"/></svg>
+            </span>
+            <div><p class="font-semibold text-[#101064]">Registrar Import Workflow</p><p class="mt-1 text-xs leading-5 text-slate-500">Review the file requirements, choose the registrar export, and confirm the import before processing.</p></div>
+        </div>
+        <span class="inline-flex w-fit shrink-0 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800">Excel · CSV · ZIP</span>
+    </div>
+
+
     {{-- ====================================================== --}}
     {{-- IMPORT GUIDELINES --}}
     {{-- ====================================================== --}}
@@ -407,6 +425,7 @@
 
         <div
             class="
+                dy-import-steps
                 grid
                 min-w-0
                 grid-cols-1
@@ -722,7 +741,7 @@
                     this.hasFile = true;
                 }
             }"
-        >
+         data-confirm data-confirm-title="Import student records?" data-confirm-message="Import the selected file and process the student data." data-confirm-confirm-text="Start Import" data-confirm-variant="warning">
 
             @csrf
 
@@ -749,6 +768,7 @@
 
                     <div
                         class="
+                            dy-import-dropzone
                             relative
                             overflow-hidden
                             border-2

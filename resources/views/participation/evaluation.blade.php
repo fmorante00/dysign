@@ -24,6 +24,18 @@
 
     }
 
+    /* Student-dashboard-inspired page styling. No additional JS needed. */
+    .pe-hero-ring { position:absolute; border:1px solid rgba(255,255,255,.16);
+        width:300px; height:300px; border-radius:9999px; pointer-events:none; }
+    .pe-summary-cards { gap:14px; border:0 !important; background:transparent !important; overflow:visible !important; }
+    .pe-summary-cards > div { border:1px solid #e2e8f0 !important; border-radius:18px;
+        background:white; box-shadow:0 3px 14px rgba(15,23,42,.04); }
+    .pe-field { width:100%; min-height:43px; border:1px solid #dbe3f0; background:#fff;
+        border-radius:12px; padding:0 12px; color:#101064; font-size:13px; outline:none; }
+    .pe-field:focus { border-color:#D4A017; box-shadow:0 0 0 3px rgba(212,160,23,.13); }
+    .pe-label { display:block; margin-bottom:7px; text-transform:uppercase; letter-spacing:.1em;
+        font-size:10px; font-weight:700; color:#73839e; }
+    .pe-table { border-radius:20px; box-shadow:0 5px 22px rgba(15,23,42,.04); }
 </style>
 
 
@@ -108,6 +120,9 @@
             "
         ></div>
 
+
+        <div aria-hidden="true" class="pe-hero-ring -right-14 -top-44"></div>
+        <div aria-hidden="true" class="pe-hero-ring -right-36 -bottom-52"></div>
 
         <div
             class="
@@ -299,6 +314,7 @@
 
         <div
             class="
+                pe-summary-cards
                 grid
                 grid-cols-1
                 overflow-hidden
@@ -669,8 +685,91 @@
 
 
 
+        {{-- Full-roster filters are server-processed before pagination. --}}
+        <form method="GET" action="{{ route('participation.evaluation') }}"
+            class="mb-4 rounded-[20px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h3 class="text-sm font-bold text-[#101064]">Find Student Evaluations</h3>
+                    <p class="mt-1 text-xs text-slate-500">Search and filter across the full evaluated student roster.</p>
+                </div>
+                <span class="self-start rounded-full bg-[#101064]/5 px-3 py-1.5 text-xs font-semibold text-[#101064]">
+                    {{ number_format($records->total()) }} matching students
+                </span>
+            </div>
+            <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+                <label class="block xl:col-span-2">
+                    <span class="pe-label">Search Student</span>
+                    <input name="search" type="search" value="{{ $search }}" maxlength="120"
+                        class="pe-field" placeholder="Student ID, name, college, or program..." />
+                </label>
+                <label class="block">
+                    <span class="pe-label">College</span>
+                    <select name="college" class="pe-field">
+                        <option value="">All Colleges</option>
+                        @foreach($colleges as $option)
+                            <option value="{{ $option }}" @selected($college === $option)>{{ $option }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label class="block">
+                    <span class="pe-label">Program</span>
+                    <select name="program" class="pe-field">
+                        <option value="">All Programs</option>
+                        @foreach($programs as $option)
+                            <option value="{{ $option }}" @selected($program === $option)>{{ $option }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label class="block">
+                    <span class="pe-label">Year Level</span>
+                    <select name="year" class="pe-field">
+                        <option value="">All Years</option>
+                        @foreach($years as $option)
+                            <option value="{{ $option }}" @selected((string)$year === (string)$option)>Year {{ $option }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label class="block">
+                    <span class="pe-label">Classification</span>
+                    <select name="classification" class="pe-field">
+                        <option value="all" @selected($classification === 'all')>All Classifications</option>
+                        <option value="highly" @selected($classification === 'highly')>Highly Participative (90–100%)</option>
+                        <option value="participative" @selected($classification === 'participative')>Participative (75–89%)</option>
+                        <option value="moderately" @selected($classification === 'moderately')>Moderately Participative (60–74%)</option>
+                        <option value="low" @selected($classification === 'low')>Low Participation (Below 60%)</option>
+                        <option value="no_data" @selected($classification === 'no_data')>No Data</option>
+                    </select>
+                </label>
+                <label class="block">
+                    <span class="pe-label">Sort By</span>
+                    <select name="sort" class="pe-field">
+                        <option value="name" @selected($sort === 'name')>Student Name A–Z</option>
+                        <option value="highest_rate" @selected($sort === 'highest_rate')>Highest Participation Rate</option>
+                        <option value="lowest_rate" @selected($sort === 'lowest_rate')>Lowest Participation Rate</option>
+                        <option value="most_events" @selected($sort === 'most_events')>Most Events Attended</option>
+                    </select>
+                </label>
+                <label class="block">
+                    <span class="pe-label">Rows Per Page</span>
+                    <select name="per_page" class="pe-field">
+                        @foreach([10, 25, 50] as $size)
+                            <option value="{{ $size }}" @selected($perPage === $size)>{{ $size }} students</option>
+                        @endforeach
+                    </select>
+                </label>
+                <div class="flex items-end gap-2 md:col-span-2 xl:col-span-4 xl:justify-end">
+                    <a href="{{ route('participation.evaluation') }}"
+                        class="inline-flex min-h-[43px] items-center justify-center rounded-xl border border-slate-200 px-5 text-xs font-semibold text-slate-600 hover:bg-slate-50">Clear Filters</a>
+                    <button type="submit"
+                        class="min-h-[43px] rounded-xl bg-[#101064] px-6 text-xs font-bold text-white hover:bg-[#0b0b4d]">Apply Filters</button>
+                </div>
+            </div>
+        </form>
+
         <div
             class="
+                pe-table
                 overflow-hidden
                 border
                 border-gray-200
@@ -1146,7 +1245,7 @@
                                             text-[#101064]
                                         "
                                     >
-                                        No Evaluation Records Available
+                                        No Matching Evaluation Records
                                     </p>
 
 
@@ -1204,9 +1303,10 @@
                             text-gray-400
                         "
                     >
-                        Classification based on
-                        {{ number_format($totalRecordedEvents ?? 0) }}
-                        recorded event(s).
+                        Showing <strong class="text-[#101064]">{{ $records->firstItem() ?? 0 }}–{{ $records->lastItem() ?? 0 }}</strong>
+                        of <strong class="text-[#101064]">{{ number_format($records->total()) }}</strong> matching students
+                        · Page {{ $records->currentPage() }} of {{ $records->lastPage() }}
+                        <span class="mt-1 block">Classification uses {{ number_format($totalRecordedEvents ?? 0) }} recorded events for every student.</span>
                     </p>
 
 

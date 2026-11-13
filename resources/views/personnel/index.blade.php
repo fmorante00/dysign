@@ -29,6 +29,14 @@
     $staffRoles = $personnel->pluck('user.role.role_name')
         ->filter()->unique()->sort()->values();
 
+    // Consistent with the three mutually exclusive account-status filters.
+    $readinessPercentage = $totalPersonnel > 0
+        ? (int) round(($activeAccounts / $totalPersonnel) * 100)
+        : 0;
+    $staffDepartmentCount = $personnel->pluck('department')
+        ->filter()->unique()->count();
+    $staffRoleCount = $staffRoles->count();
+
 @endphp
 
 
@@ -105,13 +113,22 @@
 
 </style>
 
+@include('partials.personnel-university-styles')
+
 
 <div
-    class="min-w-0 space-y-8"
+    class="dy-staff-page min-w-0 space-y-7 pb-8"
 
+    @keydown.escape.window="openMenu = null; showModal = false"
+    @scroll.window="openMenu = null"
+    @resize.window="openMenu = null"
     x-data="{
 
         openMenu: null,
+
+        // Position the account menu in the viewport, outside the scrollable table.
+        menuTop: 0,
+        menuLeft: 0,
 
         showModal: false,
 
@@ -149,12 +166,29 @@
         },
 
         openDropdown(id) {
+            this.openMenu = this.openMenu === id ? null : id;
+        },
 
-            this.openMenu =
-                this.openMenu === id
-                    ? null
-                    : id;
+        positionDropdown(id, trigger) {
+            if (this.openMenu !== id || !trigger) return;
 
+            const menu = document.getElementById('staff-actions-menu-' + id);
+            if (!menu) return;
+
+            const rect = trigger.getBoundingClientRect();
+            const width = menu.offsetWidth || 208;
+            const height = menu.offsetHeight || 180;
+            const margin = 12;
+            const gap = 8;
+
+            this.menuLeft = Math.max(
+                margin,
+                Math.min(rect.right - width, window.innerWidth - width - margin)
+            );
+
+            this.menuTop = window.innerHeight - rect.bottom >= height + gap + margin
+                ? rect.bottom + gap
+                : Math.max(margin, rect.top - height - gap);
         },
 
 
@@ -543,390 +577,109 @@
     @endif
 
     {{-- ====================================================== --}}
-    {{-- PERSONNEL OVERVIEW --}}
+    {{-- INSTITUTIONAL ACCESS OVERVIEW --}}
     {{-- ====================================================== --}}
 
-    <section class="min-w-0">
-
-
-        <div class="mb-4">
-
-            <p
-                class="
-                    text-xs
-                    font-semibold
-                    uppercase
-                    tracking-[0.28em]
-                    text-[#D4A017]
-                "
-            >
-                Overview
-            </p>
-
-
-            <div
-                class="
-                    mt-2
-                    flex
-                    min-w-0
-                    flex-col
-                    gap-2
-                    sm:flex-row
-                    sm:items-end
-                    sm:justify-between
-                "
-            >
-
-                <h2
-                    class="
-                        text-xl
-                        font-bold
-                        text-[#101064]
-                    "
-                >
-                    Staff Account Summary
-                </h2>
-
-
-                <p
-                    class="
-                        text-sm
-                        text-gray-400
-                    "
-                >
-                    Current authorized staff account records
-                </p>
-
+    <section class="min-w-0" aria-labelledby="staff-overview-heading">
+        <div class="mb-4 flex min-w-0 flex-col justify-between gap-3 sm:flex-row sm:items-end">
+            <div>
+                <p class="text-[11px] font-bold uppercase tracking-[.24em] text-[#B68A0D]">Account Overview</p>
+                <h2 id="staff-overview-heading" class="mt-2 text-xl font-bold tracking-tight text-[#101064]">Institutional Access Snapshot</h2>
+                <p class="mt-1 text-sm text-slate-500">Live account readiness based on registered staff records.</p>
             </div>
-
+            <div class="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-600">
+                <span class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5">
+                    <svg class="h-3.5 w-3.5 text-[#101064]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10l9-7 9 7v10H3V10Zm5 10v-8h8v8"/></svg>
+                    {{ $staffDepartmentCount }} {{ $staffDepartmentCount === 1 ? 'department' : 'departments' }}
+                </span>
+                <span class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5">
+                    <svg class="h-3.5 w-3.5 text-[#101064]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 2 3 7l9 5 9-5-9-5Zm-9 10 9 5 9-5M3 17l9 5 9-5"/></svg>
+                    {{ $staffRoleCount }} {{ $staffRoleCount === 1 ? 'role' : 'roles' }}
+                </span>
+            </div>
         </div>
 
-
-
-        <div
-            class="
-                grid
-                min-w-0
-                grid-cols-1
-                overflow-hidden
-                border
-                border-gray-200
-                bg-white
-                md:grid-cols-3
-            "
-        >
-
-
-            {{-- TOTAL PERSONNEL --}}
-
-            <div
-                class="
-                    min-w-0
-                    border-b
-                    border-gray-100
-                    px-6
-                    py-6
-                    md:border-b-0
-                    md:border-r
-                "
-            >
-
-                <div
-                    class="
-                        flex
-                        items-start
-                        justify-between
-                        gap-4
-                    "
-                >
-
+        <div class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <article class="dy-staff-stat" style="--dy-stat-color:#101064;--dy-stat-soft:#f0f1ff;">
+                <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
-
-                        <p
-                            class="
-                                text-xs
-                                font-semibold
-                                uppercase
-                                tracking-wider
-                                text-gray-400
-                            "
-                        >
-                            Total Staff Accounts
-                        </p>
-
-
-                        <p
-                            class="
-                                mt-3
-                                text-4xl
-                                font-bold
-                                text-[#101064]
-                            "
-                        >
-                            {{ $totalPersonnel }}
-                        </p>
-
-
-                        <p
-                            class="
-                                mt-2
-                                text-xs
-                                text-gray-400
-                            "
-                        >
-                            Registered accounts
-                        </p>
-
+                        <p class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Total Accounts</p>
+                        <p class="mt-3 text-4xl font-bold tracking-tight text-[#101064]">{{ number_format($totalPersonnel) }}</p>
                     </div>
-
-
-
-                    <div
-                        class="
-                            flex
-                            h-10
-                            w-10
-                            shrink-0
-                            items-center
-                            justify-center
-                            rounded-full
-                            bg-[#F0F1F8]
-                            text-[#101064]
-                        "
-                    >
-
-                        <svg
-                            class="h-5 w-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                stroke-width="1.8"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M12 12a4 4 0 100-8 4 4 0
-                                000 8zm-7 9a7 7 0 0114 0"
-                            />
-                        </svg>
-
-                    </div>
-
+                    <span class="dy-staff-stat-icon">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m3-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm14 10v-2a4 4 0 0 0-3-3.87M16 2.13a4 4 0 0 1 0 7.75"/></svg>
+                    </span>
                 </div>
+                <p class="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-500">Registered staff records</p>
+            </article>
 
-            </div>
-
-
-
-            {{-- ACTIVE ACCOUNTS --}}
-
-            <div
-                class="
-                    min-w-0
-                    border-b
-                    border-gray-100
-                    px-6
-                    py-6
-                    md:border-b-0
-                    md:border-r
-                "
-            >
-
-                <div
-                    class="
-                        flex
-                        items-start
-                        justify-between
-                        gap-4
-                    "
-                >
-
+            <article class="dy-staff-stat" style="--dy-stat-color:#059669;--dy-stat-soft:#ecfdf5;">
+                <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
-
-                        <p
-                            class="
-                                text-xs
-                                font-semibold
-                                uppercase
-                                tracking-wider
-                                text-gray-400
-                            "
-                        >
-                            Active Accounts
-                        </p>
-
-
-                        <p
-                            class="
-                                mt-3
-                                text-4xl
-                                font-bold
-                                text-green-600
-                            "
-                        >
-                            {{ $activeAccounts }}
-                        </p>
-
-
-                        <p
-                            class="
-                                mt-2
-                                text-xs
-                                text-gray-400
-                            "
-                        >
-                            Currently active users
-                        </p>
-
+                        <p class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Active & Ready</p>
+                        <p class="mt-3 text-4xl font-bold tracking-tight text-emerald-700">{{ number_format($activeAccounts) }}</p>
                     </div>
-
-
-
-                    <div
-                        class="
-                            flex
-                            h-10
-                            w-10
-                            shrink-0
-                            items-center
-                            justify-center
-                            rounded-full
-                            bg-green-50
-                            text-green-600
-                        "
-                    >
-
-                        <svg
-                            class="h-5 w-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                stroke-width="1.8"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M5 13l4 4L19 7"
-                            />
-                        </svg>
-
-                    </div>
-
+                    <span class="dy-staff-stat-icon">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m5 12 4 4L19 6"/><circle cx="12" cy="12" r="10"/></svg>
+                    </span>
                 </div>
+                <p class="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-500">Account setup completed</p>
+            </article>
 
-            </div>
-
-
-
-            {{-- PENDING SETUP --}}
-
-            <div
-                class="
-                    min-w-0
-                    px-6
-                    py-6
-                "
-            >
-
-                <div
-                    class="
-                        flex
-                        items-start
-                        justify-between
-                        gap-4
-                    "
-                >
-
+            <article class="dy-staff-stat" style="--dy-stat-color:#B68A0D;--dy-stat-soft:#fff8e4;">
+                <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
-
-                        <p
-                            class="
-                                text-xs
-                                font-semibold
-                                uppercase
-                                tracking-wider
-                                text-gray-400
-                            "
-                        >
-                            Pending Setup
-                        </p>
-
-
-                        <p
-                            class="
-                                mt-3
-                                text-4xl
-                                font-bold
-                                text-[#D4A017]
-                            "
-                        >
-                            {{ $pendingSetup }}
-                        </p>
-
-
-                        <p
-                            class="
-                                mt-2
-                                text-xs
-                                text-gray-400
-                            "
-                        >
-                            Awaiting account completion
-                        </p>
-
+                        <p class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Pending Setup</p>
+                        <p class="mt-3 text-4xl font-bold tracking-tight text-[#B68A0D]">{{ number_format($pendingSetup) }}</p>
                     </div>
-
-
-
-                    <div
-                        class="
-                            flex
-                            h-10
-                            w-10
-                            shrink-0
-                            items-center
-                            justify-center
-                            rounded-full
-                            bg-[#FFF9E7]
-                            text-[#B68A0D]
-                        "
-                    >
-
-                        <svg
-                            class="h-5 w-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                stroke-width="1.8"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M12 8v4m0 4h.01M10.29
-                                3.86L1.82 18a2 2 0 001.71
-                                3h16.94a2 2 0 001.71-3L13.71
-                                3.86a2 2 0 00-3.42 0z"
-                            />
-                        </svg>
-
-                    </div>
-
+                    <span class="dy-staff-stat-icon">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2"/></svg>
+                    </span>
                 </div>
+                <p class="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-500">Awaiting password setup</p>
+            </article>
 
-            </div>
-
-
+            <article class="dy-staff-stat" style="--dy-stat-color:#64748b;--dy-stat-soft:#f1f5f9;">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <p class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Inactive Accounts</p>
+                        <p class="mt-3 text-4xl font-bold tracking-tight text-slate-700">{{ number_format($inactiveAccounts) }}</p>
+                    </div>
+                    <span class="dy-staff-stat-icon">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h8"/></svg>
+                    </span>
+                </div>
+                <p class="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-500">Access currently disabled</p>
+            </article>
         </div>
 
+        <div class="dy-staff-subcard mt-4 grid min-w-0 gap-5 px-5 py-5 md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:px-7">
+            <div class="min-w-0">
+                <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                        <h3 class="text-sm font-bold text-[#101064]">Account Readiness</h3>
+                        <p class="mt-0.5 text-xs text-slate-500">Staff accounts with active access and completed setup.</p>
+                    </div>
+                    <p class="text-sm font-bold tabular-nums text-[#101064]">{{ $readinessPercentage }}%</p>
+                </div>
+                <div class="h-2.5 w-full overflow-hidden rounded-full bg-slate-100" role="progressbar" aria-label="Staff account readiness" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ $readinessPercentage }}">
+                    <div class="h-full rounded-full bg-gradient-to-r from-[#101064] to-[#4849a2]" style="width: {{ $readinessPercentage }}%"></div>
+                </div>
+            </div>
+            <div class="flex flex-wrap gap-2 text-[11px] font-semibold md:justify-end">
+                <button type="button" @click="statusFilter='active';openMenu=null; $nextTick(() => document.getElementById('staff-directory')?.scrollIntoView({behavior:'smooth',block:'start'}))" class="dy-staff-action-link inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-2 text-emerald-700 hover:bg-emerald-100"><span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span> {{ $activeAccounts }} Ready</button>
+                <button type="button" @click="statusFilter='pending';openMenu=null; $nextTick(() => document.getElementById('staff-directory')?.scrollIntoView({behavior:'smooth',block:'start'}))" class="dy-staff-action-link inline-flex items-center gap-2 rounded-full border border-amber-100 bg-amber-50 px-3 py-2 text-amber-700 hover:bg-amber-100"><span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span> {{ $pendingSetup }} Pending</button>
+                <button type="button" @click="statusFilter='inactive';openMenu=null; $nextTick(() => document.getElementById('staff-directory')?.scrollIntoView({behavior:'smooth',block:'start'}))" class="dy-staff-action-link inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700 hover:bg-slate-100"><span class="h-1.5 w-1.5 rounded-full bg-slate-400"></span> {{ $inactiveAccounts }} Inactive</button>
+            </div>
+        </div>
     </section>
-
 
 
     {{-- ====================================================== --}}
     {{-- PERSONNEL DIRECTORY --}}
     {{-- ====================================================== --}}
 
-    <section class="min-w-0">
+    <section id="staff-directory" class="min-w-0 scroll-mt-7" aria-labelledby="staff-directory-heading">
 
 
         <div
@@ -957,7 +710,7 @@
                 </p>
 
 
-                <h2
+                <h2 id="staff-directory-heading"
                     class="
                         mt-2
                         text-xl
@@ -1001,6 +754,7 @@
                     text-[#8A6D00]
                     transition
                     hover:bg-[#FFF9E7]
+                    dy-staff-action-link
                 "
             >
                 Add Staff Account
@@ -1163,6 +917,18 @@
 
 
 
+            {{-- Quick account-status filters share the existing Alpine state. --}}
+            <div class="flex min-w-0 flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-3.5 sm:px-6">
+                <div class="flex flex-wrap items-center gap-2" role="group" aria-label="Quick staff account filters">
+                    <span class="mr-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Quick view</span>
+                    <button type="button" @click="statusFilter='all';openMenu=null" :aria-pressed="statusFilter==='all'" class="dy-staff-filter-pill rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50">All</button>
+                    <button type="button" @click="statusFilter='active';openMenu=null" :aria-pressed="statusFilter==='active'" class="dy-staff-filter-pill rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50">Active</button>
+                    <button type="button" @click="statusFilter='pending';openMenu=null" :aria-pressed="statusFilter==='pending'" class="dy-staff-filter-pill rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50">Pending</button>
+                    <button type="button" @click="statusFilter='inactive';openMenu=null" :aria-pressed="statusFilter==='inactive'" class="dy-staff-filter-pill rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50">Inactive</button>
+                </div>
+                <p class="text-xs text-slate-400">Choose an account to review details or manage access.</p>
+            </div>
+
             {{-- TABLE --}}
 
             <div
@@ -1172,6 +938,7 @@
                     max-w-full
                     overflow-x-auto
                 "
+                @scroll.passive="openMenu = null"
             >
 
                 <table
@@ -1187,7 +954,7 @@
                         class="
                             border-b
                             border-gray-200
-                            bg-gray-50
+                            bg-[#f7f8fc]
                         "
                     >
 
@@ -1319,7 +1086,7 @@
 
                                 class="
                                     transition
-                                    hover:bg-gray-50
+                                    hover:bg-[#f7f9ff]
                                 "
                             >
 
@@ -1571,10 +1338,12 @@
 
                                         <button
                                             type="button"
+                                            aria-label="Actions for {{ $person->first_name }} {{ $person->last_name }}"
+                                            :aria-expanded="openMenu === {{ $person->personnel_id }}"
+                                            aria-haspopup="true"
                                             @click.stop="
-                                                openDropdown(
-                                                    {{ $person->personnel_id }}
-                                                )
+                                                openDropdown({{ $person->personnel_id }});
+                                                $nextTick(() => positionDropdown({{ $person->personnel_id }}, $el));
                                             "
                                             class="
                                                 inline-flex
@@ -1599,9 +1368,10 @@
 
 
 
-                                        {{-- DROPDOWN --}}
-
+                                        {{-- Move the menu outside the scrollable table so it cannot be clipped. --}}
+                                        <template x-teleport="body">
                                         <div
+                                            id="staff-actions-menu-{{ $person->personnel_id }}"
                                             x-show="
                                                 openMenu ===
                                                 {{ $person->personnel_id }}
@@ -1609,17 +1379,16 @@
                                             @click.outside="
                                                 openMenu = null
                                             "
-                                            x-transition
-
+                                            x-transition.opacity.duration.100ms
+                                            :style="{ top: menuTop + 'px', left: menuLeft + 'px' }"
                                             style="display:none;"
 
                                             class="
-                                                absolute
-                                                bottom-11
-                                                right-0
+                                                fixed
                                                 z-[999]
                                                 w-52
                                                 overflow-hidden
+                                                rounded-xl
                                                 border
                                                 border-gray-200
                                                 bg-white
@@ -1691,7 +1460,7 @@
                                                             $person->personnel_id
                                                         )
                                                     }}"
-                                                >
+                                                 data-confirm data-confirm-title="Resend invitation?" data-confirm-message="Send a new account invitation to this personnel member." data-confirm-confirm-text="Resend" data-confirm-variant="default">
 
                                                     @csrf
 
@@ -1837,6 +1606,7 @@
 
 
                                         </div>
+                                        </template>
 
 
                                     </div>
@@ -1866,7 +1636,10 @@
                 </table>
 
             </div>
-
+            <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 bg-[#fbfcff] px-6 py-4">
+                <p class="text-xs text-slate-500" aria-live="polite"><span class="font-bold text-[#101064]" x-text="visibleCount">{{ $totalPersonnel }}</span> of <span class="font-bold">{{ $totalPersonnel }}</span> staff records displayed</p>
+                <p class="text-[11px] text-slate-400">Account changes require confirmation and authorized access.</p>
+            </div>
 
         </div>
 

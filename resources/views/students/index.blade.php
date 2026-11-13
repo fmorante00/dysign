@@ -80,11 +80,69 @@
         background: #9ca3af;
     }
 
+
+    /* University-style design aligned with the updated DySign admin modules. */
+    .student-data-page {
+        --dy-navy: #101064;
+        --dy-gold: #D4A017;
+        --dy-stroke: #e3e8f1;
+    }
+    .student-data-page .student-records-hero {
+        box-shadow: 0 18px 34px -27px rgba(16,16,100,.65);
+    }
+    .student-data-page .student-records-section {
+        border: 1px solid var(--dy-stroke);
+        border-radius: 20px;
+        box-shadow: 0 7px 22px -20px rgba(17,24,39,.25);
+    }
+    .student-data-page .dy-student-stat {
+        min-width: 0;
+        padding: 22px;
+        border: 1px solid var(--dy-stroke);
+        border-radius: 19px;
+        background: white;
+        box-shadow: 0 5px 18px -16px rgba(17,24,39,.3);
+    }
+    .student-data-page .dy-student-stat-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
+    }
+    .student-data-page .dy-student-filter {
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        background: #f8fafc;
+    }
+    .student-data-page .dy-student-filter:focus-within {
+        border-color: #a5a9d3;
+        background: #fff;
+        box-shadow: 0 0 0 3px rgba(16,16,100,.05);
+    }
+    .student-data-page .dy-student-filter :is(input,select) {
+        background: transparent;
+    }
+    .student-data-page .dy-student-row {transition: background-color .15s ease;}
+    .student-data-page .dy-student-row:hover {background: #f8faff;}
+    .student-data-page .dy-student-pager {
+        background: #fafbff;
+        border-top: 1px solid #e8ecf4;
+    }
+    .student-data-page .dy-student-pager nav {max-width: 100%;}
+    @media (prefers-reduced-motion: reduce) {
+        .student-data-page .dy-student-row {transition:none;}
+    }
+
 </style>
 
+@include('partials.student-university-styles')
 
 
-<div class="min-w-0 space-y-8">
+
+<div class="dy-student-university student-data-page min-w-0 space-y-7 pb-8">
 
 
     {{-- ====================================================== --}}
@@ -105,6 +163,11 @@
             lg:py-10
         "
     >
+
+                {{-- Matching the translucent circular motifs used in the Student Dashboard. --}}
+        <div class="dy-hero-circle dy-hero-circle--outer" aria-hidden="true"></div>
+        <div class="dy-hero-circle dy-hero-circle--inner" aria-hidden="true"></div>
+        <div class="dy-hero-glow" aria-hidden="true"></div>
 
         {{-- GOLD ACCENT --}}
 
@@ -226,7 +289,7 @@
                         </svg>
 
                         <span>
-                            {{ $students->count() }} student records
+                            {{ number_format($totalStudents) }} student records
                         </span>
 
                     </div>
@@ -253,7 +316,7 @@
                         ></span>
 
                         <span>
-                            {{ $students->whereNotNull('rfid_identifier')->count() }}
+                            {{ number_format($rfidAssignedCount) }}
                             RFID ready
                         </span>
 
@@ -441,376 +504,70 @@
 
 
     {{-- ====================================================== --}}
-    {{-- STUDENT OVERVIEW --}}
+    {{-- REGISTRAR OVERVIEW · COUNTS FROM ALL STUDENT RECORDS --}}
     {{-- ====================================================== --}}
-
-    <section class="min-w-0">
-
-
-        <div class="mb-4">
-
-            <p
-                class="
-                    text-xs
-                    font-semibold
-                    uppercase
-                    tracking-[0.28em]
-                    text-[#D4A017]
-                "
-            >
-                Overview
-            </p>
-
-
-            <div
-                class="
-                    mt-2
-                    flex
-                    min-w-0
-                    flex-col
-                    gap-2
-                    sm:flex-row
-                    sm:items-end
-                    sm:justify-between
-                "
-            >
-
-                <h2
-                    class="
-                        text-xl
-                        font-bold
-                        text-[#101064]
-                    "
-                >
-                    Student Record Summary
-                </h2>
-
-
-                <p
-                    class="
-                        text-sm
-                        text-gray-400
-                    "
-                >
-                    Current imported student information
-                </p>
-
+    <section class="min-w-0" aria-labelledby="dy-student-overview">
+        <div class="mb-4 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-end">
+            <div>
+                <p class="text-[11px] font-bold uppercase tracking-[.25em] text-[#B58C11]">Registrar Overview</p>
+                <h2 id="dy-student-overview" class="mt-2 text-xl font-bold tracking-tight text-[#101064]">Institutional Student Snapshot</h2>
+                <p class="mt-1 text-sm text-slate-500">Campus-wide enrollment records and RFID credential coverage.</p>
             </div>
-
+            <span class="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600">
+                {{ number_format($colleges->count()) }} {{ $colleges->count() === 1 ? 'college' : 'colleges' }} represented
+            </span>
         </div>
-
-
-
-        <div
-            class="
-                grid
-                min-w-0
-                grid-cols-1
-                overflow-hidden
-                border
-                border-gray-200
-                bg-white
-                md:grid-cols-3
-            "
-        >
-
-
-            {{-- TOTAL STUDENTS --}}
-
-            <div
-                class="
-                    min-w-0
-                    border-b
-                    border-gray-100
-                    px-6
-                    py-6
-                    md:border-b-0
-                    md:border-r
-                "
-            >
-
-                <div
-                    class="
-                        flex
-                        items-start
-                        justify-between
-                        gap-4
-                    "
-                >
-
+        <div class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <article class="dy-student-stat">
+                <div class="flex items-start justify-between gap-3">
                     <div>
-
-                        <p
-                            class="
-                                text-xs
-                                font-semibold
-                                uppercase
-                                tracking-wider
-                                text-gray-400
-                            "
-                        >
-                            Total Students
-                        </p>
-
-
-                        <p
-                            class="
-                                mt-3
-                                text-4xl
-                                font-bold
-                                text-[#101064]
-                            "
-                        >
-                            {{ $students->count() }}
-                        </p>
-
-
-                        <p
-                            class="
-                                mt-2
-                                text-xs
-                                text-gray-400
-                            "
-                        >
-                            Imported student records
-                        </p>
-
+                        <p class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Total Students</p>
+                        <p class="mt-2 text-3xl font-extrabold tracking-tight text-[#101064]">{{ number_format($totalStudents) }}</p>
                     </div>
-
-
-                    <div
-                        class="
-                            flex
-                            h-10
-                            w-10
-                            shrink-0
-                            items-center
-                            justify-center
-                            rounded-full
-                            bg-[#F0F1F8]
-                            text-[#101064]
-                        "
-                    >
-
-                        <svg
-                            class="h-5 w-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                stroke-width="1.8"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M12 14L3 9l9-5 9 5-9 5zm-6-2v5c3 2 9 2 12 0v-5"
-                            />
-                        </svg>
-
+                    <div class="dy-student-stat-icon bg-[#F0F1FF] text-[#101064]">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 14 3 9l9-5 9 5-9 5ZM6 12v5c4 3 8 3 12 0v-5"/></svg>
                     </div>
-
                 </div>
-
-            </div>
-
-
-
-            {{-- RFID ASSIGNED --}}
-
-            <div
-                class="
-                    min-w-0
-                    border-b
-                    border-gray-100
-                    px-6
-                    py-6
-                    md:border-b-0
-                    md:border-r
-                "
-            >
-
-                <div
-                    class="
-                        flex
-                        items-start
-                        justify-between
-                        gap-4
-                    "
-                >
-
+                <p class="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-500">All registered student records</p>
+            </article>
+            <article class="dy-student-stat">
+                <div class="flex items-start justify-between gap-3">
                     <div>
-
-                        <p
-                            class="
-                                text-xs
-                                font-semibold
-                                uppercase
-                                tracking-wider
-                                text-gray-400
-                            "
-                        >
-                            RFID Assigned
-                        </p>
-
-
-                        <p
-                            class="
-                                mt-3
-                                text-4xl
-                                font-bold
-                                text-green-600
-                            "
-                        >
-                            {{ $students->whereNotNull('rfid_identifier')->count() }}
-                        </p>
-
-
-                        <p
-                            class="
-                                mt-2
-                                text-xs
-                                text-gray-400
-                            "
-                        >
-                            Available for attendance
-                        </p>
-
+                        <p class="text-[11px] font-bold uppercase tracking-wider text-slate-500">RFID Assigned</p>
+                        <p class="mt-2 text-3xl font-extrabold tracking-tight text-emerald-700">{{ number_format($rfidAssignedCount) }}</p>
                     </div>
-
-
-                    <div
-                        class="
-                            flex
-                            h-10
-                            w-10
-                            shrink-0
-                            items-center
-                            justify-center
-                            rounded-full
-                            bg-green-50
-                            text-green-600
-                        "
-                    >
-
-                        <svg
-                            class="h-5 w-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                stroke-width="1.8"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M5 13l4 4L19 7"
-                            />
-                        </svg>
-
+                    <div class="dy-student-stat-icon bg-emerald-50 text-emerald-700">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path stroke-linecap="round" d="M7 9h4M7 13h7M17 10h.01"/></svg>
                     </div>
-
                 </div>
-
-            </div>
-
-
-
-            {{-- MISSING RFID --}}
-
-            <div
-                class="
-                    min-w-0
-                    px-6
-                    py-6
-                "
-            >
-
-                <div
-                    class="
-                        flex
-                        items-start
-                        justify-between
-                        gap-4
-                    "
-                >
-
+                <p class="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-500">Student records with RFID identifiers</p>
+            </article>
+            <article class="dy-student-stat">
+                <div class="flex items-start justify-between gap-3">
                     <div>
-
-                        <p
-                            class="
-                                text-xs
-                                font-semibold
-                                uppercase
-                                tracking-wider
-                                text-gray-400
-                            "
-                        >
-                            Missing RFID
-                        </p>
-
-
-                        <p
-                            class="
-                                mt-3
-                                text-4xl
-                                font-bold
-                                text-[#D4A017]
-                            "
-                        >
-                            {{ $students->whereNull('rfid_identifier')->count() }}
-                        </p>
-
-
-                        <p
-                            class="
-                                mt-2
-                                text-xs
-                                text-gray-400
-                            "
-                        >
-                            Requires data verification
-                        </p>
-
+                        <p class="text-[11px] font-bold uppercase tracking-wider text-slate-500">RFID Not Assigned</p>
+                        <p class="mt-2 text-3xl font-extrabold tracking-tight text-[#B5890F]">{{ number_format($missingRfidCount) }}</p>
                     </div>
-
-
-                    <div
-                        class="
-                            flex
-                            h-10
-                            w-10
-                            shrink-0
-                            items-center
-                            justify-center
-                            rounded-full
-                            bg-[#FFF9E7]
-                            text-[#B68A0D]
-                        "
-                    >
-
-                        <svg
-                            class="h-5 w-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                stroke-width="1.8"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
-                            />
-                        </svg>
-
+                    <div class="dy-student-stat-icon bg-amber-50 text-amber-700">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path stroke-linecap="round" d="M12 7v6m0 4h.01"/></svg>
                     </div>
-
                 </div>
-
-            </div>
-
-
+                <p class="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-500">Records requiring RFID assignment</p>
+            </article>
+            <article class="dy-student-stat">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Active Records</p>
+                        <p class="mt-2 text-3xl font-extrabold tracking-tight text-[#101064]">{{ number_format($activeStudentsCount) }}</p>
+                    </div>
+                    <div class="dy-student-stat-icon bg-slate-100 text-[#101064]">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path stroke-linecap="round" d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg>
+                    </div>
+                </div>
+                <p class="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-500">Records marked with Active status</p>
+            </article>
         </div>
-
     </section>
-
 
 
     {{-- ====================================================== --}}
@@ -869,7 +626,7 @@
                         text-gray-400
                     "
                 >
-                    Search and review imported student records.
+                    Search, filter, and review imported student records by page.
                 </p>
 
             </div>
@@ -942,7 +699,7 @@
                         grid-cols-1
                         gap-3
                         md:grid-cols-2
-                        xl:grid-cols-4
+                        xl:grid-cols-5
                     "
                 >
 
@@ -1028,7 +785,7 @@
                             </option>
 
 
-                            @foreach($students->pluck('college')->unique() as $college)
+                            @foreach($colleges as $college)
 
                                 <option
                                     value="{{ $college }}"
@@ -1084,7 +841,7 @@
                             </option>
 
 
-                            @foreach($students->pluck('program_code')->unique() as $program)
+                            @foreach($programs as $program)
 
                                 <option
                                     value="{{ $program }}"
@@ -1155,6 +912,16 @@
 
                     </div>
 
+                    {{-- ROWS PER PAGE --}}
+                    <div class="min-w-0">
+                        <label for="student-page-size" class="mb-2 block text-[10px] font-semibold uppercase tracking-wider text-gray-400">Rows per page</label>
+                        <select id="student-page-size" name="per_page" class="w-full rounded-lg border-gray-200 px-4 py-2.5 text-sm text-gray-700 focus:border-[#101064] focus:ring-[#101064]">
+                            @foreach([10, 25, 50] as $pageOption)
+                                <option value="{{ $pageOption }}" {{ $perPage === $pageOption ? 'selected' : '' }}>{{ $pageOption }} students</option>
+                            @endforeach
+                        </select>
+                    </div>
+
                 </div>
 
 
@@ -1180,7 +947,7 @@
                     )
 
                         <a
-                            href="{{ route('students.index') }}"
+                            href="{{ route('students.index', ['per_page' => $perPage]) }}"
                             class="
                                 inline-flex
                                 items-center
@@ -1247,6 +1014,16 @@
             </form>
 
 
+
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-[#FBFCFF] px-6 py-3">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="inline-flex items-center rounded-full bg-[#F0F1FF] px-3 py-1 text-xs font-bold text-[#101064]">
+                        {{ number_format($students->total()) }} matching {{ $students->total() === 1 ? 'student' : 'students' }}
+                    </span>
+                    <span class="text-xs text-slate-500">Page {{ number_format($students->currentPage()) }} of {{ number_format($students->lastPage()) }}</span>
+                </div>
+                <span class="text-xs text-slate-500">Showing {{ number_format($students->firstItem() ?? 0) }}–{{ number_format($students->lastItem() ?? 0) }} of {{ number_format($students->total()) }}</span>
+            </div>
 
             {{-- ====================================================== --}}
             {{-- TABLE --}}
@@ -1416,10 +1193,7 @@
 
 
                             <tr
-                                class="
-                                    transition
-                                    hover:bg-gray-50
-                                "
+                                class="dy-student-row"
                             >
 
 
@@ -1861,7 +1635,7 @@
                                             text-gray-400
                                         "
                                     >
-                                        Try changing your search or filter options.
+                                        Try changing your search or filter options. The registry totals above reflect all student records.
                                     </p>
 
                                 </td>
@@ -1878,6 +1652,18 @@
 
             </div>
 
+            <div class="dy-student-pager flex flex-col gap-4 px-6 py-5 lg:flex-row lg:items-center lg:justify-between" aria-label="Student directory pagination">
+                <div>
+                    <p class="text-sm font-bold text-[#101064]">Student Directory</p>
+                    <p class="mt-1 text-xs text-slate-500">
+                        Showing {{ number_format($students->firstItem() ?? 0) }}–{{ number_format($students->lastItem() ?? 0) }}
+                        of {{ number_format($students->total()) }} matching records · {{ $perPage }} per page
+                    </p>
+                </div>
+                <div class="min-w-0 text-sm">
+                    {{ $students->onEachSide(1)->links() }}
+                </div>
+            </div>
 
         </div>
 
