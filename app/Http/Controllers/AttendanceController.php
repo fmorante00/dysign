@@ -163,6 +163,13 @@ class AttendanceController extends Controller
                 ], 404);
             }
 
+            if (!\App\Support\DepartmentAccess::studentBelongsToDepartment($student, $event->department)) {
+                return response()->json([
+                    'success' => false,
+                    'code' => 'student_outside_event_department',
+                    'message' => 'This student is not authorized for the organizing department.',
+                ], 403);
+            }
             // Preserve the existing active-card lifecycle check (lost/replaced cards stay invalid).
             $hasActiveCard = DB::table('rfid_card_assignments')
                 ->where('student_id', $student->student_id)
@@ -407,6 +414,7 @@ class AttendanceController extends Controller
                 'event_id',
                 $event
             )
+            ->where('department_id', $user->department_id)
             ->whereHas(
                 'assignments',
                 function ($query) use (

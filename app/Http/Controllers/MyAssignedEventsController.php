@@ -54,7 +54,7 @@ class MyAssignedEventsController extends Controller
         */
 
         $events =
-            Event::whereHas(
+            Event::where('department_id', $personnel->user->department_id)->whereHas(
                 'assignments',
                 function ($query) use ($personnel) {
 
@@ -389,6 +389,7 @@ class MyAssignedEventsController extends Controller
             'event_id',
             $event
         )
+        ->where('department_id', $personnel->user->department_id)
         ->whereHas(
             'assignments',
             function ($query) use ($personnel) {

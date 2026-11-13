@@ -6,6 +6,7 @@ use App\Models\Event;
 use App\Models\EventEligibilityRule;
 use App\Models\EventEligibleStudent;
 use App\Models\Student;
+use App\Support\DepartmentAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -124,10 +125,7 @@ class EventEligibilityController extends Controller
 
 
         $colleges =
-            Student::where(
-                'status',
-                'Active'
-            )
+            DepartmentAccess::scopeStudentsForDepartment(Student::where('status', 'Active'), $event->department)
                 ->whereNotNull(
                     'college'
                 )
@@ -146,10 +144,7 @@ class EventEligibilityController extends Controller
 
 
         $programs =
-            Student::where(
-                'status',
-                'Active'
-            )
+            DepartmentAccess::scopeStudentsForDepartment(Student::where('status', 'Active'), $event->department)
                 ->whereNotNull(
                     'program_code'
                 )
@@ -170,10 +165,7 @@ class EventEligibilityController extends Controller
 
 
         $yearLevels =
-            Student::where(
-                'status',
-                'Active'
-            )
+            DepartmentAccess::scopeStudentsForDepartment(Student::where('status', 'Active'), $event->department)
                 ->whereNotNull(
                     'year_level'
                 )
@@ -190,10 +182,7 @@ class EventEligibilityController extends Controller
          * Used by Specific Student selection.
          */
         $students =
-            Student::where(
-                'status',
-                'Active'
-            )
+            DepartmentAccess::scopeStudentsForDepartment(Student::where('status', 'Active'), $event->department)
                 ->orderBy(
                     'last_name'
                 )
@@ -339,10 +328,7 @@ class EventEligibilityController extends Controller
         if ($college) {
 
             $exists =
-                Student::where(
-                    'status',
-                    'Active'
-                )
+                DepartmentAccess::scopeStudentsForDepartment(Student::where('status', 'Active'), $event->department)
                     ->where(
                         'college',
                         $college
@@ -367,10 +353,7 @@ class EventEligibilityController extends Controller
         if ($programCode) {
 
             $exists =
-                Student::where(
-                    'status',
-                    'Active'
-                )
+                DepartmentAccess::scopeStudentsForDepartment(Student::where('status', 'Active'), $event->department)
                     ->where(
                         'program_code',
                         $programCode
@@ -395,10 +378,7 @@ class EventEligibilityController extends Controller
         if ($yearLevel) {
 
             $exists =
-                Student::where(
-                    'status',
-                    'Active'
-                )
+                DepartmentAccess::scopeStudentsForDepartment(Student::where('status', 'Active'), $event->department)
                     ->where(
                         'year_level',
                         $yearLevel
@@ -422,10 +402,7 @@ class EventEligibilityController extends Controller
          * actually matches a student.
          */
         $matchingQuery =
-            Student::where(
-                'status',
-                'Active'
-            );
+            DepartmentAccess::scopeStudentsForDepartment(Student::where('status', 'Active'), $event->department);
 
 
         if ($college) {
@@ -632,10 +609,7 @@ class EventEligibilityController extends Controller
 
 
         $student =
-            Student::where(
-                'student_id',
-                $validated['student_id']
-            )
+            DepartmentAccess::scopeStudentsForDepartment(Student::where('student_id', $validated['student_id']), $event->department)
                 ->where(
                     'status',
                     'Active'
@@ -881,10 +855,7 @@ class EventEligibilityController extends Controller
             ) {
 
                 $student =
-                    Student::where(
-                        'student_id',
-                        $rule->student_id
-                    )
+                    DepartmentAccess::scopeStudentsForDepartment(Student::where('student_id', $rule->student_id), $event->department)
                         ->where(
                             'status',
                             'Active'
@@ -930,10 +901,7 @@ class EventEligibilityController extends Controller
              * Criteria Rule
              */
             $query =
-                Student::where(
-                    'status',
-                    'Active'
-                );
+                DepartmentAccess::scopeStudentsForDepartment(Student::where('status', 'Active'), $event->department);
 
 
             if ($rule->college) {

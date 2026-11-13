@@ -980,13 +980,7 @@ class EventController extends Controller
                             ) {
 
                                 $departmentQuery
-                                    ->whereNull(
-                                        'department_id'
-                                    )
-                                    ->orWhere(
-                                        'department_id',
-                                        $departmentId
-                                    );
+                                    ->where('department_id', $departmentId);
                             }
                         );
                     }

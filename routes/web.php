@@ -2194,3 +2194,15 @@ Route::middleware(['auth', 'role:Attendance Personnel'])->group(function () {
 */
 
 require __DIR__.'/auth.php';
+
+/* Department-scoped read-only student directory (v1). */
+\Illuminate\Support\Facades\Route::middleware(['auth'])->group(function () {
+    \Illuminate\Support\Facades\Route::get('/department/students',
+        [\App\Http\Controllers\DepartmentStudentDirectoryController::class, 'index'])
+        ->name('department.students.index');
+
+    \Illuminate\Support\Facades\Route::get('/department/students/{student}',
+        [\App\Http\Controllers\DepartmentStudentDirectoryController::class, 'show'])
+        ->whereNumber('student')
+        ->name('department.students.show');
+});
