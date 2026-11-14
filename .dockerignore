@@ -1,0 +1,11 @@
+.git
+.env
+.env.*
+!.env.example
+node_modules
+vendor
+.vercel
+.phpunit.cache
+.DS_Store
+npm-debug.log
+storage/logs/*.log
