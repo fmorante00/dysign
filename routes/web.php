@@ -1434,6 +1434,12 @@ Route::middleware(['auth'])->group(function () {
         'show'
     ])->name('my-profile.show');
 
+    // Settings Page - All Authenticated Users
+    Route::get('/settings', [
+        \App\Http\Controllers\SettingsController::class,
+        'index'
+    ])->name('settings.index');
+
 });
 
 

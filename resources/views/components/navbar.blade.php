@@ -557,7 +557,7 @@ View Profile
 
 <a
 
-href="#"
+href="{{ route('settings.index') }}"
 
 class="
 block
