@@ -34,6 +34,19 @@ class AttendanceExceptionController extends Controller
             ->orderByDesc('start_time')
             ->get();
 
+        // Only offer events currently accepting live manual check-ins.
+        // Keep the legacy event list unchanged until its database is migrated.
+        if (\Illuminate\Support\Facades\Schema::hasColumn('attendance_exceptions', 'checked_out_at')) {
+            $now = Carbon::now(self::TZ);
+
+            $events = $events->filter(function (Event $event) use ($now) {
+                [$startsAt, $endsAt] = $this->eventWindow($event);
+
+                return $now->gte($startsAt->copy()->subHour())
+                    && $now->lte($endsAt)
+                    && !in_array(strtolower((string) $event->status), ['cancelled', 'canceled'], true);
+            })->values();
+        }
         $exceptions = AttendanceException::with(['event', 'student', 'reviewer'])
             ->where('reported_by', auth()->id())
             ->orderByDesc('exception_id')
@@ -48,11 +61,19 @@ class AttendanceExceptionController extends Controller
         $personnelId = $request->user()->personnel?->personnel_id;
         abort_unless($personnelId, 403, 'Attendance Personnel account has no personnel record.');
 
+        // The database determines the capture mode, never the browser.
+        if (\Illuminate\Support\Facades\Schema::hasColumn('attendance_exceptions', 'checked_out_at')) {
+            $request->merge(['capture_mode' => 'live']);
+        } else {
+            $request->request->remove('capture_mode');
+        }
+
         $data = $request->validate([
             'event_id' => ['required', 'integer', 'exists:events,event_id'],
             'student_number' => ['required', 'string', 'max:100'],
             'issue_type' => ['required', Rule::in(['Missed Scan', 'Unreadable RFID', 'Scanner Failure', 'RFID Not Registered'])],
-            'observed_at' => ['required', 'date'],
+            'observed_at' => ['required_unless:capture_mode,live', 'nullable', 'date'],
+            'capture_mode' => ['sometimes', 'in:live'],
             'reason' => ['required', 'string', 'min:10', 'max:2000'],
         ]);
 
@@ -64,7 +85,9 @@ class AttendanceExceptionController extends Controller
         );
 
         $event->syncScheduledStatus();
-        $observedAt = Carbon::parse($data['observed_at'], self::TZ);
+        $observedAt = ($data['capture_mode'] ?? null) === 'live'
+            ? Carbon::now(self::TZ)
+            : Carbon::parse($data['observed_at'], self::TZ);
         $this->validateObservedAt($event, $observedAt);
 
         $student = Student::query()
@@ -110,6 +133,68 @@ class AttendanceExceptionController extends Controller
         return back()->with('success', 'Exception submitted. Department Staff must review it before attendance is recorded.');
     }
 
+    /** Capture a real manual checkout timestamp without staff-entered times. */
+    public function personnelCheckOut(Request $request, AttendanceException $attendanceException): RedirectResponse
+    {
+        $personnelId = $request->user()->personnel?->personnel_id;
+        abort_unless($personnelId, 403);
+
+        if (!\Illuminate\Support\Facades\Schema::hasColumn('attendance_exceptions', 'checked_out_at')) {
+            abort(503, 'Manual checkout is not enabled for this database.');
+        }
+
+        DB::transaction(function () use ($request, $attendanceException, $personnelId) {
+            $exception = AttendanceException::whereKey($attendanceException->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $event = Event::findOrFail($exception->event_id);
+
+            abort_unless(
+                (int) $exception->reported_by === (int) $request->user()->user_id
+                && $event->assignments()->where('personnel_id', $personnelId)->exists(),
+                403
+            );
+
+            if ($exception->status !== 'Pending' || $exception->checked_out_at !== null) {
+                throw ValidationException::withMessages([
+                    'checkout' => 'This exception is already checked out or reviewed.',
+                ]);
+            }
+
+            if (AttendanceRecord::where('event_id', $exception->event_id)
+                ->where('student_id', $exception->student_id)->exists()) {
+                throw ValidationException::withMessages([
+                    'checkout' => 'An attendance record already exists for this student and event.',
+                ]);
+            }
+
+            $timeIn = Carbon::parse(
+                $exception->observed_at->format('Y-m-d H:i:s'),
+                self::TZ
+            );
+
+            $this->validateObservedAt($event, $timeIn);
+
+            $timeOut = Carbon::now(self::TZ);
+            [, $endsAt] = $this->eventWindow($event);
+
+            if ($timeOut->lte($timeIn)
+                || $timeOut->lt($endsAt)
+                || $timeOut->gt($endsAt->copy()->addHour())) {
+                throw ValidationException::withMessages([
+                    'checkout' => 'Checkout is allowed only from event end until one hour afterward (PH time).',
+                ]);
+            }
+
+            $exception->update([
+                'checked_out_at' => $timeOut->format('Y-m-d H:i:s'),
+                'checked_out_by' => $request->user()->user_id,
+            ]);
+        });
+
+        return back()->with('success', 'Manual checkout recorded. Awaiting Department Staff approval.');
+    }
     /** Department Staff: only requests for events owned by their own department. */
     public function staffIndex(Request $request): View
     {
@@ -146,17 +231,25 @@ class AttendanceExceptionController extends Controller
         $departmentId = $request->user()->department_id;
         abort_unless($departmentId, 403, 'Staff account is not assigned to a department.');
 
+        $automaticCheckoutEnabled = \Illuminate\Support\Facades\Schema::hasColumn(
+            'attendance_exceptions',
+            'checked_out_at'
+        );
+
         $data = $request->validate([
             'decision' => ['required', Rule::in(['Approved', 'Rejected'])],
-            // A real, staff-verified checkout time is required for a final attendance status.
-            'verified_time_out' => ['required_if:decision,Approved', 'nullable', 'date'],
-            'review_notes' => [
-                'required', 'string', 'max:2000',
-                ...($request->input('decision') === 'Approved' ? ['min:10'] : []),
-            ],
+            'verified_time_out' => $automaticCheckoutEnabled
+                ? ['nullable', 'date']
+                : ['required_if:decision,Approved', 'nullable', 'date'],
+            'review_notes' => $automaticCheckoutEnabled
+                ? ['required_if:decision,Rejected', 'nullable', 'string', 'max:2000']
+                : [
+                    'required', 'string', 'max:2000',
+                    ...($request->input('decision') === 'Approved' ? ['min:10'] : []),
+                ],
         ]);
 
-        DB::transaction(function () use ($attendanceException, $departmentId, $data, $request) {
+        DB::transaction(function () use ($attendanceException, $departmentId, $data, $request, $automaticCheckoutEnabled) {
             $exception = AttendanceException::whereKey($attendanceException->getKey())->lockForUpdate()->firstOrFail();
             $event = Event::whereKey($exception->event_id)->firstOrFail();
             abort_unless((int) $event->department_id === (int) $departmentId, 403);
@@ -177,8 +270,21 @@ class AttendanceExceptionController extends Controller
                 );
                 $this->validateObservedAt($event, $observedAt);
 
-                // Approval requires independently verified checkout evidence.
-                $verifiedTimeOut = Carbon::parse($data['verified_time_out'], self::TZ);
+                if ($automaticCheckoutEnabled) {
+                    if (!$exception->checked_out_at || !$exception->checked_out_by) {
+                        throw ValidationException::withMessages([
+                            'decision' => 'Personnel must complete the actual Manual Check-Out before staff approval.',
+                        ]);
+                    }
+
+                    $verifiedTimeOut = Carbon::parse(
+                        $exception->checked_out_at->format('Y-m-d H:i:s'),
+                        self::TZ
+                    );
+                } else {
+                    $verifiedTimeOut = Carbon::parse($data['verified_time_out'], self::TZ);
+                }
+
                 $this->validateVerifiedTimeOut($event, $observedAt, $verifiedTimeOut);
 
                 $student = Student::where('student_id', $exception->student_id)->lockForUpdate()->firstOrFail();
@@ -215,7 +321,10 @@ class AttendanceExceptionController extends Controller
                 'status' => $data['decision'],
                 'reviewed_by' => $request->user()->user_id,
                 'reviewed_at' => now(),
-                'review_notes' => trim($data['review_notes'] ?? '') ?: null,
+                'review_notes' => trim($data['review_notes'] ?? '')
+                    ?: ($automaticCheckoutEnabled && $data['decision'] === 'Approved'
+                        ? 'Reviewed and approved using personnel-captured check-in and check-out times.'
+                        : null),
                 'attendance_id' => $attendanceId,
             ]);
         });
