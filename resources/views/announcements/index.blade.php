@@ -24,6 +24,40 @@
 
 </style>
 
+<style>
+    /* Announcement workspace: independent of arbitrary Tailwind grid compilation. */
+    .dy-announcement-workspace { --dy-navy:#101064; --dy-gold:#d4a017; }
+    .dy-announcement-workspace .dy-composer-grid { display:grid; grid-template-columns:minmax(0,1fr) 260px; }
+    .dy-announcement-workspace .dy-recipient-grid { display:grid; grid-template-columns:minmax(0,1.25fr) minmax(270px,.8fr); }
+    .dy-announcement-workspace .dy-picker-filters { display:grid; grid-template-columns:minmax(0,1.45fr) minmax(130px,.8fr) minmax(120px,.7fr); gap:12px; align-items:end; }
+    .dy-announcement-workspace .dy-composer-target-filters { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+    .dy-announcement-workspace .dy-composer-target-filters #yearField { margin-top:0; }
+    .dy-announcement-workspace .dy-composer-target-filters #specificStudentsField { grid-column:1/-1; }
+    .dy-announcement-workspace .dy-history-filters { display:grid; grid-template-columns:minmax(0,1.4fr) minmax(150px,.7fr) 135px auto; gap:12px; align-items:end; }
+    .dy-announcement-workspace .dy-control-label { display:block; margin-bottom:6px; color:#64748b; font-size:10px; font-weight:800; letter-spacing:.09em; text-transform:uppercase; }
+    .dy-announcement-workspace .dy-control { display:block; width:100%; min-width:0; border:1px solid #dbe2ee; border-radius:11px; background:#fff; color:#101064; padding:10px 12px; font-size:13px; min-height:42px; }
+    .dy-announcement-workspace .dy-control:focus { outline:2px solid rgba(212,160,23,.28); border-color:#d4a017; outline-offset:0; }
+    .dy-announcement-workspace .dy-pager { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; padding-top:12px; border-top:1px solid #e7ebf4; }
+    .dy-announcement-workspace .dy-pager-controls { display:flex; align-items:center; gap:8px; }
+    .dy-announcement-workspace .dy-page-button { border:1px solid #d6deeb; border-radius:9px; background:#fff; padding:7px 12px; color:#101064; font-weight:700; font-size:12px; transition:background .15s; }
+    .dy-announcement-workspace .dy-page-button:not(:disabled):hover { background:#eef1ff; }
+    .dy-announcement-workspace .dy-page-button:disabled { opacity:.42; cursor:not-allowed; }
+    .dy-announcement-workspace .dy-primary-soft { border:1px solid #c8d0ef; border-radius:10px; background:#f0f2ff; color:#101064; font-size:12px; font-weight:800; padding:9px 12px; }
+    .dy-announcement-workspace .dy-primary-soft:hover:not(:disabled) { background:#e5eaff; }
+    .dy-announcement-workspace .dy-primary-soft:disabled { opacity:.45; }
+    .dy-announcement-workspace .dy-list-frame { height:332px; overflow:auto; overscroll-behavior:contain; }
+    .dy-announcement-workspace .dy-selected-frame { height:280px; overflow:auto; overscroll-behavior:contain; }
+    .dy-announcement-workspace .dy-preview-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:9px 0; border-bottom:1px solid #edf0f5; }
+    .dy-announcement-workspace .dy-recipient-preview-list { margin-top:14px; max-height:315px; overflow:auto; }
+    .dy-announcement-workspace .dy-history-body tr[hidden] { display:none!important; }
+    .dy-announcement-workspace .dy-history-bar { border-bottom:1px solid #e5e9f2; background:#fbfcff; padding:16px 20px; }
+    .dy-announcement-workspace .dy-subtle-note { font-size:11px; color:#718096; line-height:1.55; }
+    @media (max-width:1200px) { .dy-announcement-workspace .dy-composer-grid { grid-template-columns:minmax(0,1fr); } .dy-announcement-workspace .dy-recipient-grid { grid-template-columns:minmax(0,1.2fr) minmax(250px,.8fr); } }
+    @media (max-width:850px) { .dy-announcement-workspace .dy-recipient-grid { grid-template-columns:minmax(0,1fr); } .dy-announcement-workspace .dy-picker-filters { grid-template-columns:minmax(0,1fr) minmax(0,1fr); } .dy-announcement-workspace .dy-picker-search { grid-column:1/-1; } .dy-announcement-workspace .dy-history-filters { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+    @media (max-width:580px) { .dy-announcement-workspace .dy-picker-filters,.dy-announcement-workspace .dy-history-filters,.dy-announcement-workspace .dy-composer-target-filters { grid-template-columns:minmax(0,1fr); } .dy-announcement-workspace .dy-picker-search { grid-column:auto; } .dy-announcement-workspace .dy-list-frame { height:300px; } }
+</style>
+
+
 
 
 @php
@@ -86,7 +120,7 @@
 
 
 
-<div class="min-w-0 space-y-8">
+<div class="dy-announcement-workspace min-w-0 space-y-8">
 
 
     {{-- ====================================================== --}}
@@ -534,7 +568,7 @@
                                 text-gray-400
                             "
                         >
-                            Delivered
+                            Sent / Partial
                         </p>
 
 
@@ -822,9 +856,7 @@
 
                 <div
                     class="
-                        grid
-                        grid-cols-1
-                        lg:grid-cols-[1fr_300px]
+                        dy-composer-grid
                     "
                 >
 
@@ -1013,7 +1045,7 @@
 
                         <div
                             id="recipientOptions"
-                            class="mt-5"
+                            class="dy-composer-target-filters mt-5"
                         >
 
 
@@ -1139,89 +1171,102 @@
 
 
 
-                            {{-- SPECIFIC STUDENTS --}}
-
-                            <div
-                                id="specificStudentsField"
-                                class="hidden"
-                            >
-
-                                <label
-                                    for="specific_student_ids"
-                                    class="
-                                        mb-2
-                                        block
-                                        text-sm
-                                        font-semibold
-                                        text-gray-600
-                                    "
-                                >
-                                    Select Students
-                                </label>
-
-
-                                <select
-                                    name="specific_student_ids[]"
-                                    id="specific_student_ids"
-                                    multiple
-                                    size="9"
-                                    class="
-                                        w-full
-                                        rounded-xl
-                                        border
-                                        border-gray-300
-                                        bg-white
-                                        px-4
-                                        py-3
-                                        text-sm
-                                        text-gray-700
-                                        outline-none
-                                        transition
-                                        focus:border-[#D4A017]
-                                        focus:ring-2
-                                        focus:ring-[#D4A017]/20
-                                    "
-                                >
-
+                            {{-- SPECIFIC STUDENTS: paginated, searchable recipient directory --}}
+                            <div id="specificStudentsField" class="hidden">
+                                <div class="overflow-hidden rounded-2xl border border-[#DFE5F0] bg-white shadow-sm">
+                                    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-[#E6EAF3] bg-[#FBFCFF] px-5 py-4">
+                                        <div>
+                                            <p class="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#B78716]">Recipient directory</p>
+                                            <h3 class="mt-1 text-base font-bold text-[#101064]">Select individual students</h3>
+                                            <p class="mt-1 text-xs text-slate-500">Search and choose recipients. Selections stay saved when changing pages or filters.</p>
+                                        </div>
+                                        <span id="studentPickerCount" aria-live="polite" class="rounded-full bg-[#EEF1FF] px-3 py-1.5 text-xs font-bold text-[#101064]">0 selected</span>
+                                    </div>
+                                    <div class="dy-recipient-grid">
+                                        <div class="min-w-0 border-b border-[#E6EAF3] p-4 sm:p-5 lg:border-b-0 lg:border-r">
+                                            <div class="dy-picker-filters">
+                                                <div class="dy-picker-search">
+                                                    <label for="studentPickerSearch" class="dy-control-label">Search by name or ID</label>
+                                                    <input id="studentPickerSearch" type="search" autocomplete="off" placeholder="Find a student..." class="dy-control">
+                                                </div>
+                                                <div>
+                                                    <label for="studentPickerProgram" class="dy-control-label">Program</label>
+                                                    <select id="studentPickerProgram" class="dy-control">
+                                                        <option value="">All programs</option>
+                                                        @foreach($students->pluck('program_code')->filter()->unique()->sort()->values() as $program)
+                                                            <option value="{{ $program }}">{{ $program }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label for="studentPickerYear" class="dy-control-label">Year Level</label>
+                                                    <select id="studentPickerYear" class="dy-control">
+                                                        <option value="">All years</option>
+                                                        @foreach($students->pluck('year_level')->filter()->unique()->sort()->values() as $year)
+                                                            <option value="{{ $year }}">Year {{ $year }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="mt-3 flex flex-wrap items-center justify-between gap-2">
+                                                <div class="flex items-center gap-2">
+                                                    <label for="studentPickerPerPage" class="dy-control-label !mb-0">Show</label>
+                                                    <select id="studentPickerPerPage" class="dy-control !w-[78px] !min-h-[34px] !py-1.5">
+                                                        <option value="10" selected>10</option>
+                                                        <option value="20">20</option>
+                                                    </select>
+                                                    <span class="text-xs text-slate-500">students / page</span>
+                                                </div>
+                                                <div class="flex items-center gap-2">
+                                                    <button type="button" id="studentPickerResetFilters" class="dy-page-button">Reset filters</button>
+                                                    <button type="button" id="studentPickerSelectShown" class="dy-primary-soft">Select page</button>
+                                                </div>
+                                            </div>
+                                            <div id="studentPickerList" role="group" aria-label="Available students" class="dy-list-frame mt-3 divide-y divide-[#EDF0F6] rounded-xl border border-[#E6EAF3] bg-white p-2"></div>
+                                            <div class="dy-pager mt-3">
+                                                <span id="studentPickerShowing" aria-live="polite" class="text-xs text-slate-500">Loading students...</span>
+                                                <div class="dy-pager-controls">
+                                                    <button id="studentPickerPrev" type="button" class="dy-page-button">Previous</button>
+                                                    <span id="studentPickerPageLabel" class="min-w-[75px] text-center text-xs font-bold text-[#101064]">1 / 1</span>
+                                                    <button id="studentPickerNext" type="button" class="dy-page-button">Next</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="min-w-0 bg-[#F7F9FF] p-4 sm:p-5">
+                                            <div class="flex items-start justify-between gap-3">
+                                                <div>
+                                                    <p class="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#B78716]">Selection summary</p>
+                                                    <h4 class="mt-1 text-sm font-bold text-[#101064]">Selected recipients</h4>
+                                                    <p id="studentPickerSelectedHint" class="mt-1 text-xs text-slate-500">No students selected</p>
+                                                </div>
+                                                <button id="studentPickerClear" type="button" class="dy-page-button">Clear all</button>
+                                            </div>
+                                            <div id="studentPickerSelected" aria-live="polite" class="dy-selected-frame mt-4 space-y-2"></div>
+                                            <div class="dy-pager mt-3">
+                                                <span id="studentPickerSelectedShowing" class="text-xs text-slate-500">0 selected</span>
+                                                <div class="dy-pager-controls">
+                                                    <button id="studentPickerSelectedPrev" type="button" class="dy-page-button">Previous</button>
+                                                    <span id="studentPickerSelectedPageLabel" class="min-w-[60px] text-center text-xs font-bold text-[#101064]">1 / 1</span>
+                                                    <button id="studentPickerSelectedNext" type="button" class="dy-page-button">Next</button>
+                                                </div>
+                                            </div>
+                                            <p class="dy-subtle-note mt-3">Only the selected students will receive this announcement. Other recipients are not affected.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                {{-- Keep original multi-select as form source of truth for API. --}}
+                                <select name="specific_student_ids[]" id="specific_student_ids" multiple class="hidden" tabindex="-1" aria-hidden="true">
                                     @foreach($students as $student)
-
                                         <option
                                             value="{{ $student->student_id }}"
-                                        >
-                                            {{ $student->student_number }}
-                                            —
-                                            {{ $student->last_name }},
-                                            {{ $student->first_name }}
-
-                                            @if($student->program_code)
-                                                —
-                                                {{ $student->program_code }}
-                                            @endif
-
-                                            @if($student->year_level)
-                                                • Year {{ $student->year_level }}
-                                            @endif
-
-                                        </option>
-
+                                            data-student-number="{{ $student->student_number }}"
+                                            data-student-name="{{ trim($student->last_name.', '.$student->first_name) }}"
+                                            data-program="{{ $student->program_code ?? '' }}"
+                                            data-year="{{ $student->year_level ?? '' }}"
+                                        >{{ $student->student_number }} — {{ $student->last_name }}, {{ $student->first_name }}</option>
                                     @endforeach
-
                                 </select>
-
-
-                                <p
-                                    class="
-                                        mt-2
-                                        text-xs
-                                        text-gray-400
-                                    "
-                                >
-                                    Hold Ctrl while clicking to select
-                                    multiple students.
-                                </p>
-
                             </div>
-
                         </div>
 
 
@@ -1296,19 +1341,21 @@
                             </div>
 
 
-                            <div
-                                id="recipientPreviewList"
-                                class="
-                                    mt-3
-                                    hidden
-                                    space-y-1
-                                    border-t
-                                    border-gray-200
-                                    pt-3
-                                    text-xs
-                                    text-gray-500
-                                "
-                            ></div>
+                            <div class="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-[#E5EAF4] pt-3">
+                                <p class="text-xs text-slate-500">In-app announcements remain available even without a valid email.</p>
+                                <button type="button" id="recipientPreviewToggle" class="dy-page-button hidden" aria-expanded="false">Show recipients</button>
+                            </div>
+                            <div id="recipientPreviewDetails" class="hidden">
+                                <div id="recipientPreviewList" class="dy-recipient-preview-list"></div>
+                                <div class="dy-pager mt-2">
+                                    <span id="recipientPreviewShowing" class="text-xs text-slate-500"></span>
+                                    <div class="dy-pager-controls">
+                                        <button type="button" id="recipientPreviewPrev" class="dy-page-button">Previous</button>
+                                        <span id="recipientPreviewPageLabel" class="min-w-[60px] text-center text-xs font-bold text-[#101064]">1 / 1</span>
+                                        <button type="button" id="recipientPreviewNext" class="dy-page-button">Next</button>
+                                    </div>
+                                </div>
+                            </div>
 
                         </div>
 
@@ -1620,8 +1667,8 @@
                             "
                         >
                             DySign automatically resolves recipients,
-                            stores the announcement, and queues email
-                            delivery.
+                            stores the announcement and sends
+                            notifications using the configured mail mode.
                         </p>
 
 
@@ -1772,7 +1819,7 @@
                                             text-gray-700
                                         "
                                     >
-                                        Queue notification
+                                        Notify recipients
                                     </p>
 
 
@@ -1784,9 +1831,9 @@
                                             text-gray-400
                                         "
                                     >
-                                        Email delivery runs through the
-                                        Laravel queue instead of blocking
-                                        the page.
+                                        Delivery uses the configured mail
+                                        mode. Students without a real email
+                                        still receive in-app announcements.
                                     </p>
 
                                 </div>
@@ -1965,7 +2012,33 @@
                 shadow-sm
             "
         >
-
+            <div class="dy-history-bar">
+                <div class="dy-history-filters">
+                    <div>
+                        <label for="announcementHistorySearch" class="dy-control-label">Search announcements</label>
+                        <input id="announcementHistorySearch" type="search" class="dy-control" placeholder="Event, subject or audience...">
+                    </div>
+                    <div>
+                        <label for="announcementHistoryStatus" class="dy-control-label">Delivery status</label>
+                        <select id="announcementHistoryStatus" class="dy-control">
+                            <option value="">All statuses</option>
+                            <option value="Sent">Sent</option>
+                            <option value="Partially Sent">Partially Sent</option>
+                            <option value="Processing">Processing</option>
+                            <option value="Failed">Failed</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="announcementHistoryPerPage" class="dy-control-label">Rows per page</label>
+                        <select id="announcementHistoryPerPage" class="dy-control">
+                            <option value="10" selected>10 announcements</option>
+                            <option value="25">25 announcements</option>
+                            <option value="50">50 announcements</option>
+                        </select>
+                    </div>
+                    <button type="button" id="announcementHistoryReset" class="dy-page-button !min-h-[42px]">Reset</button>
+                </div>
+            </div>
             <div class="overflow-x-auto">
 
                 <table
@@ -2060,7 +2133,7 @@
 
 
 
-                    <tbody class="divide-y divide-gray-100">
+                    <tbody class="dy-history-body divide-y divide-gray-100">
 
                         @forelse(
                             $announcementCollection->sortByDesc('created_at')
@@ -2068,6 +2141,8 @@
                         )
 
                             <tr
+                                data-announcement-row
+                                data-status="{{ $announcement->status ?? 'Processing' }}"
                                 class="
                                     transition
                                     hover:bg-gray-50/70
@@ -2357,33 +2432,13 @@
 
 
 
-            <div
-                class="
-                    flex
-                    flex-col
-                    gap-2
-                    border-t
-                    border-gray-100
-                    bg-gray-50/50
-                    px-6
-                    py-4
-                    text-xs
-                    text-gray-400
-                    sm:flex-row
-                    sm:items-center
-                    sm:justify-between
-                "
-            >
-
-                <span>
-                    Event communication history
-                </span>
-
-
-                <span>
-                    DySign • Event Announcements
-                </span>
-
+            <div class="dy-pager border-t border-[#E8ECF4] bg-[#FAFBFF] px-5 py-4">
+                <span id="announcementHistoryShowing" class="text-xs text-slate-500">Announcement history</span>
+                <div class="dy-pager-controls">
+                    <button id="announcementHistoryPrev" class="dy-page-button" type="button">Previous</button>
+                    <span id="announcementHistoryPageLabel" class="min-w-[80px] text-center text-xs font-bold text-[#101064]">1 / 1</span>
+                    <button id="announcementHistoryNext" class="dy-page-button" type="button">Next</button>
+                </div>
             </div>
 
         </div>
@@ -2465,6 +2520,189 @@ document.addEventListener(
             );
 
 
+        const studentPickerSearch = document.getElementById('studentPickerSearch');
+        const studentPickerProgram = document.getElementById('studentPickerProgram');
+        const studentPickerYear = document.getElementById('studentPickerYear');
+        const studentPickerPerPage = document.getElementById('studentPickerPerPage');
+        const studentPickerResetFilters = document.getElementById('studentPickerResetFilters');
+        const studentPickerList = document.getElementById('studentPickerList');
+        const studentPickerCount = document.getElementById('studentPickerCount');
+        const studentPickerShowing = document.getElementById('studentPickerShowing');
+        const studentPickerPageLabel = document.getElementById('studentPickerPageLabel');
+        const studentPickerPrev = document.getElementById('studentPickerPrev');
+        const studentPickerNext = document.getElementById('studentPickerNext');
+        const studentPickerSelected = document.getElementById('studentPickerSelected');
+        const studentPickerSelectedHint = document.getElementById('studentPickerSelectedHint');
+        const studentPickerSelectedShowing = document.getElementById('studentPickerSelectedShowing');
+        const studentPickerSelectedPageLabel = document.getElementById('studentPickerSelectedPageLabel');
+        const studentPickerSelectedPrev = document.getElementById('studentPickerSelectedPrev');
+        const studentPickerSelectedNext = document.getElementById('studentPickerSelectedNext');
+        const studentPickerSelectShown = document.getElementById('studentPickerSelectShown');
+        const studentPickerClear = document.getElementById('studentPickerClear');
+
+        // Keep the original multi-select as the single source of truth for FormData.
+        // This retains selected students across searches and page changes.
+        const pickerStudents = Array.from(specificStudents.options).map(option => ({
+            option,
+            number: option.dataset.studentNumber || '',
+            name: option.dataset.studentName || option.textContent.trim(),
+            program: option.dataset.program || '',
+            year: option.dataset.year || '',
+        }));
+        let pickerPage = 1;
+        let selectedPage = 1;
+        const SELECTED_PAGE_SIZE = 5;
+
+        function matchingPickerStudents() {
+            const query = studentPickerSearch.value.trim().toLocaleLowerCase();
+            const program = studentPickerProgram.value;
+            const year = studentPickerYear.value;
+            return pickerStudents.filter(student => {
+                if (program && student.program !== program) return false;
+                if (year && student.year !== year) return false;
+                return !query || [student.name, student.number, student.program, student.year]
+                    .some(value => value.toLocaleLowerCase().includes(query));
+            });
+        }
+
+        function pickerIdentity(student) {
+            return [student.program, student.year ? `Year ${student.year}` : '']
+                .filter(Boolean).join(' · ') || 'Student';
+        }
+
+        function pickerCurrentPageItems() {
+            const perPage = Number(studentPickerPerPage.value) || 10;
+            const matching = matchingPickerStudents();
+            return matching.slice((pickerPage - 1) * perPage, pickerPage * perPage);
+        }
+
+        function createPagerState(total, perPage, requestedPage, prev, next, label) {
+            const pages = Math.max(1, Math.ceil(total / perPage));
+            const page = Math.max(1, Math.min(requestedPage, pages));
+            prev.disabled = page <= 1;
+            next.disabled = page >= pages;
+            label.textContent = `Page ${page} / ${pages}`;
+            return page;
+        }
+
+        function updateStudentPicker() {
+            const filtered = matchingPickerStudents();
+            const perPage = Number(studentPickerPerPage.value) || 10;
+            pickerPage = createPagerState(filtered.length, perPage, pickerPage,
+                studentPickerPrev, studentPickerNext, studentPickerPageLabel);
+            const shown = pickerCurrentPageItems();
+            const selected = pickerStudents.filter(student => student.option.selected);
+            selectedPage = createPagerState(selected.length, SELECTED_PAGE_SIZE, selectedPage,
+                studentPickerSelectedPrev, studentPickerSelectedNext, studentPickerSelectedPageLabel);
+            const selectedShown = selected.slice((selectedPage - 1) * SELECTED_PAGE_SIZE, selectedPage * SELECTED_PAGE_SIZE);
+
+            studentPickerCount.textContent = `${selected.length} selected`;
+            const first = shown.length ? (pickerPage - 1) * perPage + 1 : 0;
+            const last = first ? first + shown.length - 1 : 0;
+            studentPickerShowing.textContent = `Showing ${first}–${last} of ${filtered.length} students`;
+            studentPickerSelectedHint.textContent = selected.length
+                ? `${selected.length} students selected across all pages` : 'No students selected';
+            studentPickerSelectedShowing.textContent = selected.length
+                ? `${(selectedPage - 1) * SELECTED_PAGE_SIZE + 1}–${(selectedPage - 1) * SELECTED_PAGE_SIZE + selectedShown.length} of ${selected.length}`
+                : '0 selected';
+            studentPickerSelectShown.disabled = shown.length === 0 || shown.every(student => student.option.selected);
+            studentPickerClear.disabled = selected.length === 0;
+            studentPickerList.replaceChildren();
+            studentPickerSelected.replaceChildren();
+
+            if (!shown.length) {
+                const empty = document.createElement('p');
+                empty.className = 'rounded-xl bg-slate-50 px-4 py-12 text-center text-sm text-slate-500';
+                empty.textContent = 'No students match your filters.';
+                studentPickerList.appendChild(empty);
+            }
+            for (const student of shown) {
+                const row = document.createElement('label');
+                row.className = 'flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 transition ' +
+                    (student.option.selected ? 'bg-[#F0F2FF]' : 'hover:bg-slate-50');
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = student.option.selected;
+                checkbox.className = 'h-4 w-4 shrink-0 accent-[#101064]';
+                checkbox.setAttribute('aria-label', `Select ${student.name}`);
+                checkbox.addEventListener('change', () => {
+                    student.option.selected = checkbox.checked;
+                    announcePickerChange();
+                });
+                const details = document.createElement('div');
+                details.className = 'min-w-0 flex-1';
+                const name = document.createElement('p');
+                name.className = 'truncate text-sm font-semibold text-[#101064]';
+                name.textContent = student.name;
+                const meta = document.createElement('p');
+                meta.className = 'mt-0.5 truncate text-[11px] text-slate-500';
+                meta.textContent = `${student.number} · ${pickerIdentity(student)}`;
+                details.append(name, meta);
+                row.append(checkbox, details);
+                studentPickerList.appendChild(row);
+            }
+            if (!selected.length) {
+                const empty = document.createElement('div');
+                empty.className = 'rounded-xl border border-dashed border-[#D5DDEF] bg-white px-4 py-10 text-center text-xs text-slate-500';
+                empty.textContent = 'Your selected students will appear here.';
+                studentPickerSelected.appendChild(empty);
+            }
+            for (const student of selectedShown) {
+                const row = document.createElement('div');
+                row.className = 'flex items-center justify-between gap-2 rounded-lg border border-[#E4E9F4] bg-white px-3 py-2.5';
+                const details = document.createElement('div');
+                details.className = 'min-w-0';
+                const name = document.createElement('p');
+                name.className = 'truncate text-xs font-bold text-[#101064]';
+                name.textContent = student.name;
+                const meta = document.createElement('p');
+                meta.className = 'truncate text-[11px] text-slate-500';
+                meta.textContent = `${student.number} · ${pickerIdentity(student)}`;
+                const remove = document.createElement('button');
+                remove.type = 'button';
+                remove.className = 'shrink-0 rounded-lg px-2 py-1 text-xs font-bold text-[#101064] hover:bg-[#EFF1FB]';
+                remove.textContent = 'Remove';
+                remove.setAttribute('aria-label', `Remove ${student.name}`);
+                remove.addEventListener('click', () => {
+                    student.option.selected = false;
+                    announcePickerChange();
+                });
+                details.append(name, meta);
+                row.append(details, remove);
+                studentPickerSelected.appendChild(row);
+            }
+        }
+
+        function announcePickerChange() {
+            updateStudentPicker();
+            specificStudents.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        function resetPickerPage() { pickerPage = 1; updateStudentPicker(); }
+        studentPickerSearch.addEventListener('input', resetPickerPage);
+        studentPickerProgram.addEventListener('change', resetPickerPage);
+        studentPickerYear.addEventListener('change', resetPickerPage);
+        studentPickerPerPage.addEventListener('change', resetPickerPage);
+        studentPickerResetFilters.addEventListener('click', () => {
+            studentPickerSearch.value = '';
+            studentPickerProgram.value = '';
+            studentPickerYear.value = '';
+            studentPickerPerPage.value = '10';
+            resetPickerPage();
+        });
+        studentPickerPrev.addEventListener('click', () => { pickerPage--; updateStudentPicker(); });
+        studentPickerNext.addEventListener('click', () => { pickerPage++; updateStudentPicker(); });
+        studentPickerSelectedPrev.addEventListener('click', () => { selectedPage--; updateStudentPicker(); });
+        studentPickerSelectedNext.addEventListener('click', () => { selectedPage++; updateStudentPicker(); });
+        studentPickerSelectShown.addEventListener('click', () => {
+            for (const student of pickerCurrentPageItems()) student.option.selected = true;
+            announcePickerChange();
+        });
+        studentPickerClear.addEventListener('click', () => {
+            for (const student of pickerStudents) student.option.selected = false;
+            selectedPage = 1;
+            announcePickerChange();
+        });
+
         const attachmentInput =
             document.getElementById(
                 'attachments'
@@ -2499,6 +2737,46 @@ document.addEventListener(
             document.getElementById(
                 'previewLoading'
             );
+
+        const recipientPreviewToggle = document.getElementById('recipientPreviewToggle');
+        const recipientPreviewDetails = document.getElementById('recipientPreviewDetails');
+        const recipientPreviewShowing = document.getElementById('recipientPreviewShowing');
+        const recipientPreviewPageLabel = document.getElementById('recipientPreviewPageLabel');
+        const recipientPreviewPrev = document.getElementById('recipientPreviewPrev');
+        const recipientPreviewNext = document.getElementById('recipientPreviewNext');
+        let previewRecipients = [];
+        let previewPage = 1;
+        const PREVIEW_PER_PAGE = 5;
+        function renderPreviewPage() {
+            previewPage = createPagerState(previewRecipients.length, PREVIEW_PER_PAGE, previewPage,
+                recipientPreviewPrev, recipientPreviewNext, recipientPreviewPageLabel);
+            const shown = previewRecipients.slice((previewPage - 1) * PREVIEW_PER_PAGE, previewPage * PREVIEW_PER_PAGE);
+            recipientPreviewList.replaceChildren();
+            for (const recipient of shown) {
+                const row = document.createElement('div');
+                row.className = 'dy-preview-row';
+                const name = document.createElement('span');
+                name.className = 'min-w-0 truncate text-xs font-semibold text-[#101064]';
+                name.textContent = recipient.name || 'Recipient';
+                const address = document.createElement('span');
+                address.className = 'max-w-[45%] truncate text-[11px] text-slate-500';
+                address.textContent = recipient.email === 'unavailable@invalid' ? 'In-app only' : (recipient.email || 'In-app only');
+                row.append(name,address);
+                recipientPreviewList.appendChild(row);
+            }
+            const first = shown.length ? (previewPage - 1) * PREVIEW_PER_PAGE + 1 : 0;
+            const last = first ? first + shown.length - 1 : 0;
+            recipientPreviewShowing.textContent = `${first}–${last} of ${previewRecipients.length} preview records`;
+        }
+        recipientPreviewToggle.addEventListener('click', () => {
+            const show = recipientPreviewDetails.classList.contains('hidden');
+            recipientPreviewDetails.classList.toggle('hidden', !show);
+            recipientPreviewToggle.setAttribute('aria-expanded', String(show));
+            recipientPreviewToggle.textContent = show ? 'Hide recipients' : 'Show recipients';
+        });
+        recipientPreviewPrev.addEventListener('click', () => { previewPage--; renderPreviewPage(); });
+        recipientPreviewNext.addEventListener('click', () => { previewPage++; renderPreviewPage(); });
+
 
 
         const sendButton =
@@ -2536,6 +2814,7 @@ document.addEventListener(
 
 
         let previewTimer = null;
+        let previewRequestSequence = 0;
 
 
 
@@ -2973,6 +3252,7 @@ document.addEventListener(
 
         async function loadRecipientPreview() {
 
+            const requestSequence = ++previewRequestSequence;
             const payload =
                 previewPayload();
 
@@ -3062,6 +3342,8 @@ document.addEventListener(
                 const data =
                     await response.json();
 
+                if (requestSequence !== previewRequestSequence) return;
+
 
                 previewLoading
                     .classList
@@ -3096,111 +3378,23 @@ document.addEventListener(
 
                 recipientPreviewCount
                     .textContent =
-                        `${data.count} recipient${data.count === 1 ? '' : 's'} will receive this announcement.`;
+                        `${data.count} targeted recipient${data.count === 1 ? '' : 's'} (${data.email_ready_count ?? 0} email-ready, ${data.in_app_only_count ?? 0} in-app only).`;
 
 
-                if (
-                    Array.isArray(
-                        data.recipients
-                    )
-                    && data.recipients.length > 0
-                ) {
-
-                    recipientPreviewList
-                        .innerHTML =
-                            data.recipients
-                                .slice(
-                                    0,
-                                    10
-                                )
-                                .map(
-                                    function (
-                                        recipient
-                                    ) {
-
-                                        const name =
-                                            escapeHtml(
-                                                recipient.name
-                                                ?? 'Recipient'
-                                            );
-
-
-                                        const email =
-                                            escapeHtml(
-                                                recipient.email
-                                                ?? ''
-                                            );
-
-
-                                        return `
-                                            <div
-                                                class="
-                                                    flex
-                                                    items-center
-                                                    justify-between
-                                                    gap-4
-                                                "
-                                            >
-                                                <span>
-                                                    ${name}
-                                                </span>
-
-                                                <span
-                                                    class="
-                                                        text-gray-400
-                                                    "
-                                                >
-                                                    ${email}
-                                                </span>
-                                            </div>
-                                        `;
-
-                                    }
-                                )
-                                .join(
-                                    ''
-                                );
-
-
-                    if (
-                        data.recipients.length > 10
-                    ) {
-
-                        recipientPreviewList
-                            .insertAdjacentHTML(
-                                'beforeend',
-                                `
-                                    <p
-                                        class="
-                                            pt-2
-                                            font-medium
-                                            text-[#101064]
-                                        "
-                                    >
-                                        + ${
-                                            data.recipients.length
-                                            - 10
-                                        } more recipient(s)
-                                    </p>
-                                `
-                            );
-
-                    }
-
-
-                    recipientPreviewList
-                        .classList
-                        .remove(
-                            'hidden'
-                        );
-
-                }
+                previewRecipients = Array.isArray(data.recipients) ? data.recipients : [];
+                previewPage = 1;
+                recipientPreviewToggle.classList.toggle('hidden', previewRecipients.length === 0);
+                recipientPreviewDetails.classList.add('hidden');
+                recipientPreviewToggle.setAttribute('aria-expanded', 'false');
+                recipientPreviewToggle.textContent = 'Show recipients';
+                if (previewRecipients.length) renderPreviewPage();
 
             }
             catch (
                 error
             ) {
 
+                if (requestSequence !== previewRequestSequence) return;
                 console.error(
                     error
                 );
@@ -3501,6 +3695,13 @@ document.addEventListener(
                     */
 
                     form.reset();
+                    studentPickerSearch.value = '';
+                    studentPickerProgram.value = '';
+                    studentPickerYear.value = '';
+                    studentPickerPerPage.value = '10';
+                    pickerPage = 1;
+                    selectedPage = 1;
+                    updateStudentPicker();
 
 
                     selectedFiles.innerHTML =
@@ -3658,7 +3859,57 @@ document.addEventListener(
         |--------------------------------------------------------------------------
         */
 
+        updateStudentPicker();
         updateRecipientFields();
+
+        // Announcement history: client-side filters over the records provided by controller.
+        // KPI cards remain totals for all department announcements, independent of filters.
+        const historyRows = Array.from(document.querySelectorAll('[data-announcement-row]'));
+        const historySearch = document.getElementById('announcementHistorySearch');
+        const historyStatus = document.getElementById('announcementHistoryStatus');
+        const historyPerPage = document.getElementById('announcementHistoryPerPage');
+        const historyReset = document.getElementById('announcementHistoryReset');
+        const historyPrev = document.getElementById('announcementHistoryPrev');
+        const historyNext = document.getElementById('announcementHistoryNext');
+        const historyPageLabel = document.getElementById('announcementHistoryPageLabel');
+        const historyShowing = document.getElementById('announcementHistoryShowing');
+        let historyPage = 1;
+        const historyEmpty = document.createElement('tr');
+        historyEmpty.innerHTML = '<td colspan="5" class="px-6 py-10 text-center text-sm text-slate-500">No announcements match your filters.</td>';
+        if (historyRows.length) historyRows[0].parentNode.appendChild(historyEmpty);
+        function renderHistory() {
+            const query = historySearch.value.trim().toLocaleLowerCase();
+            const status = historyStatus.value;
+            const perPage = Number(historyPerPage.value) || 10;
+            const matching = historyRows.filter(row =>
+                (!status || row.dataset.status === status) &&
+                (!query || row.textContent.toLocaleLowerCase().includes(query))
+            );
+            historyPage = createPagerState(matching.length, perPage, historyPage,
+                historyPrev, historyNext, historyPageLabel);
+            const start = (historyPage - 1) * perPage;
+            const current = matching.slice(start, start + perPage);
+            for (const row of historyRows) row.hidden = true;
+            for (const row of current) row.hidden = false;
+            historyEmpty.hidden = matching.length > 0 || historyRows.length === 0;
+            const first = current.length ? start + 1 : 0;
+            const last = current.length ? start + current.length : 0;
+            historyShowing.textContent = `Showing ${first}–${last} of ${matching.length} announcements`;
+        }
+        const resetHistoryPage = () => { historyPage = 1; renderHistory(); };
+        historySearch.addEventListener('input', resetHistoryPage);
+        historyStatus.addEventListener('change', resetHistoryPage);
+        historyPerPage.addEventListener('change', resetHistoryPage);
+        historyPrev.addEventListener('click', () => { historyPage--; renderHistory(); });
+        historyNext.addEventListener('click', () => { historyPage++; renderHistory(); });
+        historyReset.addEventListener('click', () => {
+            historySearch.value = '';
+            historyStatus.value = '';
+            historyPerPage.value = '10';
+            resetHistoryPage();
+        });
+        renderHistory();
+
 
     }
 );

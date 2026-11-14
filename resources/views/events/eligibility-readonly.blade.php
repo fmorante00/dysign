@@ -37,9 +37,9 @@
             <div class="absolute inset-x-0 bottom-0 z-20 h-1 bg-[#D4A017]"></div>
             <div class="relative z-10 flex min-h-[205px] flex-wrap items-center justify-between gap-6 px-7 py-9 sm:px-9 lg:px-10">
                 <div class="min-w-0 max-w-3xl">
-                    <p class="text-[11px] font-bold uppercase tracking-[.27em] text-[#F0C65B]">Participant Eligibility · Institutional Review</p>
+                    <p class="text-[11px] font-bold uppercase tracking-[.27em] text-[#F0C65B]">Participant Eligibility · Event History</p>
                     <h1 class="mt-3 break-words text-2xl font-bold tracking-tight sm:text-3xl">{{ $event->event_name }}</h1>
-                    <p class="mt-3 text-sm leading-6 text-white/80">Review configured participation rules and the saved eligible-student roster. This administrator view cannot change eligibility.</p>
+                    <p class="mt-3 text-sm leading-6 text-white/80">Review the saved eligibility rules and student roster. Past or active events are view-only; only authorized upcoming events can be edited.</p>
                     <div class="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-xs text-white/80">
                         <span>Event #{{ $event->event_id }}</span>
                         <span>{{ $event->department?->department_name ?? 'University-wide' }}</span>
@@ -48,7 +48,7 @@
                 </div>
                 <div class="flex flex-col gap-3 sm:items-end">
                     <a href="{{ route('events.eligibility.events') }}" class="inline-flex items-center justify-center rounded-xl bg-[#D4A017] px-5 py-3 text-xs font-bold text-[#101064] hover:bg-[#E8B735]">← All Events</a>
-                    <span class="text-center text-xs text-white/80">Administrator · Read Only</span>
+                    <span class="text-center text-xs text-white/80">{{ auth()->user()?->role?->role_name === 'Administrator' ? 'Administrator · Read Only' : 'Department Staff · Historical View' }}</span>
                 </div>
             </div>
         </section>

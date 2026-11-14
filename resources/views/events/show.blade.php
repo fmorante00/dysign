@@ -2,8 +2,9 @@
     @php
         $status = $event->status ?? 'Upcoming';
         $isDepartmentStaff = auth()->user()?->role?->role_name === 'Department Staff';
-        $canEdit = $isDepartmentStaff && !in_array($status, ['Completed', 'Cancelled'], true);
-        $canCancel = $isDepartmentStaff && !in_array($status, ['Completed', 'Cancelled'], true);
+        // Department Staff can only change events that have not started.
+        $canEdit = $isDepartmentStaff && $status === 'Upcoming';
+        $canCancel = $isDepartmentStaff && $status === 'Upcoming';
 
         $statusClasses = match ($status) {
             'Upcoming' => 'bg-amber-100 text-amber-800',
@@ -204,6 +205,11 @@
                 <div class="flex flex-wrap items-center justify-between gap-4 border-t border-slate-100 bg-slate-50/60 px-7 py-5 sm:px-8">
                     <p class="text-xs text-slate-500">Event #{{ $event->event_id }}</p>
                     <div class="flex flex-wrap items-center gap-3">
+                        @if (!$canEdit)
+                            <span class="inline-flex items-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-600">
+                                Read-only · Only upcoming events can be modified
+                            </span>
+                        @endif
                         @if ($canCancel)
                             <button type="button"
                                     onclick="document.getElementById('cancel-event-dialog').showModal()"

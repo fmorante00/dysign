@@ -56,6 +56,13 @@ class EvaluationFormImportService
     |--------------------------------------------------------------------------
     */
 
+    /** Read a Word questionnaire without creating an evaluation form. */
+    public function preview(UploadedFile $file): array
+    {
+        return $this->parseDocx($file);
+    }
+
+
     public function import(
         User $user,
         Event $event,
@@ -422,9 +429,15 @@ class EvaluationFormImportService
             );
 
 
-        return $this->parseLines(
-            $lines
-        );
+        // Older tagged questionnaires remain supported, but ordinary Word
+        // documents no longer need any DySign-specific question-type tags.
+        foreach ($lines as $line) {
+            if (preg_match('/^\[(?:SHORT_ANSWER|PARAGRAPH|SINGLE_CHOICE|MULTIPLE_CHOICE|RATING|YES_NO)\]$/i', $line)) {
+                return $this->parseLines($lines);
+            }
+        }
+
+        return $this->parseNaturalLines($lines);
     }
 
 
@@ -540,6 +553,151 @@ class EvaluationFormImportService
     | PARSE DOCUMENT LINES
     |--------------------------------------------------------------------------
     */
+
+    /**
+     * Best-effort rules for regular Word questionnaires.
+     * Question prompts may be numbered or end with a question mark. Lettered
+     * and bulleted answers become options. The staff preview is mandatory
+     * because unstructured documents can be ambiguous.
+     */
+    private function parseNaturalLines(array $lines): array
+    {
+        $result = ['title' => null, 'description' => null, 'questions' => []];
+        $current = null;
+        $instructions = [];
+
+        $finish = function () use (&$current, &$result): void {
+            if ($current === null) {
+                return;
+            }
+
+            $choices = array_values(array_unique(array_filter(
+                array_map('trim', $current['options']),
+                fn ($option) => $option !== ''
+            )));
+            $lowerChoices = array_map('strtolower', $choices);
+
+            if (count($choices) >= 2) {
+                if (count($choices) === 2 && $lowerChoices === ['yes', 'no']) {
+                    $current['question_type'] = 'Yes No';
+                    $current['options'] = [];
+                } elseif ($current['question_type'] !== 'Rating') {
+                    $current['question_type'] = preg_match(
+                        '/\\b(?:select|choose|check|tick)\\s+(?:all|more than one)|multiple\\s+(?:answers|responses)\\b/i',
+                        $current['question_text']
+                    ) ? 'Multiple Choice' : 'Single Choice';
+                    $current['options'] = $choices;
+                } else {
+                    $current['options'] = [];
+                }
+            } else {
+                $current['options'] = [];
+            }
+
+            $result['questions'][] = $this->finalizeQuestion($current);
+            $current = null;
+        };
+
+        foreach ($lines as $line) {
+            $line = trim((string) $line);
+            if ($line === '') {
+                continue;
+            }
+
+            if (preg_match('/^Title\\s*:\\s*(.+)$/iu', $line, $match)) {
+                $result['title'] = trim($match[1]);
+                continue;
+            }
+            if (preg_match('/^(?:Description|Instructions?)\\s*:\\s*(.+)$/iu', $line, $match)) {
+                $instructions[] = trim($match[1]);
+                continue;
+            }
+            if (preg_match('/^(?:Name|Student Name|Student Number|Section|Course|Program|Year Level|Date|Signature)\\s*:\\s*.*$/iu', $line)) {
+                continue;
+            }
+            if (preg_match('/^(?:Part|Section)\\s+(?:[IVX]+|\\d+)\\b[^?]*$/iu', $line)) {
+                continue;
+            }
+
+            // Recognize options before numbered questions so a 1–5 answer
+            // scale is not mistaken for five separate questions.
+            $option = null;
+            if ($current !== null) {
+                if (preg_match('/^\\s*(?:[A-Ha-h][.):-]|[•●▪◦□☐☑\\-])\\s*(.+)$/u', $line, $match)) {
+                    $option = trim($match[1]);
+                } elseif (preg_match('/^[1-9][.):-]\\s*(Strongly|Very|Neither|Neutral|Somewhat|Excellent|Good|Fair|Poor|Satisfied|Dissatisfied|Agree|Disagree|Never|Always|Often|Sometimes|Rarely)\\b(.+)$/iu', $line, $match)) {
+                    $option = trim($match[1] . $match[2]);
+                } elseif (preg_match('/^(?:Yes|No)$/iu', $line)) {
+                    $option = ucfirst(strtolower($line));
+                } elseif (preg_match('/^(?:Strongly agree|Agree|Neutral|Disagree|Strongly disagree|Very satisfied|Satisfied|Dissatisfied|Very dissatisfied|Excellent|Good|Fair|Poor)$/iu', $line)) {
+                    $option = $line;
+                }
+            }
+            if ($option !== null && $option !== '') {
+                $current['options'][] = $option;
+                continue;
+            }
+
+            $text = null;
+            if (preg_match('/^(?:Question\\s*|Q\\s*)\\d+\\s*[.):-]\\s*(.+)$/iu', $line, $match)
+                || preg_match('/^\\d{1,3}\\s*[.):-]\\s*(.+)$/u', $line, $match)) {
+                $text = trim($match[1]);
+            } elseif (preg_match('/[?？]\\s*(?:\\([^)]*\\))?$/u', $line)
+                || preg_match('/^(?:Please\\s+)?(?:Rate|Evaluate|Describe|Explain|Discuss|List|Suggest|Provide feedback|Share your|How would|What would|Select|Choose)\\b/iu', $line)) {
+                $text = $line;
+            }
+
+            if ($text !== null && strlen($text) >= 6) {
+                $finish();
+
+                $isRating = preg_match('/\\b(?:rate|rating|scale\\s+(?:of|from)|1\\s*(?:-|–|to)\\s*[5-9])\\b/iu', $text);
+                $isYesNo = preg_match('/\\byes\\s*(?:\\/|or)\\s*no\\b/iu', $text);
+                $current = [
+                    'question_type' => $isRating ? 'Rating' : ($isYesNo ? 'Yes No' : (
+                        preg_match('/\\b(?:explain|describe|discuss|suggest|comment|feedback|why|improve)\\b/iu', $text)
+                        ? 'Paragraph' : 'Short Answer'
+                    )),
+                    'question_text' => $text,
+                    'is_required' => true,
+                    'rating_min' => $isRating ? 1 : null,
+                    'rating_max' => $isRating ? 5 : null,
+                    'rating_min_label' => null,
+                    'rating_max_label' => null,
+                    'options' => [],
+                ];
+                if ($isRating && preg_match('/\\b1\\s*(?:-|–|to)\\s*(\\d+)\\b/u', $text, $m)) {
+                    $current['rating_max'] = min(10, (int) $m[1]);
+                }
+                continue;
+            }
+
+            if ($current !== null) {
+                // Unlettered answer choices directly after a choice prompt.
+                if (preg_match('/\\b(?:choose|select|which|following|options?)\\b/iu', $current['question_text'])
+                    && strlen($line) <= 120 && !str_ends_with($line, '.')
+                ) {
+                    $current['options'][] = $line;
+                }
+            } elseif ($result['title'] === null && strlen($line) <= 120) {
+                $result['title'] = $line;
+            }
+        }
+        $finish();
+        $result['description'] = $instructions ? implode(' ', $instructions) : null;
+
+        if (!$result['questions']) {
+            throw ValidationException::withMessages([
+                'source_file' => 'No recognizable questions were found. Use numbered questions or questions ending in a question mark; review the Word file and try again.',
+            ]);
+        }
+        if (count($result['questions']) > 100) {
+            throw ValidationException::withMessages([
+                'source_file' => 'Please limit an evaluation questionnaire to 100 questions.',
+            ]);
+        }
+        return $result;
+    }
+
 
     private function parseLines(
         array $lines

@@ -63,101 +63,87 @@ class DashboardController extends Controller
 
     public function departmentStaff()
     {
-
         $user = auth()->user();
 
-        $departmentId = $user->department_id;
-
-        $departmentName = $user->department->department_name
-            ?? 'No Department Assigned';
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Department Event Counts
-        |--------------------------------------------------------------------------
-        */
-
-        $totalEvents = Event::where(
-            'department_id',
-            $departmentId
-        )->count();
-
-
-        $upcomingEventsCount = Event::where(
-            'department_id',
-            $departmentId
-        )
-        ->where('status', 'Upcoming')
-        ->count();
-
-
-        $ongoingEventsCount = Event::where(
-            'department_id',
-            $departmentId
-        )
-        ->where('status', 'Ongoing')
-        ->count();
-
-
-        $completedEventsCount = Event::where(
-            'department_id',
-            $departmentId
-        )
-        ->where('status', 'Completed')
-        ->count();
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Upcoming Department Events
-        |--------------------------------------------------------------------------
-        */
-
-        $upcomingEvents = Event::where(
-            'department_id',
-            $departmentId
-        )
-        ->where('status', 'Upcoming')
-        ->whereDate(
-            'event_date',
-            '>=',
-            now()->toDateString()
-        )
-        ->orderBy('event_date')
-        ->orderBy('start_time')
-        ->take(5)
-        ->get();
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Recent Department Events
-        |--------------------------------------------------------------------------
-        */
-
-        $recentEvents = Event::where(
-            'department_id',
-            $departmentId
-        )
-        ->latest()
-        ->take(5)
-        ->get();
-
-
-        return view(
-            'dashboard.department',
-            compact(
-                'departmentName',
-                'totalEvents',
-                'upcomingEventsCount',
-                'ongoingEventsCount',
-                'completedEventsCount',
-                'upcomingEvents',
-                'recentEvents'
-            )
+        abort_unless(
+            $user && $user->role?->role_name === 'Department Staff',
+            403
         );
 
+        // Never expose another department's events when a staff account has
+        // not yet been assigned to a department.
+        $departmentId = $user->department_id;
+        $departmentName = $user->department?->department_name
+            ?? 'No Department Assigned';
+
+        $departmentEvents = Event::query();
+
+        if ($departmentId) {
+            $departmentEvents->where('department_id', $departmentId);
+        } else {
+            $departmentEvents->whereRaw('1 = 0');
+        }
+
+        $totalEvents = (clone $departmentEvents)->count();
+        $upcomingEventsCount = (clone $departmentEvents)
+            ->where('status', 'Upcoming')->count();
+        $ongoingEventsCount = (clone $departmentEvents)
+            ->where('status', 'Ongoing')->count();
+        $completedEventsCount = (clone $departmentEvents)
+            ->where('status', 'Completed')->count();
+        $cancelledEventsCount = (clone $departmentEvents)
+            ->whereIn('status', ['Cancelled', 'Canceled'])->count();
+
+        // Keep the event previews independent of the KPI totals: five rows
+        // must never be mistaken for the department's overall event count.
+        $ongoingEvents = (clone $departmentEvents)
+            ->where('status', 'Ongoing')
+            ->orderBy('event_date')
+            ->orderBy('start_time')
+            ->take(3)
+            ->get();
+
+        $upcomingEvents = (clone $departmentEvents)
+            ->where('status', 'Upcoming')
+            ->whereDate('event_date', '>=', now()->toDateString())
+            ->orderBy('event_date')
+            ->orderBy('start_time')
+            ->take(5)
+            ->get();
+
+        $recentEvents = (clone $departmentEvents)
+            ->orderByDesc('updated_at')
+            ->orderByDesc('event_date')
+            ->take(5)
+            ->get();
+
+        $recentCompletedEvents = (clone $departmentEvents)
+            ->where('status', 'Completed')
+            ->orderByDesc('event_date')
+            ->orderByDesc('start_time')
+            ->take(3)
+            ->get();
+
+        // Department-scoped source for the interactive calendar and its agenda.
+        // Status KPI counts remain independent of the five-event agenda preview.
+        $calendarEvents = (clone $departmentEvents)
+            ->orderBy('event_date')
+            ->orderBy('start_time')
+            ->get();
+
+        return view('dashboard.department', compact(
+            'departmentName',
+            'totalEvents',
+            'upcomingEventsCount',
+            'ongoingEventsCount',
+            'completedEventsCount',
+            'cancelledEventsCount',
+            'ongoingEvents',
+            'upcomingEvents',
+            'recentEvents',
+            'recentCompletedEvents',
+            'calendarEvents'
+        ));
     }
 
 

@@ -84,6 +84,12 @@
 
 
 
+@if(session('eligibility_email_notice'))
+    <div role="status" class="mb-5 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-[#101064]">
+        <strong>Email notification update:</strong> {{ session('eligibility_email_notice') }}
+    </div>
+@endif
+
 <div
     class="min-w-0 space-y-7"
     x-data="{
@@ -806,7 +812,7 @@
                             'events.eligibility.store',
                             $event->event_id
                         ) }}"
-                     data-confirm data-confirm-title="Save eligibility rule?" data-confirm-message="The new eligibility rule will affect who can participate in this event." data-confirm-confirm-text="Save Rule" data-confirm-variant="warning">
+                     data-confirm data-confirm-title="Save eligibility rule?" data-confirm-message="This changes the eligible roster. Notification emails will be queued for newly eligible or reclassified students with valid addresses." data-confirm-confirm-text="Save Rule" data-confirm-variant="warning">
 
                         @csrf
 
@@ -1158,7 +1164,7 @@
                             'events.eligibility.store',
                             $event->event_id
                         ) }}"
-                     data-confirm data-confirm-title="Save eligibility rule?" data-confirm-message="Apply these eligibility criteria to this event." data-confirm-confirm-text="Save Rule" data-confirm-variant="warning">
+                     data-confirm data-confirm-title="Save eligibility rule?" data-confirm-message="Apply these rules and queue email notifications for newly eligible or reclassified students." data-confirm-confirm-text="Save Rule" data-confirm-variant="warning">
 
                         @csrf
 
@@ -1637,7 +1643,7 @@
                         'events.eligibility.refresh',
                         $event->event_id
                     ) }}"
-                 data-confirm data-confirm-title="Refresh event eligibility?" data-confirm-message="Recalculate the eligible students using the current rules." data-confirm-confirm-text="Refresh" data-confirm-variant="warning">
+                 data-confirm data-confirm-title="Refresh event eligibility?" data-confirm-message="Recalculate the eligible roster. Only newly eligible or reclassified students will receive notification emails." data-confirm-confirm-text="Refresh" data-confirm-variant="warning">
 
                     @csrf
 
