@@ -20,7 +20,7 @@
         <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <h2 class="text-lg font-extrabold text-[#101064]">Report Attendance Exception</h2>
             <p class="mb-5 mt-1 text-sm text-slate-500">This submits a request only. It does not create an attendance record until staff approval.</p>
-            <form method="POST" action="{{ route('personnel.attendance-exceptions.store') }}" class="grid gap-5 md:grid-cols-2">
+            <form method="POST" action="{{ route('personnel.attendance-exceptions.store') }}" class="grid gap-5 md:grid-cols-2" data-confirm data-confirm-title="Submit attendance exception?" data-confirm-message="Submit this exception report and its evidence for review." data-confirm-confirm-text="Submit Report" data-confirm-variant="default">
                 @csrf
                 <div>
                     <label for="event_id" class="mb-2 block text-sm font-semibold text-slate-700">Assigned Event</label>

@@ -613,7 +613,7 @@
                 'events.personnel-assignment.update',
                 $event->event_id
             ) }}"
-        >
+         data-confirm data-confirm-title="Update event personnel?" data-confirm-message="Apply the new personnel assignments for this event." data-confirm-confirm-text="Save Assignments" data-confirm-variant="warning">
 
             @csrf
             @method('PUT')

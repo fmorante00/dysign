@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\SystemBackup;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use Symfony\Component\Process\Process;
 use Throwable;
@@ -15,45 +16,98 @@ class BackupController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    public function index()
+    public function index(Request $request)
     {
-        $backups = SystemBackup::query()
-            ->with('creator')
-            ->latest('created_at')
-            ->paginate(10);
+        // Keep filters confined to backup metadata. SQL files are never parsed here.
+        $search = trim((string) $request->query('search', ''));
+        $search = mb_substr($search, 0, 100);
+        $status = (string) $request->query('status', 'all');
+        if (!in_array($status, ['all', 'Completed', 'Processing', 'Failed'], true)) {
+            $status = 'all';
+        }
 
+        $perPage = (int) $request->query('per_page', 10);
+        if (!in_array($perPage, [10, 25, 50], true)) {
+            $perPage = 10;
+        }
+
+        $dateFrom = (string) $request->query('from', '');
+        $dateTo = (string) $request->query('to', '');
+        $dateFrom = $this->validBackupDate($dateFrom) ? $dateFrom : '';
+        $dateTo = $this->validBackupDate($dateTo) ? $dateTo : '';
+
+        $query = SystemBackup::query()->with('creator');
+
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('filename', 'like', '%' . $search . '%')
+                    ->orWhereHas('creator', function ($users) use ($search) {
+                        $users->where('name', 'like', '%' . $search . '%');
+                    });
+            });
+        }
+
+        if ($status !== 'all') {
+            $query->where('status', $status);
+        }
+
+        if ($dateFrom !== '') {
+            $query->whereDate('created_at', '>=', $dateFrom);
+        }
+        if ($dateTo !== '') {
+            $query->whereDate('created_at', '<=', $dateTo);
+        }
+
+        $backups = $query->orderByDesc('created_at')
+            ->orderByDesc('backup_id')
+            ->paginate($perPage)
+            ->withQueryString();
+
+        // A completed database record does not necessarily mean its SQL file still exists.
+        $backups->getCollection()->each(function (SystemBackup $backup) {
+            $relative = (string) $backup->file_path;
+            $validPath = preg_match('~^backups/[A-Za-z0-9_.-]+\.sql$~D', $relative)
+                && !str_contains($relative, '..');
+            $backup->file_available = $validPath
+                && is_file(storage_path('app/' . $relative));
+        });
+
+        $counts = SystemBackup::query()
+            ->selectRaw('COUNT(*) AS total')
+            ->selectRaw("SUM(CASE WHEN status = 'Completed' THEN 1 ELSE 0 END) AS completed")
+            ->selectRaw("SUM(CASE WHEN status = 'Failed' THEN 1 ELSE 0 END) AS failed")
+            ->selectRaw("SUM(CASE WHEN status = 'Processing' THEN 1 ELSE 0 END) AS processing")
+            ->first();
+
+        $stats = [
+            'total' => (int) ($counts->total ?? 0),
+            'completed' => (int) ($counts->completed ?? 0),
+            'failed' => (int) ($counts->failed ?? 0),
+            'processing' => (int) ($counts->processing ?? 0),
+        ];
 
         $lastBackup = SystemBackup::query()
-            ->with('creator')
             ->where('status', 'Completed')
             ->latest('created_at')
             ->first();
 
+        $latestRecord = SystemBackup::query()->latest('created_at')->first();
+        $storageUsed = $this->formatBytes((int) SystemBackup::query()
+            ->where('status', 'Completed')->sum('size_bytes'));
 
-        $latestRecord = SystemBackup::query()
-            ->latest('created_at')
-            ->first();
+        return view('backup.index', compact(
+            'backups', 'lastBackup', 'latestRecord', 'storageUsed',
+            'stats', 'search', 'status', 'perPage', 'dateFrom', 'dateTo'
+        ));
+    }
 
+    private function validBackupDate(string $date): bool
+    {
+        if (!preg_match('/^(\d{4})-(\d{2})-(\d{2})$/D', $date, $parts)) {
+            return false;
+        }
 
-        $storageBytes = SystemBackup::query()
-            ->where('status', 'Completed')
-            ->sum('size_bytes');
-
-
-        $storageUsed = $this->formatBytes(
-            (int) $storageBytes
-        );
-
-
-        return view(
-            'backup.index',
-            compact(
-                'backups',
-                'lastBackup',
-                'latestRecord',
-                'storageUsed'
-            )
-        );
+        return checkdate((int) $parts[2], (int) $parts[3], (int) $parts[1]);
     }
 
 
@@ -496,11 +550,13 @@ class BackupController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $fullPath =
-            storage_path(
-                'app/'
-                . $backup->file_path
-            );
+        $relativePath = (string) $backup->file_path;
+        if (!preg_match('~^backups/[A-Za-z0-9_.-]+\.sql$~D', $relativePath)
+            || str_contains($relativePath, '..')) {
+            abort(404);
+        }
+
+        $fullPath = storage_path('app/' . $relativePath);
 
 
         if (

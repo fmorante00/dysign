@@ -392,7 +392,7 @@
         <form
             method="POST"
             action="{{ route('personnel-availability.store') }}"
-        >
+         data-confirm data-confirm-title="Save unavailability?" data-confirm-message="The selected schedule will be recorded as unavailable." data-confirm-confirm-text="Save" data-confirm-variant="default">
 
             @csrf
 
@@ -877,7 +877,7 @@
                                             gap-4
                                             sm:grid-cols-2
                                         "
-                                    >
+                                     data-confirm data-confirm-title="Update unavailable schedule?" data-confirm-message="Save the changes to this availability record." data-confirm-confirm-text="Save Changes" data-confirm-variant="default">
 
                                         @csrf
                                         @method('PUT')
@@ -1053,12 +1053,7 @@
                                         $availability->availability_id
                                     )
                                 }}"
-                                onsubmit="
-                                    return confirm(
-                                        'Remove this unavailable schedule?'
-                                    );
-                                "
-                            >
+                             data-confirm data-confirm-title="Remove unavailable schedule?" data-confirm-message="This unavailable schedule will be removed." data-confirm-confirm-text="Remove" data-confirm-variant="danger">
 
                                 @csrf
                                 @method('DELETE')

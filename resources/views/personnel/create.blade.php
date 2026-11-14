@@ -43,7 +43,9 @@
         }
     </style>
 
-    <div class="min-w-0 space-y-8 pb-6">
+@include('partials.personnel-university-styles')
+
+    <div class="dy-staff-page min-w-0 space-y-7 pb-8">
         {{-- Match the full-width hero used on Staff Account Management. --}}
         <header class="personnel-create-hero relative overflow-hidden rounded-[28px] px-7 py-8 text-white sm:px-8 lg:px-10 lg:py-10">
             <div class="absolute bottom-0 left-0 h-1 w-full bg-[#D4A017]" aria-hidden="true"></div>
@@ -92,7 +94,7 @@
                 <p class="text-xs font-medium text-gray-400"><span class="font-bold text-red-500">*</span> Required field</p>
             </div>
 
-            <form method="POST" action="{{ route('personnel.store') }}" class="personnel-create-section min-w-0 overflow-hidden border border-gray-200 bg-white">
+            <form method="POST" action="{{ route('personnel.store') }}" class="personnel-create-section min-w-0 overflow-hidden border border-gray-200 bg-white" data-confirm data-confirm-title="Create personnel record?" data-confirm-message="Confirm the details before creating this personnel account." data-confirm-confirm-text="Create Personnel" data-confirm-variant="default">
                 @csrf
 
                 <div class="grid grid-cols-1 gap-x-7 gap-y-6 px-6 py-7 md:grid-cols-2 xl:grid-cols-3 sm:px-8 sm:py-8">

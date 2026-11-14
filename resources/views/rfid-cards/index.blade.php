@@ -95,8 +95,7 @@
                                             <details class="group">
                                                 <summary class="cursor-pointer list-none rounded-lg border border-red-300 px-3 py-2 text-xs font-bold text-red-700 hover:bg-red-50">Report Lost</summary>
                                                 <form method="POST" action="{{ route('rfid-cards.lost', $student->student_id) }}"
-                                                      class="mt-2 w-64 rounded-xl border border-red-100 bg-red-50 p-3"
-                                                      onsubmit="return confirm('Disable this RFID card immediately? Attendance history will remain unchanged.');">
+                                                      class="mt-2 w-64 rounded-xl border border-red-100 bg-red-50 p-3" data-confirm data-confirm-title="Report this RFID card lost?" data-confirm-message="Disable this RFID card immediately. Existing attendance history will remain unchanged." data-confirm-confirm-text="Report Lost" data-confirm-variant="danger">
                                                     @csrf
                                                     <label class="text-xs font-semibold text-gray-700">Reason for loss</label>
                                                     <textarea name="reason" required minlength="3" maxlength="500" rows="2" placeholder="Reported lost card" class="mt-1 w-full rounded-lg border border-gray-300 p-2 text-xs"></textarea>
@@ -107,8 +106,7 @@
                                         <details class="group">
                                             <summary class="cursor-pointer list-none rounded-lg border border-[#D4A017] px-3 py-2 text-xs font-bold text-[#101064] hover:bg-[#FFF9E7]">Replace RFID</summary>
                                             <form method="POST" action="{{ route('rfid-cards.replace', $student->student_id) }}"
-                                                  class="mt-2 w-64 rounded-xl border border-amber-200 bg-[#FFF9E7] p-3"
-                                                  onsubmit="return confirm('Assign this NEW UID and disable the previous RFID card?');">
+                                                  class="mt-2 w-64 rounded-xl border border-amber-200 bg-[#FFF9E7] p-3" data-confirm data-confirm-title="Replace this RFID card?" data-confirm-message="Assign the new UID and disable the previous RFID card." data-confirm-confirm-text="Replace Card" data-confirm-variant="warning">
                                                 @csrf
                                                 <label class="text-xs font-semibold text-gray-700">New card UID (10 digits)</label>
                                                 <input name="rfid_identifier" required inputmode="numeric" pattern="[0-9]{10}" maxlength="10" placeholder="0000000000"
@@ -123,8 +121,7 @@
                                     <details>
                                         <summary class="cursor-pointer text-xs font-semibold text-amber-700">Review / Approve Imported UID</summary>
                                         <form method="POST" action="{{ route('rfid-cards.approve', $student->student_id) }}"
-                                              class="mt-2 w-64 rounded-xl border border-amber-200 bg-[#FFF9E7] p-3"
-                                              onsubmit="return confirm('Approve this imported RFID as the student’s active card? Any previous active card will be disabled.');">
+                                              class="mt-2 w-64 rounded-xl border border-amber-200 bg-[#FFF9E7] p-3" data-confirm data-confirm-title="Approve the imported RFID?" data-confirm-message="Confirm that the physical school card was verified. Any previous active card will be disabled." data-confirm-confirm-text="Approve RFID" data-confirm-variant="warning">
                                             @csrf
                                             <p class="text-xs text-gray-600">Verify the physical school card first. Old lost/replaced UIDs cannot be approved.</p>
                                             <textarea name="reason" required minlength="3" maxlength="500" rows="2" placeholder="Reason for approving imported UID" class="mt-2 w-full rounded-lg border border-gray-300 p-2 text-xs"></textarea>

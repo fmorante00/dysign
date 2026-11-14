@@ -104,9 +104,11 @@
 
 </style>
 
+@include('partials.personnel-university-styles')
 
 
-<div class="min-w-0 space-y-8">
+
+<div class="dy-staff-page min-w-0 space-y-7 pb-8">
 
 
     {{-- ====================================================== --}}
@@ -1290,7 +1292,7 @@
                         $personnel->personnel_id
                     ) }}"
                     class="shrink-0"
-                >
+                 data-confirm data-confirm-title="Resend invitation?" data-confirm-message="Send another account invitation to this personnel member." data-confirm-confirm-text="Resend Invitation" data-confirm-variant="default">
 
                     @csrf
 
@@ -1605,7 +1607,7 @@
                             'personnel.resendInvitation',
                             $personnel->personnel_id
                         ) }}"
-                    >
+                     data-confirm data-confirm-title="Resend invitation?" data-confirm-message="Send another account invitation to this personnel member." data-confirm-confirm-text="Resend Invitation" data-confirm-variant="default">
 
                         @csrf
 

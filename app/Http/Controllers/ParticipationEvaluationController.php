@@ -267,18 +267,91 @@ class ParticipationEvaluationController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Pagination
+        | Search, Filters and Sort (overall classification totals stay unchanged)
         |--------------------------------------------------------------------------
         */
 
-        $perPage = 20;
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:120'],
+            'college' => ['nullable', 'string', 'max:150'],
+            'program' => ['nullable', 'string', 'max:100'],
+            'year' => ['nullable', 'string', 'max:20'],
+            'classification' => ['nullable', 'in:all,highly,participative,moderately,low,no_data'],
+            'sort' => ['nullable', 'in:name,highest_rate,lowest_rate,most_events'],
+            'per_page' => ['nullable', 'in:10,25,50'],
+        ]);
+
+        $search = trim($filters['search'] ?? '');
+        $college = $filters['college'] ?? '';
+        $program = $filters['program'] ?? '';
+        $year = $filters['year'] ?? '';
+        $classification = $filters['classification'] ?? 'all';
+        $sort = $filters['sort'] ?? 'name';
+        $perPage = (int) ($filters['per_page'] ?? 10);
+
+        // Obtain filter options from the full roster, not just the current page.
+        $colleges = $evaluations->pluck('college')->filter(fn ($v) => filled($v))
+            ->unique()->sort()->values();
+        $programs = $evaluations->pluck('program_code')->filter(fn ($v) => filled($v))
+            ->unique()->sort()->values();
+        $years = $evaluations->pluck('year_level')->filter(fn ($v) => filled($v) || $v === 0)
+            ->unique()->sort()->values();
+
+        $classificationLabels = [
+            'highly' => 'Highly Participative',
+            'participative' => 'Participative',
+            'moderately' => 'Moderately Participative',
+            'low' => 'Low Participation',
+            'no_data' => 'No Data',
+        ];
+
+        $filteredEvaluations = $evaluations->filter(function ($student) use (
+            $search, $college, $program, $year, $classification, $classificationLabels
+        ) {
+            if ($college !== '' && $student->college !== $college) return false;
+            if ($program !== '' && $student->program_code !== $program) return false;
+            if ($year !== '' && (string) $student->year_level !== (string) $year) return false;
+            if ($classification !== 'all'
+                && $student->classification !== ($classificationLabels[$classification] ?? null)) return false;
+
+            if ($search !== '') {
+                $name = trim(implode(' ', array_filter([
+                    $student->first_name, $student->middle_name, $student->last_name,
+                ], fn ($part) => filled($part))));
+                $haystack = implode(' ', [
+                    $student->student_number,
+                    $name,
+                    $student->college,
+                    $student->program_name,
+                    $student->program_code,
+                ]);
+                if (stripos($haystack, $search) === false) return false;
+            }
+
+            return true;
+        });
+
+        $filteredEvaluations = match ($sort) {
+            'highest_rate' => $filteredEvaluations->sortByDesc('participation_rate'),
+            'lowest_rate' => $filteredEvaluations->sortBy('participation_rate'),
+            'most_events' => $filteredEvaluations->sortByDesc('events_attended'),
+            default => $filteredEvaluations, // Already ordered by student surname, first name.
+        };
+
+        $filteredEvaluations = $filteredEvaluations->values();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Pagination (after filters, preserving the active query string)
+        |--------------------------------------------------------------------------
+        */
 
         $currentPage =
             LengthAwarePaginator::resolveCurrentPage();
 
 
         $currentRecords =
-            $evaluations
+            $filteredEvaluations
                 ->forPage(
                     $currentPage,
                     $perPage
@@ -290,7 +363,7 @@ class ParticipationEvaluationController extends Controller
 
             $currentRecords,
 
-            $evaluations->count(),
+            $filteredEvaluations->count(),
 
             $perPage,
 
@@ -328,7 +401,17 @@ class ParticipationEvaluationController extends Controller
 
                 'moderatelyParticipativeCount',
 
-                'lowParticipationCount'
+                'lowParticipationCount',
+                'search',
+                'college',
+                'program',
+                'year',
+                'classification',
+                'sort',
+                'perPage',
+                'colleges',
+                'programs',
+                'years'
             )
         );
     }

@@ -21,11 +21,11 @@
                     </div>
                     <div class="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-700"><strong>Student explanation:</strong><p class="mt-1 whitespace-pre-wrap">{{ $item->reason }}</p></div>
                     @if ($item->verification_status === 'Unverified')
-                        <form method="POST" action="{{ route('personnel.attendance-discrepancies.verify', $item->discrepancy_id) }}" class="mt-5 grid gap-3 border-t border-slate-100 pt-5 md:grid-cols-3">
+                        <form method="POST" action="{{ route('personnel.attendance-discrepancies.verify', $item->discrepancy_id) }}" class="mt-5 grid gap-3 border-t border-slate-100 pt-5 md:grid-cols-3" data-confirm data-confirm-title="Save attendance verification?" data-confirm-message="Record your verification result and evidence for Department Staff review." data-confirm-confirm-text="Save Verification" data-confirm-variant="warning">
                             @csrf @method('PATCH')
                             <div><label class="mb-2 block text-sm font-semibold">Verification Result</label><select name="verification_status" required class="w-full rounded-xl border border-slate-300 p-3 text-sm"><option value="">Choose result</option><option value="Confirmed">Confirmed</option><option value="Not Confirmed">Not Confirmed</option></select></div>
                             <div class="md:col-span-2"><label class="mb-2 block text-sm font-semibold">Verification Evidence / Notes (required)</label><textarea name="verification_notes" rows="2" minlength="10" maxlength="2000" required class="w-full rounded-xl border border-slate-300 p-3 text-sm" placeholder="Explain how you checked the attendance log or observed the student."></textarea></div>
-                            <div class="md:col-span-3 flex justify-end"><button class="rounded-xl bg-[#101064] px-6 py-3 text-sm font-bold text-white" onclick="return confirm('Save this verification?')">Save Verification</button></div>
+                            <div class="md:col-span-3 flex justify-end"><button class="rounded-xl bg-[#101064] px-6 py-3 text-sm font-bold text-white">Save Verification</button></div>
                         </form>
                     @else
                         <div class="mt-4 border-t border-slate-100 pt-4 text-sm text-slate-600"><strong>Verified by:</strong> {{ $item->verifier?->name }} · {{ $item->verified_at?->format('M d, Y g:i A') }}<p class="mt-1 whitespace-pre-wrap">{{ $item->verification_notes }}</p></div>

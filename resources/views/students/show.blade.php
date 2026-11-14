@@ -70,9 +70,11 @@
 
 </style>
 
+@include('partials.student-university-styles')
 
 
-<div class="min-w-0 space-y-8">
+
+<div class="dy-student-university min-w-0 space-y-8 pb-8">
 
 
     {{-- ====================================================== --}}
@@ -94,6 +96,11 @@
         "
     >
 
+
+                {{-- Matching the translucent circular motifs used in the Student Dashboard. --}}
+        <div class="dy-hero-circle dy-hero-circle--outer" aria-hidden="true"></div>
+        <div class="dy-hero-circle dy-hero-circle--inner" aria-hidden="true"></div>
+        <div class="dy-hero-glow" aria-hidden="true"></div>
 
         {{-- GOLD ACCENT --}}
 
@@ -407,6 +414,33 @@
 
     </section>
 
+
+
+    {{-- A concise institutional record summary using the same student fields below. --}}
+    <section class="min-w-0" aria-labelledby="dy-student-quick-summary">
+        <div class="mb-4">
+            <p class="text-xs font-semibold uppercase tracking-[.25em] text-[#B58C11]">At a Glance</p>
+            <h2 id="dy-student-quick-summary" class="mt-2 text-xl font-bold text-[#101064]">Student Record Summary</h2>
+            <p class="mt-1 text-sm text-slate-500">Current academic standing and attendance identification.</p>
+        </div>
+        <dl class="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-3">
+            <div class="dy-profile-highlight p-5">
+                <dt>Academic Enrollment</dt>
+                <dd>{{ $student->program_code ?: 'Not specified' }}</dd>
+                <small>Year {{ $student->year_level ?: 'not specified' }} · {{ $student->college ?: 'College not specified' }}</small>
+            </div>
+            <div class="dy-profile-highlight p-5">
+                <dt>RFID Credential</dt>
+                <dd class="{{ $student->rfid_identifier ? '!text-emerald-700' : '!text-amber-700' }}">{{ $student->rfid_identifier ? 'Assigned' : 'Not assigned' }}</dd>
+                <small>{{ $student->rfid_identifier ? 'Identifier recorded for attendance' : 'No identifier on this student record' }}</small>
+            </div>
+            <div class="dy-profile-highlight p-5">
+                <dt>Record Availability</dt>
+                <dd class="{{ $student->status === 'Active' ? '!text-emerald-700' : '!text-slate-600' }}">{{ $student->status === 'Active' ? 'Active' : ($student->status ?: 'Not specified') }}</dd>
+                <small>Current status in the official student registry</small>
+            </div>
+        </dl>
+    </section>
 
 
     {{-- ====================================================== --}}

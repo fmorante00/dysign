@@ -19,7 +19,7 @@
         <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <h2 class="text-lg font-extrabold text-[#101064]">Submit Attendance Discrepancy</h2>
             <p class="mt-1 text-sm text-slate-500">Only eligible, completed events are available. A request does not automatically change attendance.</p>
-            <form method="POST" action="{{ route('student.attendance-discrepancies.store') }}" class="mt-5 grid gap-5 md:grid-cols-2">
+            <form method="POST" action="{{ route('student.attendance-discrepancies.store') }}" class="mt-5 grid gap-5 md:grid-cols-2" data-confirm data-confirm-title="Submit attendance discrepancy?" data-confirm-message="Send the attendance discrepancy and supporting explanation to staff." data-confirm-confirm-text="Submit Request" data-confirm-variant="default">
                 @csrf
                 <div class="md:col-span-2">
                     <label for="event_id" class="mb-2 block text-sm font-bold text-slate-700">Completed Event</label>

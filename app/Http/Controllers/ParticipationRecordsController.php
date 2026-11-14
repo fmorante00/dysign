@@ -64,6 +64,33 @@ class ParticipationRecordsController extends Controller
         |
         */
 
+        // Filter only the student rows; keep the overview KPIs campus-wide.
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:120'],
+            'college' => ['nullable', 'string', 'max:150'],
+            'program' => ['nullable', 'string', 'max:50'],
+            'year' => ['nullable', 'string', 'max:20'],
+            'participation' => ['nullable', 'in:all,with_records,without_records'],
+            'sort' => ['nullable', 'in:most_events,recent,name'],
+            'per_page' => ['nullable', 'in:10,25,50'],
+        ]);
+
+        $search = trim($filters['search'] ?? '');
+        $college = $filters['college'] ?? '';
+        $program = $filters['program'] ?? '';
+        $year = $filters['year'] ?? '';
+        $participation = $filters['participation'] ?? 'all';
+        $sort = $filters['sort'] ?? 'most_events';
+        $perPage = (int) ($filters['per_page'] ?? 10);
+
+        $activeStudents = Student::query()->where('status', 'Active');
+        $colleges = (clone $activeStudents)->whereNotNull('college')
+            ->where('college', '<>', '')->distinct()->orderBy('college')->pluck('college');
+        $programs = (clone $activeStudents)->whereNotNull('program_code')
+            ->where('program_code', '<>', '')->distinct()->orderBy('program_code')->pluck('program_code');
+        $years = (clone $activeStudents)->whereNotNull('year_level')
+            ->distinct()->orderBy('year_level')->pluck('year_level');
+
         $records = DB::table('students as s')
             ->leftJoin(
                 'attendance_records as ar',
@@ -76,6 +103,34 @@ class ParticipationRecordsController extends Controller
                 's.status',
                 'Active'
             )
+            ->when($search !== '', function ($query) use ($search) {
+                $like = '%' . addcslashes($search, '%_\\') . '%';
+                $query->where(function ($q) use ($like) {
+                    $q->where('s.student_number', 'like', $like)
+                        ->orWhere('s.first_name', 'like', $like)
+                        ->orWhere('s.middle_name', 'like', $like)
+                        ->orWhere('s.last_name', 'like', $like)
+                        ->orWhere('s.college', 'like', $like)
+                        ->orWhere('s.program_name', 'like', $like)
+                        ->orWhere('s.program_code', 'like', $like)
+                        ->orWhereRaw("CONCAT_WS(' ', s.first_name, NULLIF(s.middle_name, ''), s.last_name) LIKE ?", [$like]);
+                });
+            })
+            ->when($college !== '', fn ($q) => $q->where('s.college', $college))
+            ->when($program !== '', fn ($q) => $q->where('s.program_code', $program))
+            ->when($year !== '', fn ($q) => $q->where('s.year_level', $year))
+            ->when($participation === 'with_records', function ($query) {
+                $query->whereExists(function ($q) {
+                    $q->selectRaw('1')->from('attendance_records as ar_filter')
+                        ->whereColumn('ar_filter.student_id', 's.student_id');
+                });
+            })
+            ->when($participation === 'without_records', function ($query) {
+                $query->whereNotExists(function ($q) {
+                    $q->selectRaw('1')->from('attendance_records as ar_filter')
+                        ->whereColumn('ar_filter.student_id', 's.student_id');
+                });
+            })
 
             ->select([
 
@@ -151,19 +206,12 @@ class ParticipationRecordsController extends Controller
 
             ])
 
-            ->orderByDesc(
-                'events_attended'
-            )
-
-            ->orderBy(
-                's.last_name'
-            )
-
-            ->orderBy(
-                's.first_name'
-            )
-
-            ->paginate(20)
+            ->when($sort === 'most_events', fn ($q) => $q->orderByDesc('events_attended'))
+            ->when($sort === 'recent', fn ($q) => $q->orderByDesc('last_participation'))
+            ->orderBy('s.last_name')
+            ->orderBy('s.first_name')
+            ->orderBy('s.student_id')
+            ->paginate($perPage)
             ->withQueryString();
 
 
@@ -174,7 +222,17 @@ class ParticipationRecordsController extends Controller
                 'totalStudents',
                 'participatingStudents',
                 'eventsRecorded',
-                'attendanceEntries'
+                'attendanceEntries',
+                'colleges',
+                'programs',
+                'years',
+                'search',
+                'college',
+                'program',
+                'year',
+                'participation',
+                'sort',
+                'perPage'
             )
         );
     }

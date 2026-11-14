@@ -1,2902 +1,290 @@
 <x-admin-layout>
-
 @php
-
-    /*
-    |--------------------------------------------------------------------------
-    | ADMIN DASHBOARD DATA
-    |--------------------------------------------------------------------------
-    */
-
+    // All dashboard metrics continue to use the existing DashboardController data.
     $totalUsersValue = (int) ($totalUsers ?? 0);
     $activeUsersValue = (int) ($activeUsers ?? 0);
     $totalPersonnelValue = (int) ($totalPersonnel ?? 0);
     $totalRolesValue = (int) ($totalRoles ?? 0);
+    $inactiveUsersValue = max(0, $totalUsersValue - $activeUsersValue);
+    $activeRate = $totalUsersValue > 0 ? round(($activeUsersValue / $totalUsersValue) * 100) : 0;
 
-    $inactiveUsersValue = max(
-        $totalUsersValue - $activeUsersValue,
-        0
-    );
-
-    $activeRate = $totalUsersValue > 0
-        ? round(($activeUsersValue / $totalUsersValue) * 100)
-        : 0;
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | CALENDAR EVENTS
-    |--------------------------------------------------------------------------
-    |
-    | If your controller already sends $calendarEvents,
-    | this will use it.
-    |
-    | Otherwise, it will automatically get events
-    | from App\Models\Event.
-    |
-    */
-
+    // Keep the original calendar event contract and its detail dialog intact.
     if (!isset($calendarEvents)) {
-
         try {
-
             $calendarEvents = \App\Models\Event::with('department')
                 ->orderBy('event_date')
                 ->orderBy('start_time')
                 ->get();
-
         } catch (\Throwable $e) {
-
             $calendarEvents = collect();
-
         }
-
     }
 
+    $calendarEventData = collect($calendarEvents)->map(function ($event) {
+        return [
+            'id' => $event->event_id ?? $event->id ?? null,
+            'name' => $event->event_name ?? 'Untitled Event',
+            'date' => !empty($event->event_date)
+                ? \Carbon\Carbon::parse($event->event_date)->format('Y-m-d') : null,
+            'start_time' => !empty($event->start_time)
+                ? \Carbon\Carbon::parse($event->start_time)->format('g:i A') : null,
+            'end_time' => !empty($event->end_time)
+                ? \Carbon\Carbon::parse($event->end_time)->format('g:i A') : null,
+            'location' => $event->location ?? 'To be announced',
+            'status' => $event->status ?? 'Scheduled',
+            'department' => $event->department->department_name ?? 'University-wide Event',
+        ];
+    })->filter(fn ($event) => !empty($event['date']))->values();
 
-    /*
-    |--------------------------------------------------------------------------
-    | FORMAT EVENTS FOR JAVASCRIPT
-    |--------------------------------------------------------------------------
-    */
+    $eventsThisMonth = $calendarEventData->filter(
+        fn ($event) => str_starts_with($event['date'], now()->format('Y-m'))
+    )->count();
 
-    $calendarEventData = collect($calendarEvents)
-        ->map(function ($event) {
+    $upcomingCalendarEvents = $calendarEventData->filter(function ($event) {
+        return $event['date'] >= now()->toDateString()
+            && !in_array(strtolower((string) $event['status']), ['canceled', 'cancelled'], true);
+    })->sortBy('date')->take(5)->values();
 
-            return [
+    // Count every event record (including cancelled and events outside this month),
+    // just like Event Directory. The five agenda rows are only a preview.
+    $allEventRecords = collect($calendarEvents);
+    $totalEventRecords = $allEventRecords->count();
+    $allEventStatusCounts = $allEventRecords->countBy(
+        fn ($event) => strtolower(trim((string) data_get($event, 'status', '')))
+    );
+    $cancelledEventRecords = (int) $allEventStatusCounts->get('cancelled', 0)
+        + (int) $allEventStatusCounts->get('canceled', 0);
 
-                'id' => $event->event_id ?? $event->id ?? null,
-
-                'name' => $event->event_name ?? 'Untitled Event',
-
-                'date' => !empty($event->event_date)
-                    ? \Carbon\Carbon::parse(
-                        $event->event_date
-                    )->format('Y-m-d')
-                    : null,
-
-                'start_time' => !empty($event->start_time)
-                    ? \Carbon\Carbon::parse(
-                        $event->start_time
-                    )->format('g:i A')
-                    : null,
-
-                'end_time' => !empty($event->end_time)
-                    ? \Carbon\Carbon::parse(
-                        $event->end_time
-                    )->format('g:i A')
-                    : null,
-
-                'location' => $event->location
-                    ?? 'To be announced',
-
-                'status' => $event->status
-                    ?? 'Scheduled',
-
-                'department' =>
-                    $event->department->department_name
-                    ?? 'University-wide Event',
-
-            ];
-
-        })
-        ->filter(function ($event) {
-
-            return !empty($event['date']);
-
-        })
-        ->values();
-
+    $dashboardUser = auth()->user();
+    $dashboardName = trim((string) ($dashboardUser?->name ?? 'Administrator'));
+    $dashboardInitials = collect(preg_split('/\s+/', $dashboardName))->filter()
+        ->take(2)->map(fn ($part) => strtoupper(substr($part, 0, 1)))->implode('') ?: 'AD';
 @endphp
 
-
-
 <style>
-
-    /*
-    |--------------------------------------------------------------------------
-    | HERO
-    |--------------------------------------------------------------------------
-    */
-
-    .admin-hero {
-
-        background:
-            linear-gradient(
-                100deg,
-                rgba(16, 16, 100, .97) 0%,
-                rgba(16, 16, 100, .92) 52%,
-                rgba(16, 16, 100, .74) 100%
-            ),
-            url('{{ asset('images/school.jpg') }}');
-
-        background-size: cover;
-        background-position: center;
-
+    /* Shared DySign campus language: navy photo hero, gold accents, quiet cards. */
+    .dy-admin-hero {
+        background-image: linear-gradient(102deg,rgba(12,13,79,.97) 0%,rgba(16,16,100,.9) 54%,rgba(16,16,100,.72) 100%),url('{{ asset('images/school.jpg') }}');
+        background-size:cover;
+        background-position:center;
     }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | SECTIONS
-    |--------------------------------------------------------------------------
-    */
-
-    .admin-section {
-
-        box-shadow:
-            0 1px 2px rgba(15, 23, 42, .025);
-
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | MANAGEMENT LINKS
-    |--------------------------------------------------------------------------
-    */
-
-    .admin-management-item {
-
-        transition:
-            background-color .2s ease,
-            border-color .2s ease;
-
-    }
-
-    .admin-management-item:hover {
-
-        background: #fafafa;
-
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | CALENDAR
-    |--------------------------------------------------------------------------
-    */
-
-    .admin-calendar-cell {
-
-        min-height: 118px;
-
-        transition:
-            background-color .15s ease,
-            box-shadow .15s ease;
-
-    }
-
-    .admin-calendar-cell:hover {
-
-        background: #fafafd;
-
-        box-shadow:
-            inset 0 0 0 1px
-            rgba(16, 16, 100, .08);
-
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | SCROLLBAR
-    |--------------------------------------------------------------------------
-    */
-
-    .admin-scrollbar::-webkit-scrollbar {
-
-        width: 6px;
-        height: 6px;
-
-    }
-
-    .admin-scrollbar::-webkit-scrollbar-track {
-
-        background: #f3f4f6;
-
-    }
-
-    .admin-scrollbar::-webkit-scrollbar-thumb {
-
-        background: #d1d5db;
-        border-radius: 9999px;
-
-    }
-
-    .admin-scrollbar::-webkit-scrollbar-thumb:hover {
-
-        background: #9ca3af;
-
-    }
-
+    .dy-admin-action {transition:border-color .2s ease,box-shadow .2s ease,transform .2s ease;}
+    .dy-admin-action:hover {border-color:rgba(16,16,100,.25);box-shadow:0 12px 26px -19px rgba(16,16,100,.27);transform:translateY(-2px);}
+    .admin-calendar-cell {min-height:92px;transition:background-color .15s ease,box-shadow .15s ease;}
+    .admin-calendar-cell:hover {background:#f8f9ff;box-shadow:inset 0 0 0 1px rgba(16,16,100,.12);}
+    .admin-scrollbar::-webkit-scrollbar {height:6px;width:6px;}
+    .admin-scrollbar::-webkit-scrollbar-track {background:#f1f5f9;}
+    .admin-scrollbar::-webkit-scrollbar-thumb {background:#cbd5e1;border-radius:9999px;}
+    .dy-admin-progress {background:linear-gradient(90deg,#101064,#383a9c);}
+    @media (max-width:639px) {.admin-calendar-cell {min-height:76px;}}
 </style>
 
-
-
-<div
-    class="
-        min-w-0
-        space-y-8
-    "
->
-
-
-
-    {{-- ====================================================== --}}
-    {{-- HERO --}}
-    {{-- ====================================================== --}}
-
-    <section
-        class="
-            admin-hero
-            relative
-            overflow-hidden
-            rounded-[28px]
-            px-7
-            py-8
-            text-white
-            sm:px-8
-            lg:px-10
-            lg:py-10
-        "
-    >
-
-        {{-- GOLD ACCENT --}}
-
-        <div
-            class="
-                absolute
-                bottom-0
-                left-0
-                h-1
-                w-full
-                bg-[#D4A017]
-            "
-        ></div>
-
-
-
-        <div
-            class="
-                relative
-                z-10
-                flex
-                min-w-0
-                flex-col
-                gap-8
-                lg:flex-row
-                lg:items-center
-                lg:justify-between
-            "
-        >
-
-
-            {{-- HERO CONTENT --}}
-
-            <div
-                class="
-                    min-w-0
-                    max-w-3xl
-                "
-            >
-
-                <p
-                    class="
-                        text-xs
-                        font-semibold
-                        uppercase
-                        tracking-[0.35em]
-                        text-[#E7C75B]
-                    "
-                >
-                    System Administration
-                </p>
-
-
-                <h1
-                    class="
-                        mt-3
-                        break-words
-                        text-3xl
-                        font-bold
-                        tracking-tight
-                        md:text-4xl
-                    "
-                >
-                    Good day,
-                    {{ auth()->user()?->name ?? 'Administrator' }}
-                </h1>
-
-
-                <p
-                    class="
-                        mt-3
-                        max-w-2xl
-                        text-sm
-                        leading-6
-                        text-white/75
-                    "
-                >
-                    Oversee DySign system operations, manage institutional
-                    records, administer user access, and monitor scheduled
-                    university events from one central workspace.
-                </p>
-
-
-
-                <div
-                    class="
-                        mt-6
-                        flex
-                        flex-wrap
-                        gap-x-8
-                        gap-y-3
-                        text-sm
-                        text-white/70
-                    "
-                >
-
-
-                    {{-- DATE --}}
-
-                    <div
-                        class="
-                            flex
-                            items-center
-                            gap-2
-                        "
-                    >
-
-                        <svg
-                            class="
-                                h-4
-                                w-4
-                                shrink-0
-                                text-[#E7C75B]
-                            "
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                stroke-width="2"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M8 7V3m8 4V3M5 11h14M5 5h14a2 2 0
-                                012 2v12a2 2 0 01-2 2H5a2 2 0
-                                01-2-2V7a2 2 0 012-2z"
-                            />
-                        </svg>
-
-                        <span>
-                            {{ now()->format('l, F d, Y') }}
-                        </span>
-
-                    </div>
-
-
-
-                    {{-- STATUS --}}
-
-                    <div
-                        class="
-                            flex
-                            items-center
-                            gap-2
-                        "
-                    >
-
-                        <span
-                            class="
-                                h-2
-                                w-2
-                                rounded-full
-                                bg-green-400
-                            "
-                        ></span>
-
-                        System Administration Portal
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-
-            {{-- HERO BUTTON --}}
-
-            <div class="shrink-0">
-
-                <a
-                    href="{{ route('events.index') }}"
-                    class="
-                        inline-flex
-                        items-center
-                        justify-center
-                        gap-3
-                        rounded-xl
-                        bg-[#D4A017]
-                        px-6
-                        py-3
-                        text-sm
-                        font-bold
-                        text-[#101064]
-                        transition
-                        hover:bg-white
-                    "
-                >
-
-                    Event Management
-
-                    <svg
-                        class="
-                            h-4
-                            w-4
-                        "
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            d="M9 5l7 7-7 7"
-                        />
-                    </svg>
-
-                </a>
-
-            </div>
-
-        </div>
-
-    </section>
-
-
-
-    {{-- ====================================================== --}}
-    {{-- SYSTEM OVERVIEW --}}
-    {{-- ====================================================== --}}
-
-    <section
-        class="
-            min-w-0
-        "
-    >
-
-        <div class="mb-4">
-
-            <p
-                class="
-                    text-xs
-                    font-semibold
-                    uppercase
-                    tracking-[0.28em]
-                    text-[#D4A017]
-                "
-            >
-                Overview
-            </p>
-
-
-            <div
-                class="
-                    mt-2
-                    flex
-                    min-w-0
-                    flex-col
-                    gap-2
-                    sm:flex-row
-                    sm:items-end
-                    sm:justify-between
-                "
-            >
-
-                <h2
-                    class="
-                        text-xl
-                        font-bold
-                        text-[#101064]
-                    "
-                >
-                    Institutional System Summary
-                </h2>
-
-
-                <p
-                    class="
-                        text-sm
-                        text-gray-400
-                    "
-                >
-                    Current DySign administrative records
-                </p>
-
-            </div>
-
-        </div>
-
-
-
-        <div
-            class="
-                grid
-                min-w-0
-                grid-cols-1
-                overflow-hidden
-                border
-                border-gray-200
-                bg-white
-                sm:grid-cols-2
-                xl:grid-cols-4
-            "
-        >
-
-
-            {{-- SYSTEM USERS --}}
-
-            <div
-                class="
-                    min-w-0
-                    border-b
-                    border-gray-100
-                    px-6
-                    py-6
-                    sm:border-r
-                    xl:border-b-0
-                "
-            >
-
-                <div
-                    class="
-                        flex
-                        min-w-0
-                        items-start
-                        justify-between
-                        gap-4
-                    "
-                >
-
-                    <div class="min-w-0">
-
-                        <p
-                            class="
-                                truncate
-                                text-xs
-                                font-semibold
-                                uppercase
-                                tracking-wider
-                                text-gray-400
-                            "
-                        >
-                            System Users
-                        </p>
-
-
-                        <p
-                            class="
-                                mt-3
-                                text-4xl
-                                font-bold
-                                text-[#101064]
-                            "
-                        >
-                            {{ $totalUsersValue }}
-                        </p>
-
-
-                        <p
-                            class="
-                                mt-2
-                                text-xs
-                                text-gray-400
-                            "
-                        >
-                            Registered accounts
-                        </p>
-
-                    </div>
-
-
-                    <div
-                        class="
-                            flex
-                            h-10
-                            w-10
-                            shrink-0
-                            items-center
-                            justify-center
-                            rounded-full
-                            bg-[#F0F1F8]
-                            text-[#101064]
-                        "
-                    >
-
-                        <svg
-                            class="h-5 w-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                stroke-width="1.8"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M16 21v-2a4 4 0 00-4-4H6a4
-                                4 0 00-4 4v2m7-10a4 4 0 100-8
-                                4 4 0 000 8zm8 10v-2a4 4 0
-                                00-3-3.87"
-                            />
-                        </svg>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-
-            {{-- ACTIVE ACCOUNTS --}}
-
-            <div
-                class="
-                    min-w-0
-                    border-b
-                    border-gray-100
-                    px-6
-                    py-6
-                    xl:border-b-0
-                    xl:border-r
-                "
-            >
-
-                <div
-                    class="
-                        flex
-                        min-w-0
-                        items-start
-                        justify-between
-                        gap-4
-                    "
-                >
-
-                    <div class="min-w-0">
-
-                        <p
-                            class="
-                                truncate
-                                text-xs
-                                font-semibold
-                                uppercase
-                                tracking-wider
-                                text-gray-400
-                            "
-                        >
-                            Active Accounts
-                        </p>
-
-
-                        <p
-                            class="
-                                mt-3
-                                text-4xl
-                                font-bold
-                                text-green-600
-                            "
-                        >
-                            {{ $activeUsersValue }}
-                        </p>
-
-
-                        <p
-                            class="
-                                mt-2
-                                text-xs
-                                text-gray-400
-                            "
-                        >
-                            {{ $activeRate }}% currently active
-                        </p>
-
-                    </div>
-
-
-                    <div
-                        class="
-                            flex
-                            h-10
-                            w-10
-                            shrink-0
-                            items-center
-                            justify-center
-                            rounded-full
-                            bg-green-50
-                            text-green-600
-                        "
-                    >
-
-                        <svg
-                            class="h-5 w-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                stroke-width="1.8"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M5 13l4 4L19 7"
-                            />
-                        </svg>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-
-            {{-- PERSONNEL --}}
-
-            <div
-                class="
-                    min-w-0
-                    border-b
-                    border-gray-100
-                    px-6
-                    py-6
-                    sm:border-b-0
-                    sm:border-r
-                "
-            >
-
-                <div
-                    class="
-                        flex
-                        min-w-0
-                        items-start
-                        justify-between
-                        gap-4
-                    "
-                >
-
-                    <div class="min-w-0">
-
-                        <p
-                            class="
-                                truncate
-                                text-xs
-                                font-semibold
-                                uppercase
-                                tracking-wider
-                                text-gray-400
-                            "
-                        >
-                            Personnel
-                        </p>
-
-
-                        <p
-                            class="
-                                mt-3
-                                text-4xl
-                                font-bold
-                                text-[#D4A017]
-                            "
-                        >
-                            {{ $totalPersonnelValue }}
-                        </p>
-
-
-                        <p
-                            class="
-                                mt-2
-                                text-xs
-                                text-gray-400
-                            "
-                        >
-                            Authorized personnel
-                        </p>
-
-                    </div>
-
-
-                    <div
-                        class="
-                            flex
-                            h-10
-                            w-10
-                            shrink-0
-                            items-center
-                            justify-center
-                            rounded-full
-                            bg-[#FFF9E7]
-                            text-[#B68A0D]
-                        "
-                    >
-
-                        <svg
-                            class="h-5 w-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                stroke-width="1.8"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M12 14c3.866 0 7 1.79 7 4v2H5v-2c0-2.21
-                                3.134-4 7-4zm0-2a4 4 0 100-8 4
-                                4 0 000 8z"
-                            />
-                        </svg>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-
-            {{-- ROLES --}}
-
-            <div
-                class="
-                    min-w-0
-                    px-6
-                    py-6
-                "
-            >
-
-                <div
-                    class="
-                        flex
-                        min-w-0
-                        items-start
-                        justify-between
-                        gap-4
-                    "
-                >
-
-                    <div class="min-w-0">
-
-                        <p
-                            class="
-                                truncate
-                                text-xs
-                                font-semibold
-                                uppercase
-                                tracking-wider
-                                text-gray-400
-                            "
-                        >
-                            System Roles
-                        </p>
-
-
-                        <p
-                            class="
-                                mt-3
-                                text-4xl
-                                font-bold
-                                text-[#101064]
-                            "
-                        >
-                            {{ $totalRolesValue }}
-                        </p>
-
-
-                        <p
-                            class="
-                                mt-2
-                                text-xs
-                                text-gray-400
-                            "
-                        >
-                            Access classifications
-                        </p>
-
-                    </div>
-
-
-                    <div
-                        class="
-                            flex
-                            h-10
-                            w-10
-                            shrink-0
-                            items-center
-                            justify-center
-                            rounded-full
-                            bg-[#F0F1F8]
-                            text-[#101064]
-                        "
-                    >
-
-                        <svg
-                            class="h-5 w-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                stroke-width="1.8"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M12 15l3.5-2V8L12 6 8.5
-                                8v5L12 15zm0 0v6M5 7l7-4 7 4"
-                            />
-                        </svg>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </section>
-
-
-
-    {{-- ====================================================== --}}
-    {{-- EVENTS CALENDAR --}}
-    {{-- ====================================================== --}}
-
-    <section
-        class="
-            min-w-0
-        "
-    >
-
-        {{-- TITLE + CONTROLS --}}
-
-        <div
-            class="
-                mb-4
-                flex
-                min-w-0
-                flex-col
-                gap-4
-                md:flex-row
-                md:items-end
-                md:justify-between
-            "
-        >
-
-            <div class="min-w-0">
-
-                <p
-                    class="
-                        text-xs
-                        font-semibold
-                        uppercase
-                        tracking-[0.28em]
-                        text-[#D4A017]
-                    "
-                >
-                    DYCI Schedule
-                </p>
-
-
-                <h2
-                    class="
-                        mt-2
-                        text-xl
-                        font-bold
-                        text-[#101064]
-                    "
-                >
-                    Events Calendar
-                </h2>
-
-
-                <p
-                    class="
-                        mt-1
-                        text-sm
-                        text-gray-400
-                    "
-                >
-                    Select a date to view scheduled institutional events.
-                </p>
-
-            </div>
-
-
-
-            {{-- CONTROLS --}}
-
-            <div
-                class="
-                    flex
-                    shrink-0
-                    items-center
-                    gap-2
-                "
-            >
-
-                <button
-                    type="button"
-                    onclick="goToToday()"
-                    class="
-                        rounded-lg
-                        border
-                        border-gray-200
-                        bg-white
-                        px-4
-                        py-2.5
-                        text-xs
-                        font-semibold
-                        text-[#101064]
-                        transition
-                        hover:border-[#101064]
-                        hover:bg-gray-50
-                    "
-                >
-                    Today
-                </button>
-
-
-
-                <button
-                    type="button"
-                    onclick="changeCalendarMonth(-1)"
-                    class="
-                        flex
-                        h-10
-                        w-10
-                        items-center
-                        justify-center
-                        rounded-lg
-                        border
-                        border-gray-200
-                        bg-white
-                        text-[#101064]
-                        transition
-                        hover:border-[#101064]
-                        hover:bg-gray-50
-                    "
-                    aria-label="Previous month"
-                >
-
-                    <svg
-                        class="
-                            h-4
-                            w-4
-                        "
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            d="M15 19l-7-7 7-7"
-                        />
-                    </svg>
-
-                </button>
-
-
-
-                <button
-                    type="button"
-                    onclick="changeCalendarMonth(1)"
-                    class="
-                        flex
-                        h-10
-                        w-10
-                        items-center
-                        justify-center
-                        rounded-lg
-                        border
-                        border-gray-200
-                        bg-white
-                        text-[#101064]
-                        transition
-                        hover:border-[#101064]
-                        hover:bg-gray-50
-                    "
-                    aria-label="Next month"
-                >
-
-                    <svg
-                        class="
-                            h-4
-                            w-4
-                        "
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            d="M9 5l7 7-7 7"
-                        />
-                    </svg>
-
-                </button>
-
-            </div>
-
-        </div>
-
-
-
-        {{-- CALENDAR CONTAINER --}}
-
-        <div
-            class="
-                admin-section
-                min-w-0
-                overflow-hidden
-                border
-                border-gray-200
-                bg-white
-            "
-        >
-
-
-            {{-- MONTH HEADER --}}
-
-            <div
-                class="
-                    flex
-                    min-w-0
-                    flex-col
-                    gap-4
-                    border-b
-                    border-gray-100
-                    px-6
-                    py-5
-                    sm:flex-row
-                    sm:items-center
-                    sm:justify-between
-                "
-            >
-
-                <div class="min-w-0">
-
-                    <p
-                        class="
-                            text-[10px]
-                            font-semibold
-                            uppercase
-                            tracking-[0.22em]
-                            text-gray-400
-                        "
-                    >
-                        Academic Events
-                    </p>
-
-
-                    <h3
-                        id="calendarMonthTitle"
-                        class="
-                            mt-1
-                            truncate
-                            text-lg
-                            font-bold
-                            text-[#101064]
-                        "
-                    >
-                    </h3>
-
-                </div>
-
-
-
-                <div
-                    class="
-                        flex
-                        flex-wrap
-                        items-center
-                        gap-x-5
-                        gap-y-2
-                        text-xs
-                        text-gray-400
-                    "
-                >
-
-                    <span
-                        class="
-                            flex
-                            items-center
-                            gap-2
-                        "
-                    >
-
-                        <span
-                            class="
-                                h-2
-                                w-2
-                                rounded-full
-                                bg-[#101064]
-                            "
-                        ></span>
-
-                        Today
-
+<div class="min-w-0 space-y-7 pb-8">
+
+    {{-- A welcoming institutional identity banner, consistent with Student Dashboard. --}}
+    <section class="dy-admin-hero relative isolate overflow-hidden rounded-[28px] bg-[#101064] px-6 py-8 text-white shadow-sm sm:px-9 sm:py-10" aria-labelledby="admin-welcome-heading">
+        <div class="pointer-events-none absolute -right-16 -top-24 h-80 w-80 rounded-full border border-white/10"></div>
+        <div class="pointer-events-none absolute -right-4 -top-12 h-60 w-60 rounded-full border border-white/10"></div>
+        <div class="pointer-events-none absolute bottom-0 right-0 h-28 w-80 bg-gradient-to-l from-[#D4A017]/20 to-transparent"></div>
+        <div class="relative flex flex-col items-start justify-between gap-7 lg:flex-row lg:items-center">
+            <div class="min-w-0 max-w-2xl">
+                <p class="text-xs font-semibold uppercase tracking-[0.25em] text-[#E7C75B]">DySign · Administration Portal</p>
+                <h1 id="admin-welcome-heading" class="mt-3 break-words text-3xl font-bold tracking-tight sm:text-4xl">Welcome, {{ $dashboardName }}!</h1>
+                <p class="mt-3 max-w-xl text-sm leading-6 text-white/75">Your institutional operations, event coordination, and account management in one secure workspace.</p>
+                <div class="mt-6 flex flex-wrap items-center gap-3">
+                    <span class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-medium text-white/90">
+                        <svg class="h-4 w-4 text-[#E7C75B]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18"/></svg>
+                        {{ now()->format('l, F d, Y') }}
                     </span>
-
-
-                    <span
-                        class="
-                            flex
-                            items-center
-                            gap-2
-                        "
-                    >
-
-                        <span
-                            class="
-                                h-2
-                                w-2
-                                rounded-full
-                                bg-[#D4A017]
-                            "
-                        ></span>
-
-                        Has Event
-
-                    </span>
-
+                    <span class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-medium text-white/90"><span class="h-1.5 w-1.5 rounded-full bg-emerald-300"></span> Administrator workspace</span>
                 </div>
-
             </div>
-
-
-
-            {{-- RESPONSIVE CALENDAR SCROLLER --}}
-
-            <div
-                class="
-                    admin-scrollbar
-                    w-full
-                    max-w-full
-                    overflow-x-auto
-                "
-            >
-
-                <div
-                    class="
-                        min-w-[760px]
-                    "
-                >
-
-
-                    {{-- WEEKDAY HEADERS --}}
-
-                    <div
-                        class="
-                            grid
-                            grid-cols-7
-                            border-b
-                            border-gray-200
-                            bg-gray-50
-                        "
-                    >
-
-                        <div
-                            class="
-                                border-r
-                                border-gray-100
-                                px-3
-                                py-3
-                                text-center
-                                text-[10px]
-                                font-bold
-                                uppercase
-                                tracking-wider
-                                text-gray-400
-                            "
-                        >
-                            Sunday
-                        </div>
-
-
-                        <div
-                            class="
-                                border-r
-                                border-gray-100
-                                px-3
-                                py-3
-                                text-center
-                                text-[10px]
-                                font-bold
-                                uppercase
-                                tracking-wider
-                                text-gray-400
-                            "
-                        >
-                            Monday
-                        </div>
-
-
-                        <div
-                            class="
-                                border-r
-                                border-gray-100
-                                px-3
-                                py-3
-                                text-center
-                                text-[10px]
-                                font-bold
-                                uppercase
-                                tracking-wider
-                                text-gray-400
-                            "
-                        >
-                            Tuesday
-                        </div>
-
-
-                        <div
-                            class="
-                                border-r
-                                border-gray-100
-                                px-3
-                                py-3
-                                text-center
-                                text-[10px]
-                                font-bold
-                                uppercase
-                                tracking-wider
-                                text-gray-400
-                            "
-                        >
-                            Wednesday
-                        </div>
-
-
-                        <div
-                            class="
-                                border-r
-                                border-gray-100
-                                px-3
-                                py-3
-                                text-center
-                                text-[10px]
-                                font-bold
-                                uppercase
-                                tracking-wider
-                                text-gray-400
-                            "
-                        >
-                            Thursday
-                        </div>
-
-
-                        <div
-                            class="
-                                border-r
-                                border-gray-100
-                                px-3
-                                py-3
-                                text-center
-                                text-[10px]
-                                font-bold
-                                uppercase
-                                tracking-wider
-                                text-gray-400
-                            "
-                        >
-                            Friday
-                        </div>
-
-
-                        <div
-                            class="
-                                px-3
-                                py-3
-                                text-center
-                                text-[10px]
-                                font-bold
-                                uppercase
-                                tracking-wider
-                                text-gray-400
-                            "
-                        >
-                            Saturday
-                        </div>
-
-                    </div>
-
-
-
-                    {{-- CALENDAR DAYS --}}
-
-                    <div
-                        id="adminCalendarGrid"
-                        class="
-                            grid
-                            grid-cols-7
-                        "
-                    ></div>
-
+            <div class="flex w-full shrink-0 flex-wrap items-center gap-4 lg:w-auto">
+                <div class="hidden items-center gap-3 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 backdrop-blur-sm sm:flex">
+                    <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/20 bg-white/15 text-sm font-bold">{{ $dashboardInitials }}</div>
+                    <div class="min-w-0"><p class="max-w-[160px] truncate text-sm font-semibold">{{ $dashboardName }}</p><p class="mt-0.5 text-xs text-white/60">System Administrator</p></div>
                 </div>
-
+                <a href="{{ route('events.index') }}" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#D4A017] px-5 py-3 text-sm font-bold text-[#101064] transition hover:bg-[#E7C75B] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+                    Manage Events
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14m-6-6 6 6-6 6"/></svg>
+                </a>
             </div>
-
         </div>
-
     </section>
 
-
-
-    {{-- ====================================================== --}}
-    {{-- ADMINISTRATIVE MANAGEMENT --}}
-    {{-- ====================================================== --}}
-
-    <section
-        class="
-            min-w-0
-        "
-    >
-
-        <div class="mb-4">
-
-            <p
-                class="
-                    text-xs
-                    font-semibold
-                    uppercase
-                    tracking-[0.28em]
-                    text-[#D4A017]
-                "
-            >
-                Administration
-            </p>
-
-
-            <h2
-                class="
-                    mt-2
-                    text-xl
-                    font-bold
-                    text-[#101064]
-                "
-            >
-                Administrative Management
-            </h2>
-
-
-            <p
-                class="
-                    mt-1
-                    text-sm
-                    text-gray-400
-                "
-            >
-                Access the primary administrative functions of DySign.
-            </p>
-
+    {{-- Four clear metrics, matching the Student Dashboard card language. --}}
+    <section aria-label="Institutional records overview" class="grid gap-4 sm:grid-cols-2 2xl:grid-cols-4">
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <div class="flex items-start justify-between gap-3">
+                <div><p class="text-sm font-medium text-slate-500">Total Accounts</p><p class="mt-3 text-3xl font-bold tracking-tight text-[#101064]">{{ number_format($totalUsersValue) }}</p></div>
+                <div class="rounded-xl bg-indigo-50 p-3 text-[#101064]"><svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.7" aria-hidden="true"><path d="M16 20H5a2 2 0 0 1-2-2v-2a5 5 0 0 1 10 0v2M8 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm8-2a3 3 0 1 0 0-6m2 17h3v-2a5 5 0 0 0-5-5"/></svg></div>
+            </div><p class="mt-4 text-xs leading-5 text-slate-500">Registered system user accounts</p>
         </div>
-
-
-
-        <div
-            class="
-                admin-section
-                min-w-0
-                overflow-hidden
-                border
-                border-gray-200
-                bg-white
-            "
-        >
-
-            <div
-                class="
-                    grid
-                    min-w-0
-                    grid-cols-1
-                    md:grid-cols-2
-                    xl:grid-cols-3
-                "
-            >
-
-
-                {{-- EVENT MANAGEMENT --}}
-
-                <a
-                    href="{{ route('events.index') }}"
-                    class="
-                        admin-management-item
-                        group
-                        min-w-0
-                        overflow-hidden
-                        border-b
-                        border-gray-100
-                        p-6
-                        md:border-r
-                    "
-                >
-
-                    <div
-                        class="
-                            flex
-                            min-w-0
-                            items-start
-                            gap-4
-                        "
-                    >
-
-                        <div
-                            class="
-                                flex
-                                h-12
-                                w-12
-                                shrink-0
-                                items-center
-                                justify-center
-                                border
-                                border-gray-200
-                                bg-gray-50
-                                text-[#101064]
-                                transition
-                                group-hover:border-[#D4A017]
-                            "
-                        >
-
-                            <svg
-                                class="
-                                    h-5
-                                    w-5
-                                "
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    stroke-width="1.8"
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    d="M8 7V3m8 4V3M5 11h14M5 5h14a2
-                                    2 0 012 2v12a2 2 0 01-2 2H5a2
-                                    2 0 01-2-2V7a2 2 0 012-2z"
-                                />
-                            </svg>
-
-                        </div>
-
-
-                        <div class="min-w-0">
-
-                            <div
-                                class="
-                                    flex
-                                    min-w-0
-                                    items-center
-                                    gap-2
-                                "
-                            >
-
-                                <h3
-                                    class="
-                                        min-w-0
-                                        truncate
-                                        font-bold
-                                        text-[#101064]
-                                    "
-                                >
-                                    Event Management
-                                </h3>
-
-
-                                <span
-                                    class="
-                                        shrink-0
-                                        text-gray-300
-                                        transition
-                                        group-hover:translate-x-1
-                                        group-hover:text-[#D4A017]
-                                    "
-                                >
-                                    →
-                                </span>
-
-                            </div>
-
-
-                            <p
-                                class="
-                                    mt-2
-                                    break-words
-                                    text-sm
-                                    leading-6
-                                    text-gray-500
-                                "
-                            >
-                                Create, schedule, review, and administer
-                                institutional events.
-                            </p>
-
-                        </div>
-
-                    </div>
-
-                </a>
-
-
-
-                {{-- STUDENTS --}}
-
-                <a
-                    href="{{ route('students.index') }}"
-                    class="
-                        admin-management-item
-                        group
-                        min-w-0
-                        overflow-hidden
-                        border-b
-                        border-gray-100
-                        p-6
-                        xl:border-r
-                    "
-                >
-
-                    <div
-                        class="
-                            flex
-                            min-w-0
-                            items-start
-                            gap-4
-                        "
-                    >
-
-                        <div
-                            class="
-                                flex
-                                h-12
-                                w-12
-                                shrink-0
-                                items-center
-                                justify-center
-                                border
-                                border-gray-200
-                                bg-gray-50
-                                text-[#101064]
-                                transition
-                                group-hover:border-[#D4A017]
-                            "
-                        >
-
-                            <svg
-                                class="
-                                    h-5
-                                    w-5
-                                "
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    stroke-width="1.8"
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    d="M12 14L3 9l9-5 9 5-9
-                                    5zm-6-2v5c3 2 9 2 12 0v-5"
-                                />
-                            </svg>
-
-                        </div>
-
-
-                        <div class="min-w-0">
-
-                            <div
-                                class="
-                                    flex
-                                    min-w-0
-                                    items-center
-                                    gap-2
-                                "
-                            >
-
-                                <h3
-                                    class="
-                                        truncate
-                                        font-bold
-                                        text-[#101064]
-                                    "
-                                >
-                                    Student Records
-                                </h3>
-
-
-                                <span
-                                    class="
-                                        shrink-0
-                                        text-gray-300
-                                        transition
-                                        group-hover:translate-x-1
-                                        group-hover:text-[#D4A017]
-                                    "
-                                >
-                                    →
-                                </span>
-
-                            </div>
-
-
-                            <p
-                                class="
-                                    mt-2
-                                    break-words
-                                    text-sm
-                                    leading-6
-                                    text-gray-500
-                                "
-                            >
-                                Maintain student identity and participation
-                                records.
-                            </p>
-
-                        </div>
-
-                    </div>
-
-                </a>
-
-
-
-                {{-- PERSONNEL --}}
-
-                <a
-                    href="{{ route('personnel.index') }}"
-                    class="
-                        admin-management-item
-                        group
-                        min-w-0
-                        overflow-hidden
-                        border-b
-                        border-gray-100
-                        p-6
-                        md:border-r
-                        xl:border-r-0
-                    "
-                >
-
-                    <div
-                        class="
-                            flex
-                            min-w-0
-                            items-start
-                            gap-4
-                        "
-                    >
-
-                        <div
-                            class="
-                                flex
-                                h-12
-                                w-12
-                                shrink-0
-                                items-center
-                                justify-center
-                                border
-                                border-gray-200
-                                bg-gray-50
-                                text-[#101064]
-                                transition
-                                group-hover:border-[#D4A017]
-                            "
-                        >
-
-                            <svg
-                                class="
-                                    h-5
-                                    w-5
-                                "
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    stroke-width="1.8"
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    d="M12 12a4 4 0 100-8 4 4 0
-                                    000 8zm-7 9a7 7 0 0114 0"
-                                />
-                            </svg>
-
-                        </div>
-
-
-                        <div class="min-w-0">
-
-                            <div
-                                class="
-                                    flex
-                                    min-w-0
-                                    items-center
-                                    gap-2
-                                "
-                            >
-
-                                <h3
-                                    class="
-                                        truncate
-                                        font-bold
-                                        text-[#101064]
-                                    "
-                                >
-                                    Personnel Management
-                                </h3>
-
-
-                                <span
-                                    class="
-                                        shrink-0
-                                        text-gray-300
-                                        transition
-                                        group-hover:translate-x-1
-                                        group-hover:text-[#D4A017]
-                                    "
-                                >
-                                    →
-                                </span>
-
-                            </div>
-
-
-                            <p
-                                class="
-                                    mt-2
-                                    break-words
-                                    text-sm
-                                    leading-6
-                                    text-gray-500
-                                "
-                            >
-                                Manage authorized personnel accounts,
-                                departments, and access.
-                            </p>
-
-                        </div>
-
-                    </div>
-
-                </a>
-
-
-
-                {{-- REPORTS --}}
-
-                <a
-                    href="{{ route('reports.attendance') }}"
-                    class="
-                        admin-management-item
-                        group
-                        min-w-0
-                        overflow-hidden
-                        border-b
-                        border-gray-100
-                        p-6
-                        xl:border-r
-                        xl:border-b-0
-                    "
-                >
-
-                    <div
-                        class="
-                            flex
-                            min-w-0
-                            items-start
-                            gap-4
-                        "
-                    >
-
-                        <div
-                            class="
-                                flex
-                                h-12
-                                w-12
-                                shrink-0
-                                items-center
-                                justify-center
-                                border
-                                border-gray-200
-                                bg-gray-50
-                                text-[#101064]
-                                transition
-                                group-hover:border-[#D4A017]
-                            "
-                        >
-
-                            <svg
-                                class="
-                                    h-5
-                                    w-5
-                                "
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    stroke-width="1.8"
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    d="M4 19V9m6 10V5m6
-                                    14v-7m4 7H2"
-                                />
-                            </svg>
-
-                        </div>
-
-
-                        <div class="min-w-0">
-
-                            <div
-                                class="
-                                    flex
-                                    min-w-0
-                                    items-center
-                                    gap-2
-                                "
-                            >
-
-                                <h3
-                                    class="
-                                        truncate
-                                        font-bold
-                                        text-[#101064]
-                                    "
-                                >
-                                    Reports & Analytics
-                                </h3>
-
-
-                                <span
-                                    class="
-                                        shrink-0
-                                        text-gray-300
-                                        transition
-                                        group-hover:translate-x-1
-                                        group-hover:text-[#D4A017]
-                                    "
-                                >
-                                    →
-                                </span>
-
-                            </div>
-
-
-                            <p
-                                class="
-                                    mt-2
-                                    break-words
-                                    text-sm
-                                    leading-6
-                                    text-gray-500
-                                "
-                            >
-                                Review attendance information and generate
-                                administrative reports.
-                            </p>
-
-                        </div>
-
-                    </div>
-
-                </a>
-
-
-
-                {{-- AUDIT LOGS --}}
-
-                <a
-                    href="{{ route('logs.index') }}"
-                    class="
-                        admin-management-item
-                        group
-                        min-w-0
-                        overflow-hidden
-                        border-b
-                        border-gray-100
-                        p-6
-                        md:border-b-0
-                        md:border-r
-                    "
-                >
-
-                    <div
-                        class="
-                            flex
-                            min-w-0
-                            items-start
-                            gap-4
-                        "
-                    >
-
-                        <div
-                            class="
-                                flex
-                                h-12
-                                w-12
-                                shrink-0
-                                items-center
-                                justify-center
-                                border
-                                border-gray-200
-                                bg-gray-50
-                                text-[#101064]
-                                transition
-                                group-hover:border-[#D4A017]
-                            "
-                        >
-
-                            <svg
-                                class="
-                                    h-5
-                                    w-5
-                                "
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    stroke-width="1.8"
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    d="M9 12h6m-6 4h6M9
-                                    8h6M5 3h14v18H5z"
-                                />
-                            </svg>
-
-                        </div>
-
-
-                        <div class="min-w-0">
-
-                            <div
-                                class="
-                                    flex
-                                    min-w-0
-                                    items-center
-                                    gap-2
-                                "
-                            >
-
-                                <h3
-                                    class="
-                                        truncate
-                                        font-bold
-                                        text-[#101064]
-                                    "
-                                >
-                                    Audit Trail
-                                </h3>
-
-
-                                <span
-                                    class="
-                                        shrink-0
-                                        text-gray-300
-                                        transition
-                                        group-hover:translate-x-1
-                                        group-hover:text-[#D4A017]
-                                    "
-                                >
-                                    →
-                                </span>
-
-                            </div>
-
-
-                            <p
-                                class="
-                                    mt-2
-                                    break-words
-                                    text-sm
-                                    leading-6
-                                    text-gray-500
-                                "
-                            >
-                                Review administrative actions and recorded
-                                system activities.
-                            </p>
-
-                        </div>
-
-                    </div>
-
-                </a>
-
-
-
-                {{-- BACKUP --}}
-
-                <a
-                    href="{{ route('backup.index') }}"
-                    class="
-                        admin-management-item
-                        group
-                        min-w-0
-                        overflow-hidden
-                        p-6
-                    "
-                >
-
-                    <div
-                        class="
-                            flex
-                            min-w-0
-                            items-start
-                            gap-4
-                        "
-                    >
-
-                        <div
-                            class="
-                                flex
-                                h-12
-                                w-12
-                                shrink-0
-                                items-center
-                                justify-center
-                                border
-                                border-gray-200
-                                bg-gray-50
-                                text-[#101064]
-                                transition
-                                group-hover:border-[#D4A017]
-                            "
-                        >
-
-                            <svg
-                                class="
-                                    h-5
-                                    w-5
-                                "
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    stroke-width="1.8"
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    d="M4 7h16v13H4V7zm3-4h10v4H7V3zm5
-                                    8v6m-3-3h6"
-                                />
-                            </svg>
-
-                        </div>
-
-
-                        <div class="min-w-0">
-
-                            <div
-                                class="
-                                    flex
-                                    min-w-0
-                                    items-center
-                                    gap-2
-                                "
-                            >
-
-                                <h3
-                                    class="
-                                        truncate
-                                        font-bold
-                                        text-[#101064]
-                                    "
-                                >
-                                    System Backup
-                                </h3>
-
-
-                                <span
-                                    class="
-                                        shrink-0
-                                        text-gray-300
-                                        transition
-                                        group-hover:translate-x-1
-                                        group-hover:text-[#D4A017]
-                                    "
-                                >
-                                    →
-                                </span>
-
-                            </div>
-
-
-                            <p
-                                class="
-                                    mt-2
-                                    break-words
-                                    text-sm
-                                    leading-6
-                                    text-gray-500
-                                "
-                            >
-                                Maintain backup copies of essential DySign
-                                institutional records.
-                            </p>
-
-                        </div>
-
-                    </div>
-
-                </a>
-
-            </div>
-
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <div class="flex items-start justify-between gap-3">
+                <div><p class="text-sm font-medium text-slate-500">Active Accounts</p><p class="mt-3 text-3xl font-bold tracking-tight text-[#101064]">{{ number_format($activeUsersValue) }}</p></div>
+                <div class="rounded-xl bg-emerald-50 p-3 text-emerald-700"><svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.7" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="m8 12 3 3 5-6"/></svg></div>
+            </div><p class="mt-4 text-xs leading-5 text-slate-500">{{ $activeRate }}% of all registered accounts</p>
         </div>
-
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <div class="flex items-start justify-between gap-3">
+                <div><p class="text-sm font-medium text-slate-500">Personnel Records</p><p class="mt-3 text-3xl font-bold tracking-tight text-[#101064]">{{ number_format($totalPersonnelValue) }}</p></div>
+                <div class="rounded-xl bg-amber-50 p-3 text-[#A9780B]"><svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.7" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></div>
+            </div><p class="mt-4 text-xs leading-5 text-slate-500">Staff and personnel registry entries</p>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <div class="flex items-start justify-between gap-3">
+                <div><p class="text-sm font-medium text-slate-500">System Roles</p><p class="mt-3 text-3xl font-bold tracking-tight text-[#101064]">{{ number_format($totalRolesValue) }}</p></div>
+                <div class="rounded-xl bg-slate-100 p-3 text-slate-600"><svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.7" aria-hidden="true"><path d="M12 3 3 8l9 5 9-5-9-5Zm-6 7v5c3.5 3 8.5 3 12 0v-5M4 19h16"/></svg></div>
+            </div><p class="mt-4 text-xs leading-5 text-slate-500">Configured access roles in DySign</p>
+        </div>
     </section>
 
-
-
-    {{-- ====================================================== --}}
-    {{-- RECENT PERSONNEL + ACCOUNT STATUS --}}
-    {{-- ====================================================== --}}
-
-    <section
-        class="
-            grid
-            min-w-0
-            grid-cols-1
-            gap-8
-            xl:grid-cols-3
-        "
-    >
-
-
-        {{-- ================================================== --}}
-        {{-- RECENT PERSONNEL --}}
-        {{-- ================================================== --}}
-
-        <div
-            class="
-                admin-section
-                min-w-0
-                overflow-hidden
-                border
-                border-gray-200
-                bg-white
-                xl:col-span-2
-            "
-        >
-
-            <div
-                class="
-                    flex
-                    min-w-0
-                    flex-col
-                    gap-3
-                    border-b
-                    border-gray-100
-                    px-7
-                    py-6
-                    sm:flex-row
-                    sm:items-end
-                    sm:justify-between
-                "
-            >
-
-                <div class="min-w-0">
-
-                    <p
-                        class="
-                            text-xs
-                            font-semibold
-                            uppercase
-                            tracking-[0.25em]
-                            text-[#D4A017]
-                        "
-                    >
-                        Personnel Registry
-                    </p>
-
-
-                    <h2
-                        class="
-                            mt-2
-                            truncate
-                            text-xl
-                            font-bold
-                            text-[#101064]
-                        "
-                    >
-                        Recent Personnel Accounts
-                    </h2>
-
+    {{-- Real event calendar + upcoming agenda, with the original JS and event detail dialog. --}}
+    <div class="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1.9fr)_minmax(280px,0.85fr)]">
+        <section class="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm" aria-labelledby="admin-calendar-heading">
+            <div class="flex flex-col gap-4 border-b border-slate-100 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                <div><p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#A9780B]">Institutional Schedule</p><h2 id="admin-calendar-heading" class="mt-1.5 text-lg font-bold text-[#101064]">Events Calendar</h2><p class="mt-1 text-xs leading-5 text-slate-500">Select a date to view event details.</p></div>
+                <div class="flex shrink-0 items-center gap-2">
+                    <button type="button" onclick="goToToday()" class="inline-flex h-10 items-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-[#101064] hover:bg-slate-50">Today</button>
+                    <button type="button" onclick="changeCalendarMonth(-1)" aria-label="Previous month" class="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-[#101064] hover:bg-slate-50"><svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button>
+                    <button type="button" onclick="changeCalendarMonth(1)" aria-label="Next month" class="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-[#101064] hover:bg-slate-50"><svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
                 </div>
+            </div>
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-slate-50/60 px-5 py-3 sm:px-6">
+                <h3 id="calendarMonthTitle" aria-live="polite" class="text-sm font-bold text-[#101064]"></h3>
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] font-medium text-slate-500"><span class="inline-flex items-center gap-1.5"><span class="h-2 w-2 rounded-full bg-[#101064]"></span>Today</span><span class="inline-flex items-center gap-1.5"><span class="h-2 w-2 rounded-full bg-[#D4A017]"></span>Event scheduled</span></div>
+            </div>
+            <div class="admin-scrollbar max-w-full overflow-x-auto">
+                <div class="min-w-[650px]">
+                    <div class="grid grid-cols-7 border-b border-slate-200 bg-slate-50 text-center text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                        @foreach(['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as $weekday)
+                            <div class="border-r border-slate-100 px-1 py-3 last:border-r-0">{{ $weekday }}</div>
+                        @endforeach
+                    </div>
+                    <div id="adminCalendarGrid" class="grid grid-cols-7" aria-label="Calendar dates"></div>
+                </div>
+            </div>
+            <div class="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-white px-5 py-4 text-xs text-slate-500 sm:px-6">
+                <span>Events recorded for <span id="adminMonthlyEventLabel">{{ now()->format('F Y') }}</span></span><span class="rounded-full bg-[#101064]/5 px-3 py-1 font-semibold text-[#101064]"><span id="adminMonthlyEventCount">{{ $eventsThisMonth }}</span> events</span>
+            </div>
+        </section>
 
-
-                <a
-                    href="{{ route('personnel.index') }}"
-                    class="
-                        shrink-0
-                        text-xs
-                        font-semibold
-                        text-[#101064]
-                        transition
-                        hover:text-[#D4A017]
-                    "
-                >
-                    View All
-                </a>
-
+        <section class="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm" aria-labelledby="admin-agenda-heading">
+            <div class="flex items-center justify-between gap-3 border-b border-slate-100 px-6 py-5">
+                <div><p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#A9780B]">Today &amp; Ahead</p><h2 id="admin-agenda-heading" class="mt-1.5 text-lg font-bold text-[#101064]">Event Agenda</h2></div>
+                <span class="inline-flex rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-[#101064]">{{ $upcomingCalendarEvents->count() }} of {{ $totalEventRecords }} shown</span>
             </div>
 
-
-
-            @if(
-                isset($recentPersonnel)
-                &&
-                $recentPersonnel->count()
-            )
-
-                <div
-                    class="
-                        divide-y
-                        divide-gray-100
-                    "
-                >
-
-                    @foreach($recentPersonnel as $person)
-
-                        <div
-                            class="
-                                flex
-                                min-w-0
-                                flex-col
-                                gap-4
-                                px-7
-                                py-5
-                                transition
-                                hover:bg-gray-50
-                                md:flex-row
-                                md:items-center
-                                md:justify-between
-                            "
-                        >
-
-
-                            {{-- PERSON DETAILS --}}
-
-                            <div
-                                class="
-                                    flex
-                                    min-w-0
-                                    items-center
-                                    gap-4
-                                "
-                            >
-
-                                <div
-                                    class="
-                                        flex
-                                        h-11
-                                        w-11
-                                        shrink-0
-                                        items-center
-                                        justify-center
-                                        rounded-full
-                                        bg-[#F0F1F8]
-                                        text-sm
-                                        font-bold
-                                        text-[#101064]
-                                    "
-                                >
-
-                                    {{ strtoupper(
-                                        substr(
-                                            $person->first_name ?? 'P',
-                                            0,
-                                            1
-                                        )
-                                    ) }}
-
-                                    {{ strtoupper(
-                                        substr(
-                                            $person->last_name ?? '',
-                                            0,
-                                            1
-                                        )
-                                    ) }}
-
-                                </div>
-
-
-                                <div class="min-w-0">
-
-                                    <p
-                                        class="
-                                            truncate
-                                            font-semibold
-                                            text-[#101064]
-                                        "
-                                    >
-                                        {{ $person->first_name ?? '' }}
-                                        {{ $person->last_name ?? '' }}
-                                    </p>
-
-
-                                    <p
-                                        class="
-                                            mt-1
-                                            truncate
-                                            text-sm
-                                            text-gray-500
-                                        "
-                                    >
-                                        {{ $person->department ?? 'No Department' }}
-                                    </p>
-
-                                </div>
-
-                            </div>
-
-
-
-                            {{-- PERSON META --}}
-
-                            <div
-                                class="
-                                    grid
-                                    shrink-0
-                                    grid-cols-2
-                                    gap-x-8
-                                    gap-y-3
-                                    md:text-right
-                                "
-                            >
-
-                                <div class="min-w-0">
-
-                                    <p
-                                        class="
-                                            text-[10px]
-                                            font-semibold
-                                            uppercase
-                                            tracking-wider
-                                            text-gray-400
-                                        "
-                                    >
-                                        Position
-                                    </p>
-
-
-                                    <p
-                                        class="
-                                            mt-1
-                                            max-w-[180px]
-                                            truncate
-                                            text-sm
-                                            font-semibold
-                                            text-gray-700
-                                        "
-                                    >
-                                        {{ $person->position ?? 'Personnel' }}
-                                    </p>
-
-                                </div>
-
-
-
-                                <div class="min-w-0">
-
-                                    <p
-                                        class="
-                                            text-[10px]
-                                            font-semibold
-                                            uppercase
-                                            tracking-wider
-                                            text-gray-400
-                                        "
-                                    >
-                                        Added
-                                    </p>
-
-
-                                    <p
-                                        class="
-                                            mt-1
-                                            whitespace-nowrap
-                                            text-sm
-                                            text-gray-500
-                                        "
-                                    >
-                                        {{ $person->created_at
-                                            ? $person->created_at->format('M d, Y')
-                                            : '—'
-                                        }}
-                                    </p>
-
-                                </div>
-
-                            </div>
-
+            {{-- Let the agenda rows expand naturally to match the adjacent calendar's height. --}}
+            <div class="flex flex-1 flex-col">
+                @forelse($upcomingCalendarEvents as $event)
+                    <div class="flex min-h-[90px] flex-1 items-center gap-3 border-b border-slate-100 px-5 py-4 sm:px-6">
+                        <div class="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-xl border border-indigo-100 bg-indigo-50/70 text-[#101064]">
+                            <span class="text-[10px] font-bold uppercase tracking-wider">{{ \Carbon\Carbon::parse($event['date'])->format('M') }}</span><span class="text-xl font-bold leading-6">{{ \Carbon\Carbon::parse($event['date'])->format('d') }}</span>
                         </div>
-
-                    @endforeach
-
-                </div>
-
-            @else
-
-                <div
-                    class="
-                        px-7
-                        py-14
-                        text-center
-                    "
-                >
-
-                    <div
-                        class="
-                            mx-auto
-                            h-1
-                            w-12
-                            bg-[#D4A017]
-                        "
-                    ></div>
-
-
-                    <h3
-                        class="
-                            mt-5
-                            font-semibold
-                            text-[#101064]
-                        "
-                    >
-                        No personnel accounts available
-                    </h3>
-
-
-                    <p
-                        class="
-                            mt-2
-                            text-sm
-                            text-gray-400
-                        "
-                    >
-                        Newly registered personnel will appear here.
-                    </p>
-
-                </div>
-
-            @endif
-
-        </div>
-
-
-
-        {{-- ================================================== --}}
-        {{-- ACCOUNT STATUS --}}
-        {{-- ================================================== --}}
-
-        <div
-            class="
-                admin-section
-                min-w-0
-                overflow-hidden
-                border
-                border-gray-200
-                bg-white
-            "
-        >
-
-            <div
-                class="
-                    border-b
-                    border-gray-100
-                    px-6
-                    py-6
-                "
-            >
-
-                <p
-                    class="
-                        text-xs
-                        font-semibold
-                        uppercase
-                        tracking-[0.25em]
-                        text-[#D4A017]
-                    "
-                >
-                    Access Status
-                </p>
-
-
-                <h2
-                    class="
-                        mt-2
-                        text-xl
-                        font-bold
-                        text-[#101064]
-                    "
-                >
-                    Account Availability
-                </h2>
-
+                        <div class="min-w-0 flex-1"><p class="break-words text-sm font-semibold leading-5 text-slate-800">{{ $event['name'] }}</p><p class="mt-1 break-words text-xs text-slate-500">{{ $event['department'] }}</p><p class="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500"><span class="h-1.5 w-1.5 rounded-full bg-[#D4A017]"></span>{{ $event['start_time'] ?: 'Time to be announced' }} <span class="text-slate-300">·</span> {{ $event['status'] }}</p></div>
+                    </div>
+                @empty
+                    <div class="flex flex-1 flex-col items-center justify-center px-7 py-16 text-center"><div class="rounded-2xl bg-slate-100 p-4 text-slate-500"><svg class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18M8 15h8"/></svg></div><h3 class="mt-4 text-sm font-semibold text-slate-800">No upcoming events</h3><p class="mt-2 text-xs leading-5 text-slate-500">Newly scheduled events will appear here.</p></div>
+                @endforelse
             </div>
 
+            {{-- Meaningful bottom section rather than an empty stretched card. --}}
+            <div class="border-t border-slate-100 bg-slate-50/60 px-5 py-4 sm:px-6" aria-label="Agenda status overview">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <h3 class="text-[11px] font-bold uppercase tracking-[0.16em] text-[#101064]">All Events at a Glance</h3>
+                    <span class="text-[11px] font-semibold tabular-nums text-[#101064]">{{ number_format($totalEventRecords) }} total records</span>
+                </div>
+                <p class="mt-1 text-[11px] text-slate-500">Counts include all event dates, not just the agenda preview.</p>
+                <dl class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    <div class="rounded-xl border border-indigo-100 bg-white px-3 py-3">
+                        <dt class="text-[11px] font-medium text-slate-500">Upcoming</dt>
+                        <dd class="mt-1 text-xl font-bold tabular-nums text-[#101064]">{{ $allEventStatusCounts->get('upcoming', 0) }}</dd>
+                    </div>
+                    <div class="rounded-xl border border-amber-100 bg-white px-3 py-3">
+                        <dt class="text-[11px] font-medium text-slate-500">Ongoing</dt>
+                        <dd class="mt-1 text-xl font-bold tabular-nums text-amber-700">{{ $allEventStatusCounts->get('ongoing', 0) }}</dd>
+                    </div>
+                    <div class="rounded-xl border border-emerald-100 bg-white px-3 py-3">
+                        <dt class="text-[11px] font-medium text-slate-500">Completed</dt>
+                        <dd class="mt-1 text-xl font-bold tabular-nums text-emerald-700">{{ $allEventStatusCounts->get('completed', 0) }}</dd>
+                    </div>
+                    <div class="rounded-xl border border-rose-100 bg-white px-3 py-3">
+                        <dt class="text-[11px] font-medium text-slate-500">Cancelled</dt>
+                        <dd class="mt-1 text-xl font-bold tabular-nums text-rose-700">{{ $cancelledEventRecords }}</dd>
+                    </div>
+                </dl>
+            </div>
+            <div class="border-t border-slate-100 bg-white px-6 py-4"><a href="{{ route('events.index') }}" class="inline-flex items-center gap-2 text-xs font-bold text-[#101064] hover:underline">View all {{ number_format($totalEventRecords) }} event records <span aria-hidden="true">→</span></a></div>
+        </section>
+    </div>
 
+    {{-- Primary work areas, grouped like a purposeful campus administration console. --}}
+    <section aria-labelledby="admin-management-heading">
+        <div class="mb-4 flex flex-wrap items-end justify-between gap-3"><div><p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#A9780B]">Quick Access</p><h2 id="admin-management-heading" class="mt-1.5 text-xl font-bold text-[#101064]">Administrative Workspaces</h2><p class="mt-1 text-sm text-slate-500">Open the tools you use to manage day-to-day operations.</p></div></div>
+        <div class="grid gap-4 sm:grid-cols-2 2xl:grid-cols-3">
+            @php
+                $dashboardActions = [
+                    ['name' => 'Event Management', 'description' => 'Plan schedules and oversee institutional events.', 'route' => 'events.index', 'icon' => 'calendar'],
+                    ['name' => 'Student Records', 'description' => 'Maintain student profiles and registration details.', 'route' => 'students.index', 'icon' => 'students'],
+                    ['name' => 'Personnel Management', 'description' => 'Manage staff records and account assignments.', 'route' => 'personnel.index', 'icon' => 'personnel'],
+                    ['name' => 'Reports & Analytics', 'description' => 'Review attendance and participation records.', 'route' => 'reports.attendance', 'icon' => 'chart'],
+                    ['name' => 'Audit Trail', 'description' => 'Inspect logged actions and system activity.', 'route' => 'logs.index', 'icon' => 'audit'],
+                    ['name' => 'System Backup', 'description' => 'Access database backup and recovery options.', 'route' => 'backup.index', 'icon' => 'backup'],
+                ];
+            @endphp
+            @foreach($dashboardActions as $action)
+                <a href="{{ route($action['route']) }}" class="dy-admin-action group flex min-w-0 items-start gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#101064]">
+                    <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-[#101064]">
+                        @if($action['icon'] === 'calendar')<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18"/></svg>
+                        @elseif($action['icon'] === 'students')<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M17 6a3 3 0 0 1 0 6m1 4a4 4 0 0 1 3 4v1"/></svg>
+                        @elseif($action['icon'] === 'personnel')<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h4"/></svg>
+                        @elseif($action['icon'] === 'chart')<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8" aria-hidden="true"><path d="M4 20V8m5 12V4m5 16v-7m5 7V9M3 20h18"/></svg>
+                        @elseif($action['icon'] === 'audit')<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8" aria-hidden="true"><path d="M8 3h8l4 4v14H4V3h4Zm8 0v5h4M8 13h8m-8 4h6"/></svg>
+                        @else<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v4h16v-4M5 7V4h14v3"/></svg>@endif
+                    </div>
+                    <div class="min-w-0 flex-1"><h3 class="text-sm font-bold text-[#101064]">{{ $action['name'] }}</h3><p class="mt-1.5 text-xs leading-5 text-slate-500">{{ $action['description'] }}</p></div>
+                    <svg class="mt-1 h-4 w-4 shrink-0 text-slate-300 transition group-hover:translate-x-1 group-hover:text-[#101064]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg>
+                </a>
+            @endforeach
+        </div>
+    </section>
 
+    {{-- Personnel and account health: both use live controller values. --}}
+    <div class="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(290px,0.9fr)]">
+        <section class="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm" aria-labelledby="admin-personnel-heading">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-6 py-5"><div><p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#A9780B]">Staff Registry</p><h2 id="admin-personnel-heading" class="mt-1.5 text-lg font-bold text-[#101064]">Recent Personnel Accounts</h2></div><a href="{{ route('personnel.index') }}" class="text-xs font-bold text-[#101064] hover:underline">View all</a></div>
+            @forelse(($recentPersonnel ?? collect()) as $person)
+                <div class="flex flex-wrap items-center gap-3 border-b border-slate-100 px-6 py-4 last:border-b-0 sm:flex-nowrap">
+                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-xs font-bold text-[#101064]">{{ strtoupper(substr((string) ($person->first_name ?? 'P'), 0, 1) . substr((string) ($person->last_name ?? ''), 0, 1)) }}</div>
+                    <div class="min-w-0 flex-1"><p class="truncate text-sm font-semibold text-slate-800">{{ trim(($person->first_name ?? '') . ' ' . ($person->last_name ?? '')) ?: 'Personnel Record' }}</p><p class="mt-0.5 truncate text-xs text-slate-500">{{ $person->department ?? 'No department assigned' }} · {{ $person->position ?? 'Personnel' }}</p></div>
+                    <span class="shrink-0 text-xs text-slate-400">{{ $person->created_at ? $person->created_at->format('M d, Y') : '—' }}</span>
+                </div>
+            @empty
+                <div class="flex flex-col items-center justify-center px-6 py-16 text-center"><div class="rounded-xl bg-slate-100 p-4 text-slate-500"><svg class="h-7 w-7" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg></div><p class="mt-4 text-sm font-semibold text-slate-800">No personnel records yet</p><p class="mt-1 text-xs text-slate-500">Recently created personnel records will appear here.</p></div>
+            @endforelse
+        </section>
+        <section class="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm" aria-labelledby="admin-access-heading">
+            <div class="border-b border-slate-100 px-6 py-5"><p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#A9780B]">Account Monitoring</p><h2 id="admin-access-heading" class="mt-1.5 text-lg font-bold text-[#101064]">Account Availability</h2></div>
             <div class="p-6">
-
-                <div
-                    class="
-                        flex
-                        min-w-0
-                        items-end
-                        justify-between
-                        gap-4
-                    "
-                >
-
-                    <div class="min-w-0">
-
-                        <p
-                            class="
-                                text-5xl
-                                font-bold
-                                tracking-tight
-                                text-[#101064]
-                            "
-                        >
-                            {{ $activeRate }}%
-                        </p>
-
-
-                        <p
-                            class="
-                                mt-2
-                                text-sm
-                                text-gray-500
-                            "
-                        >
-                            Active system accounts
-                        </p>
-
+                <div class="flex flex-wrap items-end justify-between gap-2"><div><p class="text-sm text-slate-500">Active user rate</p><p class="mt-2 text-3xl font-bold tracking-tight text-[#101064]">{{ $activeRate }}%</p></div><span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">{{ number_format($activeUsersValue) }} active</span></div>
+                <div class="mt-4 h-2.5 overflow-hidden rounded-full bg-slate-100" role="progressbar" aria-valuenow="{{ $activeRate }}" aria-valuemin="0" aria-valuemax="100" aria-label="Percentage of active user accounts"><div class="dy-admin-progress h-full rounded-full" style="width: {{ min(100, max(0, $activeRate)) }}%"></div></div>
+                <dl class="mt-6 grid grid-cols-2 gap-3 rounded-xl bg-slate-50 px-4 py-4 text-sm"><div><dt class="text-xs text-slate-500">Active Accounts</dt><dd class="mt-1 font-bold text-[#101064]">{{ number_format($activeUsersValue) }}</dd></div><div><dt class="text-xs text-slate-500">Inactive Accounts</dt><dd class="mt-1 font-bold text-slate-700">{{ number_format($inactiveUsersValue) }}</dd></div></dl>
+                <div class="mt-6 border-t border-slate-100 pt-5"><h3 class="text-xs font-bold uppercase tracking-wide text-slate-500">Accounts by Role</h3>
+                    <div class="mt-4 space-y-3">
+                        @forelse(($roleDistribution ?? collect()) as $role)
+                            @php $roleCount = (int) ($role->users_count ?? 0); @endphp
+                            <div class="flex items-center justify-between gap-3 text-xs"><span class="min-w-0 truncate text-slate-600">{{ $role->role_name ?? 'Role' }}</span><span class="shrink-0 font-semibold tabular-nums text-[#101064]">{{ number_format($roleCount) }}</span></div>
+                        @empty
+                            <p class="text-xs text-slate-500">No role information available.</p>
+                        @endforelse
                     </div>
-
-
-                    <span
-                        class="
-                            mb-2
-                            flex
-                            shrink-0
-                            items-center
-                            gap-2
-                            text-xs
-                            font-semibold
-                            text-green-600
-                        "
-                    >
-
-                        <span
-                            class="
-                                h-2
-                                w-2
-                                rounded-full
-                                bg-green-500
-                            "
-                        ></span>
-
-                        Operational
-
-                    </span>
-
                 </div>
-
-
-
-                {{-- PROGRESS --}}
-
-                <div
-                    class="
-                        mt-6
-                        h-2
-                        w-full
-                        overflow-hidden
-                        bg-gray-100
-                    "
-                >
-
-                    <div
-                        class="
-                            h-full
-                            bg-[#101064]
-                        "
-                        style="width: {{ min($activeRate, 100) }}%"
-                    ></div>
-
-                </div>
-
-
-
-                {{-- STATUS DETAILS --}}
-
-                <div
-                    class="
-                        mt-7
-                        divide-y
-                        divide-gray-100
-                        border-t
-                        border-gray-100
-                    "
-                >
-
-                    <div
-                        class="
-                            flex
-                            items-center
-                            justify-between
-                            gap-4
-                            py-4
-                        "
-                    >
-
-                        <span
-                            class="
-                                text-sm
-                                text-gray-500
-                            "
-                        >
-                            Total Accounts
-                        </span>
-
-                        <span
-                            class="
-                                shrink-0
-                                font-bold
-                                text-[#101064]
-                            "
-                        >
-                            {{ $totalUsersValue }}
-                        </span>
-
-                    </div>
-
-
-
-                    <div
-                        class="
-                            flex
-                            items-center
-                            justify-between
-                            gap-4
-                            py-4
-                        "
-                    >
-
-                        <span
-                            class="
-                                text-sm
-                                text-gray-500
-                            "
-                        >
-                            Active
-                        </span>
-
-                        <span
-                            class="
-                                shrink-0
-                                font-bold
-                                text-green-600
-                            "
-                        >
-                            {{ $activeUsersValue }}
-                        </span>
-
-                    </div>
-
-
-
-                    <div
-                        class="
-                            flex
-                            items-center
-                            justify-between
-                            gap-4
-                            py-4
-                        "
-                    >
-
-                        <span
-                            class="
-                                text-sm
-                                text-gray-500
-                            "
-                        >
-                            Inactive
-                        </span>
-
-                        <span
-                            class="
-                                shrink-0
-                                font-bold
-                                text-gray-500
-                            "
-                        >
-                            {{ $inactiveUsersValue }}
-                        </span>
-
-                    </div>
-
-
-
-                    <div
-                        class="
-                            flex
-                            items-center
-                            justify-between
-                            gap-4
-                            py-4
-                        "
-                    >
-
-                        <span
-                            class="
-                                text-sm
-                                text-gray-500
-                            "
-                        >
-                            Access Roles
-                        </span>
-
-                        <span
-                            class="
-                                shrink-0
-                                font-bold
-                                text-[#D4A017]
-                            "
-                        >
-                            {{ $totalRolesValue }}
-                        </span>
-
-                    </div>
-
-                </div>
-
             </div>
-
-        </div>
-
-    </section>
-
+        </section>
+    </div>
 </div>
-
 
 
 {{-- ====================================================== --}}
@@ -2905,6 +293,9 @@
 
 <div
     id="eventDayModal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="modalEventDate"
     class="
         fixed
         inset-0
@@ -3178,6 +569,16 @@
         calendarTitle.textContent =
             `${monthName} ${year}`;
 
+        const monthlyCountEl = document.getElementById('adminMonthlyEventCount');
+        const monthlyLabelEl = document.getElementById('adminMonthlyEventLabel');
+        const monthlyPrefix = `${year}-${String(month + 1).padStart(2, '0')}`;
+        if (monthlyCountEl) {
+            monthlyCountEl.textContent = adminCalendarEvents.filter(event => event.date && event.date.startsWith(monthlyPrefix)).length;
+        }
+        if (monthlyLabelEl) {
+            monthlyLabelEl.textContent = `${monthName} ${year}`;
+        }
+
 
 
         const firstDay =
@@ -3397,6 +798,10 @@
 
             cell.type =
                 'button';
+
+            cell.setAttribute('aria-label', actualDate.toLocaleDateString('en-US', {
+                weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
+            }) + ' — ' + eventsForDay.length + ' events');
 
 
             cell.className = `
@@ -3962,8 +1367,7 @@
                     }
 
                     else if (
-                        calendarEvent.status
-                        === 'Cancelled'
+                        ['Cancelled', 'Canceled'].includes(calendarEvent.status)
                     ) {
 
                         statusDot.classList.add(
@@ -4098,8 +1502,7 @@
                     }
 
                     else if (
-                        calendarEvent.status
-                        === 'Cancelled'
+                        ['Cancelled', 'Canceled'].includes(calendarEvent.status)
                     ) {
 
                         status.classList.add(

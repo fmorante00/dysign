@@ -99,7 +99,7 @@
                         @if($item->status === 'Pending')
                             <details class="mt-4 rounded-xl border border-indigo-100 bg-indigo-50/50 p-4">
                                 <summary class="cursor-pointer text-sm font-semibold text-[#101064]">Review Request</summary>
-                                <form method="POST" action="{{ route('attendance-discrepancies.staff.review', $item->discrepancy_request_id) }}" class="mt-4 space-y-4">
+                                <form method="POST" action="{{ route('attendance-discrepancies.staff.review', $item->discrepancy_request_id) }}" class="mt-4 space-y-4" data-confirm data-confirm-title="Save attendance discrepancy review?" data-confirm-message="Review the selected decision and evidence. Saving this review may update the discrepancy status." data-confirm-confirm-text="Save Review" data-confirm-variant="warning">
                                     @csrf
                                     <div class="grid gap-4 md:grid-cols-2">
                                         <div>
@@ -191,17 +191,17 @@
                     </div>
                     @if ($item->status === 'Pending')
                         <div class="mt-5 grid gap-4 border-t border-slate-100 pt-5 lg:grid-cols-2">
-                            <form method="POST" action="{{ route('staff.attendance-discrepancies.review', $item->discrepancy_id) }}" class="space-y-3 rounded-xl border border-green-200 bg-green-50 p-4">
+                            <form method="POST" action="{{ route('staff.attendance-discrepancies.review', $item->discrepancy_id) }}" class="space-y-3 rounded-xl border border-green-200 bg-green-50 p-4" data-confirm data-confirm-title="Approve attendance correction?" data-confirm-message="Approval can create or modify an attendance record. Check the evidence before proceeding." data-confirm-confirm-text="Approve Correction" data-confirm-variant="warning">
                                 @csrf @method('PATCH')<input type="hidden" name="decision" value="Approved">
                                 <p class="font-bold text-green-900">Approve & Correct Attendance</p><p class="text-xs text-green-900">Check the attendance log and evidence first. Approval can create or modify a record.</p>
                                 <label class="block text-xs font-semibold text-green-900">Approval Reason / Evidence (required)</label><textarea name="review_notes" rows="3" required minlength="10" maxlength="2000" class="w-full rounded-lg border border-green-200 p-3 text-sm" placeholder="Explain the evidence supporting the correction."></textarea>
-                                <button class="rounded-lg bg-green-700 px-5 py-2.5 text-sm font-bold text-white" onclick="return confirm('Approve and apply the requested attendance correction?')">Approve</button>
+                                <button class="rounded-lg bg-green-700 px-5 py-2.5 text-sm font-bold text-white">Approve</button>
                             </form>
-                            <form method="POST" action="{{ route('staff.attendance-discrepancies.review', $item->discrepancy_id) }}" class="space-y-3 rounded-xl border border-red-200 bg-red-50 p-4">
+                            <form method="POST" action="{{ route('staff.attendance-discrepancies.review', $item->discrepancy_id) }}" class="space-y-3 rounded-xl border border-red-200 bg-red-50 p-4" data-confirm data-confirm-title="Reject discrepancy request?" data-confirm-message="The request will be rejected and no attendance record will be changed." data-confirm-confirm-text="Reject Request" data-confirm-variant="danger">
                                 @csrf @method('PATCH')<input type="hidden" name="decision" value="Rejected">
                                 <p class="font-bold text-red-900">Reject Request</p><p class="text-xs text-red-900">No attendance record will be changed.</p>
                                 <label class="block text-xs font-semibold text-red-900">Reason for Rejection (required)</label><textarea name="review_notes" rows="3" required minlength="10" maxlength="2000" class="w-full rounded-lg border border-red-200 p-3 text-sm" placeholder="Explain why the request was rejected."></textarea>
-                                <button class="rounded-lg bg-red-700 px-5 py-2.5 text-sm font-bold text-white" onclick="return confirm('Reject this discrepancy request?')">Reject</button>
+                                <button class="rounded-lg bg-red-700 px-5 py-2.5 text-sm font-bold text-white">Reject</button>
                             </form>
                         </div>
                     @else

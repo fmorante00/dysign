@@ -886,7 +886,7 @@
             $role->role_id
         ) }}"
         class="min-w-0"
-    >
+     data-confirm data-confirm-title="Save role permissions?" data-confirm-message="Changes to permissions can affect access for users with this role." data-confirm-confirm-text="Save Permissions" data-confirm-variant="warning">
 
         @csrf
         @method('PUT')

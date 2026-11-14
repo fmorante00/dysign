@@ -71,8 +71,10 @@
 
 </style>
 
+@include('partials.personnel-university-styles')
 
-<div class="min-w-0 space-y-8">
+
+<div class="dy-staff-page min-w-0 space-y-7 pb-8">
 
 
     {{-- ====================================================== --}}
@@ -358,7 +360,7 @@
             $personnel->personnel_id
         ) }}"
         class="space-y-8"
-    >
+     data-confirm data-confirm-title="Save personnel changes?" data-confirm-message="Update this personnel record with the edited information." data-confirm-confirm-text="Save Changes" data-confirm-variant="default">
 
         @csrf
         @method('PUT')

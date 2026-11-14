@@ -47,7 +47,7 @@
             <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
                 <h2 class="text-lg font-bold text-[#101064]">Register Eligible Student</h2>
                 <p class="mt-1 text-sm text-slate-500">Enter the student's exact school-issued student number. Eligibility is checked automatically.</p>
-                <form action="{{ route('events.registrations.store', $managedEvent->event_id) }}" method="POST" class="mt-4 flex flex-col gap-3 sm:flex-row">
+                <form action="{{ route('events.registrations.store', $managedEvent->event_id) }}" method="POST" class="mt-4 flex flex-col gap-3 sm:flex-row" data-confirm data-confirm-title="Register this participant?" data-confirm-message="Check the student number before adding this participant to the event." data-confirm-confirm-text="Add Participant" data-confirm-variant="default">
                     @csrf
                     <label class="flex-1">
                         <span class="sr-only">Student Number</span>
@@ -93,7 +93,7 @@
                                 <td class="px-5 py-4">{{ $registration->registeredBy?->name ?? $registration->source }}</td>
                                 <td class="px-5 py-4">
                                     @if ($canEdit)
-                                        <form method="POST" action="{{ route('events.registrations.cancel', [$managedEvent->event_id, $registration->registration_id]) }}" onsubmit="return confirm('Remove this participant registration?');">
+                                        <form method="POST" action="{{ route('events.registrations.cancel', [$managedEvent->event_id, $registration->registration_id]) }}" data-confirm data-confirm-title="Remove participant registration?" data-confirm-message="The student will be unregistered from this event." data-confirm-confirm-text="Unregister" data-confirm-variant="danger">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="text-sm font-semibold text-red-700 hover:underline">Unregister</button>

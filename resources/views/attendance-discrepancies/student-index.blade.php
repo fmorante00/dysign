@@ -29,7 +29,7 @@
                     <p class="mt-1 text-xs text-slate-500">Student No. {{ $student->student_number }} · {{ $student->first_name }} {{ $student->last_name }}</p>
                 </div>
 
-                <form method="POST" action="{{ route('attendance-discrepancies.student.store') }}" class="space-y-5 p-6">
+                <form method="POST" action="{{ route('attendance-discrepancies.student.store') }}" class="space-y-5 p-6" data-confirm data-confirm-title="Submit attendance correction request?" data-confirm-message="Review the event and supporting explanation before submitting." data-confirm-confirm-text="Submit Request" data-confirm-variant="default">
                     @csrf
                     <div>
                         <label for="event_id" class="mb-2 block text-sm font-semibold text-slate-700">Event <span class="text-red-600">*</span></label>

@@ -288,7 +288,7 @@
                                         @method('DELETE')
                                     </form>
                                 @else
-                                    <form action="{{ route('student.registrations.store', $event->event_id) }}" method="POST">
+                                    <form action="{{ route('student.registrations.store', $event->event_id) }}" method="POST" data-confirm data-confirm-title="Register for this event?" data-confirm-message="Confirm registration for this optional event." data-confirm-confirm-text="Register" data-confirm-variant="default">
                                         @csrf
                                         <button class="dsr-btn-primary" type="submit">{{ $wasCancelled ? 'Register Again' : 'Register Now' }}</button>
                                     </form>
