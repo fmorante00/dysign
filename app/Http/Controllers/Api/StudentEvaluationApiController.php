@@ -82,6 +82,11 @@ class StudentEvaluationApiController extends Controller
                     'status',
                     'Published'
                 )
+                ->whereIn('event_id', DB::table('attendance_records')
+                    ->where('student_id', $user->student_id)
+                    ->whereIn('status', ['Present', 'Late'])
+                    ->whereNotNull('time_in')
+                    ->select('event_id'))
                 ->whereIn(
                     'event_id',
                     $eligibleEventIds
@@ -346,6 +351,17 @@ class StudentEvaluationApiController extends Controller
                 'You are not eligible to access this evaluation.'
             );
         }
+
+        // Enrollment alone is not proof of participation. Only students with
+        // finalized, time-stamped attendance may access the questionnaire.
+        $attended = DB::table('attendance_records')
+            ->where('event_id', $evaluationForm->event_id)
+            ->where('student_id', $user->student_id)
+            ->whereIn('status', ['Present', 'Late'])
+            ->whereNotNull('time_in')
+            ->exists();
+
+        abort_unless($attended, 403, 'Only students who attended this event may answer its evaluation.');
     }
 
     public function response(EvaluationForm $evaluationForm)

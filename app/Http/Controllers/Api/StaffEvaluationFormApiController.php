@@ -94,6 +94,34 @@ class StaffEvaluationFormApiController extends Controller
     |--------------------------------------------------------------------------
     */
 
+    /** Preview an ordinary Word questionnaire; nothing is written to the DB. */
+    public function preview(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'event_id' => ['required', 'integer', 'exists:events,event_id'],
+            'source_file' => ['required', 'file', 'mimes:docx', 'max:10240'],
+        ]);
+
+        $user = $request->user();
+        $event = Event::findOrFail($validated['event_id']);
+        abort_unless(
+            $user?->role?->role_name === 'Department Staff'
+            && $user->department_id
+            && (int) $event->department_id === (int) $user->department_id,
+            403,
+            'You may only analyze questionnaires for your own department events.'
+        );
+
+        $parsed = $this->importService->preview($request->file('source_file'));
+
+        return response()->json([
+            'success' => true,
+            'data' => $parsed,
+            'message' => 'Review the detected questions and options before generating this evaluation form.',
+        ]);
+    }
+
+
     public function import(
         Request $request
     ): JsonResponse {

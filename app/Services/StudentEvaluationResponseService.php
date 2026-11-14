@@ -89,6 +89,17 @@ class StudentEvaluationResponseService
             );
         }
 
+        // Repeat authorization in the write service so a forged API request
+        // cannot submit on behalf of a non-attendee.
+        $attended = DB::table('attendance_records')
+            ->where('event_id', $form->event_id)
+            ->where('student_id', $user->student_id)
+            ->whereIn('status', ['Present', 'Late'])
+            ->whereNotNull('time_in')
+            ->exists();
+
+        abort_unless($attended, 403, 'Only verified attendees can submit this evaluation.');
+
 
         /*
         |--------------------------------------------------------------------------

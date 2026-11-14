@@ -10,6 +10,9 @@ use App\Models\Student;
 use App\Support\DepartmentAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\EventEligibilityMail;
 use Illuminate\Validation\ValidationException;
 
 class EventEligibilityController extends Controller
@@ -29,12 +32,11 @@ class EventEligibilityController extends Controller
         $user = auth()->user();
         $isAdministrator = $user->role?->role_name === 'Administrator';
 
-        // The administrator is a read-only observer of ALL event statuses.
-        // Department Staff may manage only their department's Upcoming events.
+        // Administrators see every event in read-only mode. Department staff
+        // see the complete history for their own department, including past events.
         $baseQuery = Event::query()
             ->when(!$isAdministrator, fn ($query) => $query
-                ->where('department_id', $user->department_id)
-                ->where('status', 'Upcoming'));
+                ->where('department_id', $user->department_id));
 
         $statusCounts = (clone $baseQuery)
             ->selectRaw('status, COUNT(*) as total')
@@ -65,17 +67,18 @@ class EventEligibilityController extends Controller
                     ->orWhere('location', 'like', '%'.$search.'%');
             });
         }
-        if ($isAdministrator && $status !== 'all') {
+        if ($status !== 'all') {
             $query->where('status', $status);
         }
         if ($isAdministrator && ctype_digit($departmentId) && (int) $departmentId > 0) {
             $query->where('department_id', (int) $departmentId);
         }
 
-        // Admin sees recent events first; staff sees the nearest upcoming event first.
-        $events = ($isAdministrator
-            ? $query->orderByDesc('event_date')->orderByDesc('start_time')
-            : $query->orderBy('event_date')->orderBy('start_time'))
+        // Future sessions first, followed by recent historical records.
+        $events = $query
+            ->orderByRaw("CASE WHEN status IN ('Ongoing', 'Upcoming') THEN 0 ELSE 1 END")
+            ->orderByDesc('event_date')
+            ->orderByDesc('start_time')
             ->paginate(10)
             ->withQueryString();
 
@@ -121,9 +124,10 @@ class EventEligibilityController extends Controller
                 )
                 ->get();
 
-        if ($isAdministrator) {
-            // Admin only reads saved rules and generated participants.
-            // No form inputs, regeneration, or write permissions are exposed.
+        if ($isAdministrator || $event->status !== 'Upcoming') {
+            // Administrators and department staff reviewing non-upcoming events
+            // can only inspect saved rules and generated participants.
+            // Modification endpoints retain their independent 403/validation guards.
             $participation = (string) $request->query('participation', 'all');
             if (!in_array($participation, ['all', 'Required', 'Optional'], true)) {
                 $participation = 'all';
@@ -513,7 +517,7 @@ class EventEligibilityController extends Controller
         }
 
 
-        DB::transaction(
+        $newlyEligible = DB::transaction(
             function () use (
                 $event,
                 $college,
@@ -633,12 +637,14 @@ class EventEligibilityController extends Controller
                 }
 
 
-                $this->regenerateEligibleStudents(
+                return $this->regenerateEligibleStudents(
                     $event
                 );
             }
         );
 
+
+        $emailNotice = $this->queueEligibilityEmails($event, $newlyEligible);
 
         return redirect()
             ->route(
@@ -648,7 +654,8 @@ class EventEligibilityController extends Controller
             ->with(
                 'success',
                 'Eligibility criteria saved and the eligible student list was regenerated.'
-            );
+            )
+            ->with('eligibility_email_notice', $emailNotice);
     }
 
 
@@ -698,7 +705,7 @@ class EventEligibilityController extends Controller
         }
 
 
-        DB::transaction(
+        $newlyEligible = DB::transaction(
             function () use (
                 $event,
                 $student,
@@ -769,12 +776,14 @@ class EventEligibilityController extends Controller
                 }
 
 
-                $this->regenerateEligibleStudents(
+                return $this->regenerateEligibleStudents(
                     $event
                 );
             }
         );
 
+
+        $emailNotice = $this->queueEligibilityEmails($event, $newlyEligible);
 
         return redirect()
             ->route(
@@ -784,7 +793,8 @@ class EventEligibilityController extends Controller
             ->with(
                 'success',
                 'Specific student eligibility saved successfully.'
-            );
+            )
+            ->with('eligibility_email_notice', $emailNotice);
     }
 
 
@@ -822,7 +832,7 @@ class EventEligibilityController extends Controller
                 ->firstOrFail();
 
 
-        DB::transaction(
+        $newlyEligible = DB::transaction(
             function () use (
                 $eligibilityRule,
                 $event
@@ -830,12 +840,14 @@ class EventEligibilityController extends Controller
 
                 $eligibilityRule->delete();
 
-                $this->regenerateEligibleStudents(
+                return $this->regenerateEligibleStudents(
                     $event
                 );
             }
         );
 
+
+        $emailNotice = $this->queueEligibilityEmails($event, $newlyEligible);
 
         return redirect()
             ->route(
@@ -845,7 +857,8 @@ class EventEligibilityController extends Controller
             ->with(
                 'success',
                 'Eligibility rule removed successfully.'
-            );
+            )
+            ->with('eligibility_email_notice', $emailNotice);
     }
 
 
@@ -870,15 +883,17 @@ class EventEligibilityController extends Controller
         );
 
 
-        DB::transaction(
+        $newlyEligible = DB::transaction(
             function () use ($event) {
 
-                $this->regenerateEligibleStudents(
+                return $this->regenerateEligibleStudents(
                     $event
                 );
             }
         );
 
+
+        $emailNotice = $this->queueEligibilityEmails($event, $newlyEligible);
 
         return redirect()
             ->route(
@@ -888,7 +903,8 @@ class EventEligibilityController extends Controller
             ->with(
                 'success',
                 'Eligible student list refreshed from the current student registry.'
-            );
+            )
+            ->with('eligibility_email_notice', $emailNotice);
     }
 
 
@@ -900,7 +916,14 @@ class EventEligibilityController extends Controller
 
     private function regenerateEligibleStudents(
         Event $event
-    ): void {
+    ): array {
+
+        // Snapshot BEFORE delete/reinsert. Regeneration itself must not
+        // trigger duplicate mail for students already eligible.
+        $previous = EventEligibleStudent::query()
+            ->where('event_id', $event->event_id)
+            ->pluck('participation_type', 'student_id')
+            ->all();
 
         $rules =
             EventEligibilityRule::where(
@@ -1050,7 +1073,7 @@ class EventEligibilityController extends Controller
 
 
         if (empty($generatedStudents)) {
-            return;
+            return [];
         }
 
 
@@ -1099,6 +1122,88 @@ class EventEligibilityController extends Controller
                 $chunk
             );
         }
+
+        // Notify only newly included students or students whose requirement
+        // changed (Optional <-> Required), never on unchanged refreshes.
+        return array_filter(
+            $generatedStudents,
+            fn ($type, $studentId) => !array_key_exists($studentId, $previous)
+                || $previous[$studentId] !== $type,
+            ARRAY_FILTER_USE_BOTH
+        );
+    }
+
+
+    /**
+     * Queue notification emails only AFTER eligibility changes commit.
+     * Sending failures must never roll back valid eligibility changes.
+     * Uses the configured queue connection: sync for local testing, a worker for database queues.
+     */
+    private function queueEligibilityEmails(Event $event, array $changes): string
+    {
+        if (!$changes) {
+            return 'No new or changed eligibility. No duplicate emails were queued.';
+        }
+
+        $queued = 0;
+        $skipped = 0;
+        $failed = 0;
+
+        $students = Student::query()
+            ->with('user:user_id,student_id,email')
+            ->whereIn('student_id', array_keys($changes))
+            ->get(['student_id', 'first_name', 'last_name', 'email']);
+
+        foreach ($students as $student) {
+            // Prefer the student registry address; fall back to a linked
+            // student-account address when the registry email is unusable.
+            $email = collect([$student->email, $student->user?->email])
+                ->map(fn ($candidate) => trim((string) $candidate))
+                ->first(function ($candidate): bool {
+                    if (!filter_var($candidate, FILTER_VALIDATE_EMAIL)) {
+                        return false;
+                    }
+
+                    // Reserved example/test addresses are syntactically valid but
+                    // should never receive real SMTP notifications.
+                    $domain = strtolower(substr(strrchr($candidate, '@'), 1));
+
+                    return !in_array($domain, [
+                        'example.com', 'example.net', 'example.org', 'localhost',
+                    ], true) && !preg_match('/\.(?:example|invalid|test|localhost)$/i', $domain);
+                });
+            if (!$email) {
+                $skipped++;
+                continue;
+            }
+
+            try {
+                Mail::to($email)->queue(
+                    (new EventEligibilityMail(
+                        recipientName: trim($student->first_name.' '.$student->last_name),
+                        eventName: (string) $event->event_name,
+                        eventDate: $event->event_date?->format('F j, Y') ?? '',
+                        startTime: $event->start_time
+                            ? \Carbon\Carbon::parse($event->start_time)->format('g:i A') : '',
+                        endTime: $event->end_time
+                            ? \Carbon\Carbon::parse($event->end_time)->format('g:i A') : '',
+                        venue: (string) ($event->location ?: 'To be announced'),
+                        participationType: $changes[$student->student_id],
+                        portalUrl: route('student.registrations.index')
+                    ))
+                );
+                $queued++;
+            } catch (\Throwable $exception) {
+                $failed++;
+                Log::error('Could not queue event eligibility email', [
+                    'event_id' => $event->event_id,
+                    'student_id' => $student->student_id,
+                    'exception' => $exception->getMessage(),
+                ]);
+            }
+        }
+
+        return "Eligibility notifications submitted: {$queued}. Missing, invalid or placeholder emails skipped: {$skipped}. Errors: {$failed}.";
     }
 
 

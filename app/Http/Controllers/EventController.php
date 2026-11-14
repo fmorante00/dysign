@@ -354,16 +354,14 @@ class EventController extends Controller
 
 
 
-        if (in_array(
-            $event->status,
-            ['Completed', 'Cancelled'],
-            true
-        )) {
+        // Event details are editable only before the event starts.
+        // accessibleEvent() refreshes the schedule-based status first.
+        if ($event->status !== 'Upcoming') {
             return redirect()
                 ->route('events.show', $event->event_id)
                 ->with(
                     'error',
-                    'Completed or cancelled events can no longer be edited.'
+                    'Only upcoming events can be edited. Ongoing, completed, and cancelled events are read-only.'
                 );
         }
 
@@ -397,16 +395,14 @@ class EventController extends Controller
         $this->ensureDepartmentStaffHasDepartment();
 
 
-        if (in_array(
-            $event->status,
-            ['Completed', 'Cancelled'],
-            true
-        )) {
+        // Event details are editable only before the event starts.
+        // accessibleEvent() refreshes the schedule-based status first.
+        if ($event->status !== 'Upcoming') {
             return redirect()
                 ->route('events.show', $event->event_id)
                 ->with(
                     'error',
-                    'Completed or cancelled events can no longer be edited.'
+                    'Only upcoming events can be edited. Ongoing, completed, and cancelled events are read-only.'
                 );
         }
 
@@ -870,30 +866,14 @@ class EventController extends Controller
             $this->accessibleEvent($id);
 
 
-        if ($event->status === 'Cancelled') {
-
+        // Cancelling is also a change to the event lifecycle.
+        // Once an event starts, its official record stays read-only.
+        if ($event->status !== 'Upcoming') {
             return redirect()
-                ->route(
-                    'events.show',
-                    $event->event_id
-                )
+                ->route('events.show', $event->event_id)
                 ->with(
                     'error',
-                    'This event is already cancelled.'
-                );
-        }
-
-
-        if ($event->status === 'Completed') {
-
-            return redirect()
-                ->route(
-                    'events.show',
-                    $event->event_id
-                )
-                ->with(
-                    'error',
-                    'A completed event can no longer be cancelled.'
+                    'Only upcoming events can be cancelled. Ongoing, completed, and cancelled events are read-only.'
                 );
         }
 

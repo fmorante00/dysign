@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Mail\StudentAnnouncementMail;
 use App\Models\Announcement;
 use App\Models\AnnouncementRecipient;
+use App\Support\AnnouncementEmailAddress;
 
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -43,7 +44,7 @@ class SendAnnouncementEmail implements ShouldQueue
             AnnouncementRecipient::with([
                 'announcement.event',
                 'announcement.attachments',
-                'student',
+                'student.user',
                 'user',
             ])
             ->findOrFail(
@@ -51,8 +52,41 @@ class SendAnnouncementEmail implements ShouldQueue
             );
 
 
+        // Retried jobs must never resend an already completed email.
+        if ($recipient->status === 'Sent') {
+            return;
+        }
+
         $announcement =
             $recipient->announcement;
+
+        // Preserve the in-app announcement even if this account uses a dummy
+        // email address. Prefer the student's real linked-account address.
+        $email = $recipient->recipient_type === 'Student'
+            ? AnnouncementEmailAddress::preferred(
+                $recipient->student?->email,
+                $recipient->student?->user?->email,
+                $recipient->email
+            )
+            : AnnouncementEmailAddress::preferred(
+                $recipient->email,
+                $recipient->user?->email
+            );
+
+        if (!$email) {
+            // The current schema has Pending/Sent/Failed, not Skipped.
+            $recipient->update([
+                'status' => 'Failed',
+                'sent_at' => null,
+                'error_message' => 'Email skipped: missing or placeholder address. In-app announcement is retained.',
+            ]);
+            $this->refreshAnnouncementStatus($announcement);
+            return;
+        }
+
+        if ($recipient->email !== $email) {
+            $recipient->update(['email' => $email]);
+        }
 
 
         /*
@@ -102,16 +136,27 @@ class SendAnnouncementEmail implements ShouldQueue
         |--------------------------------------------------------------------------
         */
 
-        Mail::to(
-            $recipient->email
-        )
-        ->send(
-            new StudentAnnouncementMail(
+        try {
+            Mail::to($email)->send(new StudentAnnouncementMail(
                 $announcement,
                 $recipientName,
                 $mailAttachments
-            )
-        );
+            ));
+        } catch (Throwable $exception) {
+            // In local sync mode a failed SMTP attempt must not make the
+            // whole publish request look unsaved (and invite duplicate posts).
+            if (config('queue.default') !== 'sync') {
+                throw $exception; // Preserve Laravel retries on background queues.
+            }
+
+            $recipient->update([
+                'status' => 'Failed',
+                'sent_at' => null,
+                'error_message' => Str::limit($exception->getMessage(), 1000),
+            ]);
+            $this->refreshAnnouncementStatus($announcement);
+            return;
+        }
 
 
         /*

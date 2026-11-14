@@ -41,6 +41,7 @@
     }
 
     .assignment-card {
+        border-radius: 20px;
         box-shadow:
             0 1px 2px rgba(15, 23, 42, .03);
     }
@@ -70,6 +71,10 @@
             text-white
         "
     >
+
+        <div class="pointer-events-none absolute -right-16 -top-24 h-80 w-80 rounded-full border border-white/10"></div>
+        <div class="pointer-events-none absolute -right-4 -top-12 h-60 w-60 rounded-full border border-white/10"></div>
+        <div class="pointer-events-none absolute bottom-0 right-0 h-28 w-80 bg-gradient-to-l from-[#D4A017]/20 to-transparent"></div>
 
         <div
             class="
@@ -134,7 +139,7 @@
                 >
                     Assign Attendance Personnel and automatically
                     prevent conflicting assignments with overlapping
-                    event schedules.
+                    event schedules. Newly assigned personnel will receive an email notification.
                 </p>
 
 
@@ -211,7 +216,7 @@
                     hover:bg-white
                 "
             >
-                ← Available Events
+                ← Event Directory
             </a>
 
         </div>
@@ -613,7 +618,7 @@
                 'events.personnel-assignment.update',
                 $event->event_id
             ) }}"
-         data-confirm data-confirm-title="Update event personnel?" data-confirm-message="Apply the new personnel assignments for this event." data-confirm-confirm-text="Save Assignments" data-confirm-variant="warning">
+         data-confirm data-confirm-title="Update event personnel?" data-confirm-message="Save these assignments? Newly assigned personnel will receive an email notification." data-confirm-confirm-text="Save Assignments" data-confirm-variant="warning">
 
             @csrf
             @method('PUT')
@@ -1006,7 +1011,7 @@
                                 hover:text-[#101064]
                             "
                         >
-                            Save Assignments
+                            Save Assignments & Notify New Personnel
                         </button>
 
                     </div>

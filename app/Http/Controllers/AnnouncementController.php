@@ -8,6 +8,7 @@ use App\Models\AnnouncementAttachment;
 use App\Models\AnnouncementRecipient;
 use App\Models\Event;
 use App\Models\Student;
+use App\Support\DepartmentAccess;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -27,17 +28,23 @@ class AnnouncementController extends Controller
 
     public function index()
     {
+        $user = auth()->user();
+        abort_unless($user?->department_id, 403, 'No department assigned.');
+
         $announcements = Announcement::with([
             'event',
             'creator',
             'attachments',
             'recipients',
         ])
+        ->whereHas('event', fn ($query) => $query
+            ->where('department_id', $user->department_id))
         ->latest('created_at')
         ->get();
 
 
-        $events = Event::whereNotIn('status', [
+        $events = Event::where('department_id', $user->department_id)
+        ->whereNotIn('status', [
             'Completed',
             'Cancelled',
         ])
@@ -45,14 +52,18 @@ class AnnouncementController extends Controller
         ->get();
 
 
-        $colleges = Student::where('status', 'Active')
+        $colleges = DepartmentAccess::scopeStudentsForUser(
+                Student::where('status', 'Active'), $user
+            )
             ->whereNotNull('college')
             ->distinct()
             ->orderBy('college')
             ->pluck('college');
 
 
-        $yearLevels = Student::where('status', 'Active')
+        $yearLevels = DepartmentAccess::scopeStudentsForUser(
+                Student::where('status', 'Active'), $user
+            )
             ->distinct()
             ->orderBy('year_level')
             ->pluck('year_level');
@@ -64,9 +75,9 @@ class AnnouncementController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $students = Student::where('status', 'Active')
-            ->whereNotNull('email')
-            ->where('email', '!=', '')
+        $students = DepartmentAccess::scopeStudentsForUser(
+                Student::where('status', 'Active'), $user
+            )
             ->orderBy('last_name')
             ->orderBy('first_name')
             ->get([
@@ -88,19 +99,20 @@ class AnnouncementController extends Controller
         */
 
         $totalAnnouncements =
-            Announcement::count();
+            $announcements->count();
 
 
         $sentNotifications =
-            AnnouncementRecipient::where(
-                'status',
-                'Sent'
-            )
-            ->count();
+            AnnouncementRecipient::where('status', 'Sent')
+                ->whereHas('announcement.event', fn ($query) => $query
+                    ->where('department_id', $user->department_id))
+                ->count();
 
 
         $totalRecipients =
-            AnnouncementRecipient::count();
+            AnnouncementRecipient::whereHas('announcement.event', fn ($query) => $query
+                ->where('department_id', $user->department_id))
+                ->count();
 
 
         /*

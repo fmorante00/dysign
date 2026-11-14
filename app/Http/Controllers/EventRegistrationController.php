@@ -76,67 +76,140 @@ class EventRegistrationController extends Controller
             ->with('success', 'Your event registration was cancelled.');
     }
 
-    /** Staff: show the events organized by their own department. */
-    public function staffIndex(): View
+    /** Staff: department-scoped, searchable and paginated event directory. */
+    public function staffIndex(Request $request): View
     {
         $departmentId = $this->staffDepartmentId();
 
         Event::syncScheduledStatuses();
 
-        $events = Event::with('department')
-            ->withCount('eligibleStudents')
-            ->where('department_id', $departmentId)
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:120'],
+            'status' => ['nullable', 'in:all,Upcoming,Ongoing,Completed,Cancelled'],
+            'per_page' => ['nullable', 'in:10,25,50'],
+        ]);
+
+        $search = trim((string) ($filters['search'] ?? ''));
+        $status = $filters['status'] ?? 'all';
+        $perPage = (int) ($filters['per_page'] ?? 10);
+
+        // Use the same department ownership rule for all counts and result rows.
+        $baseQuery = Event::query()->where('department_id', $departmentId);
+        $totalEvents = (clone $baseQuery)->count();
+        $upcomingCount = (clone $baseQuery)->where('status', 'Upcoming')->count();
+        $completedCount = (clone $baseQuery)->where('status', 'Completed')->count();
+        $totalRegistrations = EventRegistration::query()
+            ->where('status', 'Registered')
+            ->whereIn('event_id', (clone $baseQuery)->select('event_id'))
+            ->count();
+
+        $eventsQuery = (clone $baseQuery)->with('department')->withCount('eligibleStudents');
+
+        if ($search !== '') {
+            $eventsQuery->where(function ($query) use ($search) {
+                $query->where('event_name', 'like', '%'.$search.'%')
+                    ->orWhere('location', 'like', '%'.$search.'%');
+            });
+        }
+
+        if ($status !== 'all') {
+            $eventsQuery->where('status', $status);
+        }
+
+        $events = $eventsQuery
+            ->orderByRaw("CASE status WHEN 'Upcoming' THEN 0 WHEN 'Ongoing' THEN 1 WHEN 'Completed' THEN 2 ELSE 3 END")
             ->orderByDesc('event_date')
             ->orderBy('start_time')
-            ->get();
+            ->paginate($perPage)
+            ->withQueryString();
 
+        // Only count registrations for the visible page, not every event in memory.
         $counts = EventRegistration::query()
             ->select('event_id')
             ->selectRaw('COUNT(*) AS registration_count')
             ->where('status', 'Registered')
-            ->whereIn('event_id', $events->pluck('event_id'))
+            ->whereIn('event_id', $events->getCollection()->pluck('event_id'))
             ->groupBy('event_id')
             ->pluck('registration_count', 'event_id');
 
-        return view('events.registration-events', compact('events', 'counts'));
+        return view('events.registration-events', compact(
+            'events', 'counts', 'search', 'status', 'perPage',
+            'totalEvents', 'totalRegistrations', 'upcomingCount', 'completedCount'
+        ));
     }
 
-    /** Staff: view registered participants for one authorized event. */
+    /** Staff: view registrations for one event, never another department's. */
     public function staffShow(Request $request, int $event): View
     {
         $managedEvent = $this->staffEvent($event);
+        $managedEvent->syncScheduledStatus();
 
         $filters = $request->validate([
             'search' => ['nullable', 'string', 'max:100'],
+            'registration_status' => ['nullable', 'in:Registered,Cancelled,all'],
+            'program' => ['nullable', 'string', 'max:100'],
+            'year_level' => ['nullable', 'string', 'max:30'],
+            'per_page' => ['nullable', 'in:10,25,50'],
+            'sort' => ['nullable', 'in:latest,oldest'],
         ]);
-        $search = trim($filters['search'] ?? '');
+
+        $search = trim((string) ($filters['search'] ?? ''));
+        $registrationStatus = $filters['registration_status'] ?? 'Registered';
+        $program = trim((string) ($filters['program'] ?? ''));
+        $yearLevel = trim((string) ($filters['year_level'] ?? ''));
+        $perPage = (int) ($filters['per_page'] ?? 10);
+        $sort = $filters['sort'] ?? 'latest';
+
+        // Filter option values are drawn only from participants of this event.
+        $optionsQuery = EventRegistration::query()
+            ->join('students', 'students.student_id', '=', 'event_registrations.student_id')
+            ->where('event_registrations.event_id', $managedEvent->event_id);
+
+        $programs = (clone $optionsQuery)->whereNotNull('students.program_code')
+            ->where('students.program_code', '<>', '')
+            ->distinct()->orderBy('students.program_code')
+            ->pluck('students.program_code');
+        $yearLevels = (clone $optionsQuery)->whereNotNull('students.year_level')
+            ->distinct()->orderBy('students.year_level')
+            ->pluck('students.year_level');
 
         $participants = EventRegistration::query()
             ->with(['student', 'registeredBy'])
             ->where('event_id', $managedEvent->event_id)
-            ->where('status', 'Registered')
-            ->when($search !== '', function ($query) use ($search) {
-                $query->whereHas('student', function ($studentQuery) use ($search) {
-                    $studentQuery->where(function ($q) use ($search) {
-                        $q->where('student_number', 'like', "%{$search}%")
-                            ->orWhere('first_name', 'like', "%{$search}%")
-                            ->orWhere('last_name', 'like', "%{$search}%");
-                    });
+            ->when($registrationStatus !== 'all', fn ($query) => $query->where('status', $registrationStatus))
+            ->when($search !== '' || $program !== '' || $yearLevel !== '', function ($query) use ($search, $program, $yearLevel) {
+                $query->whereHas('student', function ($studentQuery) use ($search, $program, $yearLevel) {
+                    if ($search !== '') {
+                        $studentQuery->where(function ($q) use ($search) {
+                            $q->where('student_number', 'like', '%'.$search.'%')
+                                ->orWhere('first_name', 'like', '%'.$search.'%')
+                                ->orWhere('last_name', 'like', '%'.$search.'%');
+                        });
+                    }
+                    if ($program !== '') {
+                        $studentQuery->where('program_code', $program);
+                    }
+                    if ($yearLevel !== '') {
+                        $studentQuery->where('year_level', $yearLevel);
+                    }
                 });
             })
-            ->orderByDesc('registered_at')
-            ->paginate(20)
+            ->orderBy('registered_at', $sort === 'oldest' ? 'asc' : 'desc')
+            ->orderByDesc('registration_id')
+            ->paginate($perPage)
             ->withQueryString();
 
         $registeredCount = EventRegistration::where('event_id', $managedEvent->event_id)
-            ->where('status', 'Registered')
-            ->count();
-        $eligibleCount = EventEligibleStudent::where('event_id', $managedEvent->event_id)
-            ->count();
+            ->where('status', 'Registered')->count();
+        $cancelledCount = EventRegistration::where('event_id', $managedEvent->event_id)
+            ->where('status', 'Cancelled')->count();
+        $eligibleCount = EventEligibleStudent::where('event_id', $managedEvent->event_id)->count();
         $canEdit = $managedEvent->calculateScheduledStatus() === 'Upcoming';
 
         return view('events.registrations', compact(
-            'managedEvent', 'participants', 'registeredCount', 'eligibleCount', 'canEdit', 'search'
+            'managedEvent', 'participants', 'registeredCount', 'cancelledCount',
+            'eligibleCount', 'canEdit', 'search', 'registrationStatus',
+            'program', 'yearLevel', 'programs', 'yearLevels', 'perPage', 'sort'
         ));
     }
 

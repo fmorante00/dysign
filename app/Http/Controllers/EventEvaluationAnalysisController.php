@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\EvaluationForm;
+use App\Models\EvaluationSubmission;
+use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use App\Models\EventEligibleStudent;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -13,32 +16,78 @@ use Illuminate\View\View;
  */
 class EventEvaluationAnalysisController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request): View|StreamedResponse
     {
         $departmentId = $request->user()?->department_id;
         abort_unless($departmentId, 403, 'Your account is not assigned to a department.');
 
-        $search = trim((string) $request->query('search', ''));
+        $search = trim(substr((string) $request->query('search', ''), 0, 120));
+        $status = (string) $request->query('status', 'all');
+        if (!in_array($status, ['all', 'Draft', 'Scheduled', 'Published', 'Closed'], true)) {
+            $status = 'all';
+        }
+        $perPage = (int) $request->query('per_page', 10);
+        if (!in_array($perPage, [10, 25, 50], true)) {
+            $perPage = 10;
+        }
 
-        $forms = EvaluationForm::query()
+        // All totals and exports are constrained to the authenticated staff department.
+        $base = EvaluationForm::query()->whereHas('event', fn ($query) =>
+            $query->where('department_id', $departmentId));
+
+        $totalForms = (clone $base)->count();
+        $publishedForms = (clone $base)->where('status', 'Published')->count();
+        $scheduledForms = (clone $base)->where('status', 'Scheduled')->count();
+        $totalResponses = EvaluationSubmission::query()
+            ->whereHas('form.event', fn ($query) => $query->where('department_id', $departmentId))
+            ->count();
+
+        $query = (clone $base)
             ->with('event')
             ->withCount('submissions')
-            ->whereHas('event', fn ($query) => $query->where('department_id', $departmentId))
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($query) use ($search) {
-                    $query->where('title', 'like', '%' . $search . '%')
+                    $query->where('title', 'like', '%'.$search.'%')
                         ->orWhereHas('event', fn ($eventQuery) => $eventQuery
-                            ->where('event_name', 'like', '%' . $search . '%'));
+                            ->where('event_name', 'like', '%'.$search.'%'));
                 });
             })
-            ->orderByDesc('created_at')
-            ->paginate(10)
-            ->withQueryString();
+            ->when($status !== 'all', fn ($query) => $query->where('status', $status))
+            ->orderByDesc('created_at');
 
-        return view('staff.evaluation-analysis.index', compact('forms', 'search'));
+        if ($request->query('export') === 'csv') {
+            // Export the *filtered* department directory without a page limit.
+            $rows = (clone $query)->get();
+            return response()->streamDownload(function () use ($rows) {
+                $stream = fopen('php://output', 'w');
+                fwrite($stream, "\xEF\xBB\xBF"); // Excel-friendly UTF-8 BOM
+                fputcsv($stream, ['Form ID', 'Questionnaire', 'Event', 'Event Date', 'Status', 'Responses']);
+                foreach ($rows as $form) {
+                    fputcsv($stream, [
+                        $form->evaluation_form_id,
+                        $this->csvSafe($form->title),
+                        $this->csvSafe($form->event?->event_name ?? ''),
+                        $form->event?->event_date?->format('Y-m-d') ?? '',
+                        $form->status,
+                        $form->submissions_count,
+                    ]);
+                }
+                fclose($stream);
+            }, 'dysign-evaluation-directory-'.now()->format('Ymd-His').'.csv', [
+                'Content-Type' => 'text/csv; charset=UTF-8',
+                'Cache-Control' => 'no-store, private',
+            ]);
+        }
+
+        $forms = $query->paginate($perPage)->withQueryString();
+
+        return view('staff.evaluation-analysis.index', compact(
+            'forms', 'search', 'status', 'perPage', 'totalForms',
+            'publishedForms', 'scheduledForms', 'totalResponses'
+        ));
     }
 
-    public function show(Request $request, int $evaluationForm): View
+    public function show(Request $request, int $evaluationForm): View|StreamedResponse
     {
         $departmentId = $request->user()?->department_id;
         abort_unless($departmentId, 403, 'Your account is not assigned to a department.');
@@ -137,9 +186,108 @@ class EventEvaluationAnalysisController extends Controller
             ? round($allRatingValues->avg(), 2)
             : null;
 
+        if ($request->query('export') === 'csv') {
+            return $this->downloadAnalysisCsv(
+                $form, $eligibleCount, $submissionCount, $responseRate, $overallRating, $results
+            );
+        }
+
+        if ($request->boolean('print')) {
+            return view('staff.evaluation-analysis.print', compact(
+                'form', 'eligibleCount', 'submissionCount', 'responseRate', 'results', 'overallRating'
+            ));
+        }
+
         return view('staff.evaluation-analysis.show', compact(
             'form', 'eligibleCount', 'submissionCount', 'responseRate', 'results', 'overallRating'
         ));
+    }
+
+    /**
+     * Export a single, rectangular question-by-question CSV table.
+     * A CSV cannot store fonts, logos, column widths, or merged cells;
+     * use the existing branded Print / Save PDF report for visual presentation.
+     * No student identifiers or email addresses are included.
+     */
+    private function downloadAnalysisCsv(
+        EvaluationForm $form,
+        int $eligibleCount,
+        int $submissionCount,
+        ?float $responseRate,
+        ?float $overallRating,
+        array $results
+    ): StreamedResponse {
+        return response()->streamDownload(function () use ($results) {
+            $stream = fopen('php://output', 'w');
+            // BOM preserves Filipino names and other UTF-8 text in Excel/WPS.
+            fwrite($stream, "\xEF\xBB\xBF");
+
+            // Exactly one header, and every data row has exactly eight columns.
+            $headers = [
+                'Question #', 'Question', 'Question Type', 'Answer / Option',
+                'Count', 'Percent (%)', 'Answered', 'Average Rating',
+            ];
+            fputcsv($stream, $headers);
+
+            $writeRow = function (array $values) use ($stream): void {
+                fputcsv($stream, array_map(fn ($value) => $this->csvSafe($value), $values));
+            };
+
+            foreach ($results as $index => $result) {
+                $question = $result['question'];
+                $common = [
+                    $index + 1,
+                    $question->question_text,
+                    $question->question_type,
+                ];
+                $answered = (int) $result['answered'];
+                $average = $result['average'] ?? '';
+
+                if (count($result['distribution']) > 0) {
+                    foreach ($result['distribution'] as $choice) {
+                        $writeRow([
+                            ...$common,
+                            $choice['label'],
+                            (int) $choice['count'],
+                            $choice['percent'],
+                            $answered,
+                            $average,
+                        ]);
+                    }
+                    continue;
+                }
+
+                if (count($result['comments']) > 0) {
+                    // Text answers are anonymous, with the same 40-comment cap as the page.
+                    foreach ($result['comments'] as $comment) {
+                        $writeRow([
+                            ...$common,
+                            preg_replace('/\s+/u', ' ', trim((string) $comment)) ?? trim((string) $comment),
+                            '', '', $answered, '',
+                        ]);
+                    }
+                    continue;
+                }
+
+                $writeRow([...$common, 'No responses', 0, '', 0, $average]);
+            }
+            fclose($stream);
+        }, 'dysign-question-results-'.$form->evaluation_form_id.'-'
+            .Str::slug((string) $form->title).'-'.now()->format('Ymd').'.csv', [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Cache-Control' => 'no-store, private',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
+    }
+
+    /** Prevent spreadsheet programs from executing imported cell content as formulas. */
+    private function csvSafe(mixed $value): string|int|float
+    {
+        if (is_int($value) || is_float($value)) {
+            return $value;
+        }
+        $value = (string) ($value ?? '');
+        return preg_match('/^[\s]*[=+\-@]/u', $value) ? "'".$value : $value;
     }
 
     private function optionResult(string $label, int $count, int $answered): array

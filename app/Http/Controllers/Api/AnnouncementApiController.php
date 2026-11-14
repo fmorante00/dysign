@@ -9,6 +9,8 @@ use App\Models\AnnouncementAttachment;
 use App\Models\AnnouncementRecipient;
 use App\Models\Event;
 use App\Services\AnnouncementService;
+use App\Support\AnnouncementEmailAddress;
+use App\Support\DepartmentAccess;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -33,6 +35,9 @@ class AnnouncementApiController extends Controller
 
     public function index(): JsonResponse
     {
+        $user = auth()->user();
+        abort_unless($user?->department_id, 403, 'No department assigned.');
+
         $announcements =
             Announcement::with([
                 'event',
@@ -40,6 +45,8 @@ class AnnouncementApiController extends Controller
                 'attachments',
                 'recipients',
             ])
+            ->whereHas('event', fn ($query) => $query
+                ->where('department_id', $user->department_id))
             ->latest('created_at')
             ->get();
 
@@ -115,6 +122,8 @@ class AnnouncementApiController extends Controller
                 $validated['event_id']
             );
 
+        DepartmentAccess::assertCanManageEvent(auth()->user(), $event);
+
 
         $recipients =
             $this->announcementService
@@ -131,6 +140,14 @@ class AnnouncementApiController extends Controller
 
             'count' =>
                 $recipients->count(),
+
+            'email_ready_count' => $recipients->filter(fn ($recipient) =>
+                AnnouncementEmailAddress::isSendable($recipient['email'] ?? null)
+            )->count(),
+
+            'in_app_only_count' => $recipients->filter(fn ($recipient) =>
+                !AnnouncementEmailAddress::isSendable($recipient['email'] ?? null)
+            )->count(),
 
             'recipients' =>
                 $recipients
@@ -226,6 +243,8 @@ class AnnouncementApiController extends Controller
             Event::findOrFail(
                 $validated['event_id']
             );
+
+        DepartmentAccess::assertCanManageEvent(auth()->user(), $event);
 
 
         /*
@@ -512,7 +531,8 @@ class AnnouncementApiController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $announcement->load([
+        // With QUEUE_CONNECTION=sync the jobs may have completed already.
+        $announcement->refresh()->load([
             'event',
             'creator',
             'attachments',
@@ -532,7 +552,9 @@ class AnnouncementApiController extends Controller
                 true,
 
             'message' =>
-                'Announcement published successfully. Email notifications have been queued.',
+                config('queue.default') === 'sync'
+                    ? 'Announcement published. Email sending was attempted; check the recipient statuses.'
+                    : 'Announcement published. Email notifications have been queued.',
 
             'data' => [
 
@@ -545,7 +567,13 @@ class AnnouncementApiController extends Controller
                     ),
 
                 'delivery_status' =>
-                    'Processing',
+                    $announcement->status,
+
+                'email_counts' => [
+                    'sent' => $announcement->recipients->where('status', 'Sent')->count(),
+                    'pending' => $announcement->recipients->where('status', 'Pending')->count(),
+                    'failed_or_skipped' => $announcement->recipients->where('status', 'Failed')->count(),
+                ],
 
             ],
 
@@ -562,6 +590,8 @@ class AnnouncementApiController extends Controller
     public function show(
         Announcement $announcement
     ): JsonResponse {
+
+        DepartmentAccess::assertCanManageEvent(auth()->user(), $announcement->event);
 
         $announcement->load([
             'event',

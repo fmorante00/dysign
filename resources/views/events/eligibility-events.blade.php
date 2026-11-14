@@ -43,7 +43,7 @@
                         @if($isAdministrator)
                             Review eligibility rules and student participation for every institutional event, across all departments and statuses.
                         @else
-                            Configure eligibility for upcoming events within your authorized department.
+                            Manage upcoming eligibility and review ongoing, completed, or cancelled events in your department.
                         @endif
                     </p>
                     <div class="mt-5 flex flex-wrap items-center gap-4 text-xs text-white/80">
@@ -87,8 +87,8 @@
             <div class="mb-4 flex flex-wrap items-end justify-between gap-3">
                 <div>
                     <p class="text-[11px] font-bold uppercase tracking-[.24em] text-[#B8890F]">Event Registry</p>
-                    <h2 id="eligibility-directory-title" class="mt-1.5 text-lg font-bold text-[#101064]">{{ $isAdministrator ? 'All Events · Eligibility Review' : 'Upcoming Events · Eligibility Setup' }}</h2>
-                    <p class="mt-1 text-xs text-slate-500">Select an event to {{ $isAdministrator ? 'view its configured rules and eligible students' : 'manage its participation rules' }}.</p>
+                    <h2 id="eligibility-directory-title" class="mt-1.5 text-lg font-bold text-[#101064]">{{ $isAdministrator ? 'All Events · Eligibility Review' : 'Department Events · Eligibility & History' }}</h2>
+                    <p class="mt-1 text-xs text-slate-500">Select an event to {{ $isAdministrator ? 'view its configured rules and eligible students' : 'manage upcoming eligibility or review saved participation history' }}.</p>
                 </div>
                 <span class="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-[#101064]">{{ $events->total() }} matching events</span>
             </div>
@@ -98,8 +98,7 @@
                     <span class="mb-2 block text-[10px] font-bold uppercase tracking-wider text-slate-500">Search events</span>
                     <input class="dy-elig-control" name="search" value="{{ $search }}" placeholder="Event title or venue" maxlength="120" />
                 </label>
-                @if($isAdministrator)
-                    <label class="block">
+                <label class="block">
                         <span class="mb-2 block text-[10px] font-bold uppercase tracking-wider text-slate-500">Status</span>
                         <select class="dy-elig-control" name="status">
                             @foreach(['all' => 'All Statuses', 'Upcoming' => 'Upcoming', 'Ongoing' => 'Ongoing', 'Completed' => 'Completed', 'Cancelled' => 'Cancelled'] as $value => $label)
@@ -107,6 +106,7 @@
                             @endforeach
                         </select>
                     </label>
+                @if($isAdministrator)
                     <label class="block">
                         <span class="mb-2 block text-[10px] font-bold uppercase tracking-wider text-slate-500">Department</span>
                         <select class="dy-elig-control" name="department_id">
@@ -155,7 +155,7 @@
                                     <div class="min-w-[72px] border-l border-slate-200"><p class="text-[10px] uppercase tracking-wide text-slate-400">Eligible</p><p class="mt-1 font-bold text-emerald-700">{{ $event->eligible_students_count }}</p></div>
                                 </div>
                                 <a href="{{ route('events.eligibility.index', $event->event_id) }}" class="inline-flex min-h-[46px] flex-1 items-center justify-center whitespace-nowrap rounded-xl bg-[#101064] px-5 py-3 text-xs font-bold text-white transition hover:bg-[#202075] sm:flex-none">
-                                    {{ $isAdministrator ? 'View Eligibility' : 'Manage Eligibility' }} <span class="ml-2" aria-hidden="true">→</span>
+                                    {{ $isAdministrator || $event->status !== 'Upcoming' ? 'View Eligibility' : 'Manage Eligibility' }} <span class="ml-2" aria-hidden="true">→</span>
                                 </a>
                             </div>
                         </div>
@@ -163,7 +163,7 @@
                 @empty
                     <div class="rounded-2xl border border-slate-200 bg-white px-6 py-14 text-center">
                         <h3 class="font-bold text-[#101064]">No matching events found</h3>
-                        <p class="mt-2 text-sm text-slate-500">{{ $isAdministrator ? 'Try removing filters to review all events.' : 'There are no upcoming events available for your department.' }}</p>
+                        <p class="mt-2 text-sm text-slate-500">{{ $isAdministrator ? 'Try removing filters to review all events.' : 'No department events match your search and status filters.' }}</p>
                         <a href="{{ route('events.eligibility.events') }}" class="mt-4 inline-block rounded-lg border border-slate-200 px-4 py-2 text-xs font-bold text-[#101064]">Clear Filters</a>
                     </div>
                 @endforelse

@@ -1733,6 +1733,9 @@ Route::prefix(
     |--------------------------------------------------------------------------
     */
 
+    Route::post('/preview', [StaffEvaluationFormApiController::class, 'preview'])
+        ->name('preview');
+
     Route::post(
         '/import',
         [

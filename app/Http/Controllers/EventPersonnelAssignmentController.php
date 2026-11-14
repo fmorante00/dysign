@@ -9,6 +9,9 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\EventPersonnelAssignmentMail;
 use Illuminate\Validation\ValidationException;
 
 class EventPersonnelAssignmentController extends Controller
@@ -22,42 +25,61 @@ class EventPersonnelAssignmentController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    public function events()
+    public function events(Request $request)
     {
-        $user =
-            $this->departmentStaffUser();
-
-
+        $user = $this->departmentStaffUser();
         Event::syncScheduledStatuses();
 
+        $status = strtolower(trim((string) $request->query('status', 'all')));
+        if (!in_array($status, ['all', 'upcoming', 'ongoing', 'completed', 'cancelled'], true)) {
+            $status = 'all';
+        }
+        $search = trim((string) $request->query('q', ''));
+        $perPage = (int) $request->query('per_page', 10);
+        if (!in_array($perPage, [10, 25, 50], true)) {
+            $perPage = 10;
+        }
 
-        $events =
-            Event::with('department')
-                ->withCount('assignments')
-                ->where(
-                    'department_id',
-                    $user->department_id
-                )
-                ->where(
-                    'status',
-                    'Upcoming'
-                )
-                ->orderBy(
-                    'event_date'
-                )
-                ->orderBy(
-                    'start_time'
-                )
-                ->get();
+        // Every query is scoped to the authenticated department, including totals.
+        $base = Event::query()->where('department_id', $user->department_id);
+        $totalEvents = (clone $base)->count();
+        $upcomingCount = (clone $base)->where('status', 'Upcoming')->count();
+        $ongoingCount = (clone $base)->where('status', 'Ongoing')->count();
+        $completedCount = (clone $base)->where('status', 'Completed')->count();
+        $cancelledCount = (clone $base)->where('status', 'Cancelled')->count();
+        $assignedCount = (clone $base)->whereHas('assignments')->count();
+        $unassignedUpcomingCount = (clone $base)->where('status', 'Upcoming')
+            ->whereDoesntHave('assignments')->count();
 
+        $eventsQuery = (clone $base)->with('department')->withCount('assignments');
+        if ($status !== 'all') {
+            $eventsQuery->where('status', ucfirst($status));
+        }
+        if ($search !== '') {
+            $eventsQuery->where(function (Builder $query) use ($search) {
+                $query->where('event_name', 'like', '%'.$search.'%')
+                    ->orWhere('location', 'like', '%'.$search.'%');
+            });
+        }
+        $events = $eventsQuery
+            ->orderByRaw("CASE status WHEN 'Ongoing' THEN 0 WHEN 'Upcoming' THEN 1 WHEN 'Completed' THEN 2 ELSE 3 END")
+            ->orderBy('event_date', 'desc')
+            ->orderBy('start_time', 'asc')
+            ->paginate($perPage)->withQueryString();
 
-        return view(
-            'events.personnel-assignment-events',
-            compact(
-                'events'
-            )
-        );
+        return view('events.personnel-assignment-events', compact(
+            'events', 'status', 'search', 'perPage', 'totalEvents',
+            'upcomingCount', 'ongoingCount', 'completedCount',
+            'cancelledCount', 'assignedCount', 'unassignedUpcomingCount'
+        ));
     }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Event Selection: all departmental events are visible for historical review.
+    |--------------------------------------------------------------------------
+    */
 
 
     /*
@@ -74,10 +96,14 @@ class EventPersonnelAssignmentController extends Controller
             $this->departmentStaffUser();
 
 
-        $event =
-            $this->accessibleEvent(
-                $event
-            );
+        $event = $this->accessibleEvent($event, false);
+
+        // Never expose the assignment form for historical or active events.
+        // Authorization is enforced again in update(), not only by the view.
+        if ($event->status !== 'Upcoming') {
+            $event->load(['assignments.personnel.user', 'department']);
+            return view('events.personnel-assignment-history', compact('event'));
+        }
 
 
         /*
@@ -542,132 +568,98 @@ class EventPersonnelAssignmentController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        DB::transaction(
-            function () use (
-                $event,
-                $selectedIds
-            ) {
+        // Lock the event row while comparing assignments to prevent duplicate
+        // notifications from concurrent saves of the same roster.
+        $newlyAssignedIds = DB::transaction(function () use ($event, $selectedIds) {
+            DB::table('events')->where('event_id', $event->event_id)
+                ->lockForUpdate()->first();
 
-                /*
-                |--------------------------------------------------------------------------
-                | Remove Unselected Personnel
-                |--------------------------------------------------------------------------
-                */
+            $previousIds = DB::table('event_assignments')
+                ->where('event_id', $event->event_id)
+                ->pluck('personnel_id')->map(fn ($id) => (int) $id)->all();
 
-                if (
-                    $selectedIds->isEmpty()
-                ) {
-
-                    DB::table(
-                        'event_assignments'
-                    )
-                    ->where(
-                        'event_id',
-                        $event->event_id
-                    )
-                    ->delete();
-
-                } else {
-
-                    DB::table(
-                        'event_assignments'
-                    )
-                    ->where(
-                        'event_id',
-                        $event->event_id
-                    )
-                    ->whereNotIn(
-                        'personnel_id',
-                        $selectedIds->all()
-                    )
-                    ->delete();
-
-                }
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | Existing Assignments
-                |--------------------------------------------------------------------------
-                */
-
-                $existingIds =
-                    DB::table(
-                        'event_assignments'
-                    )
-                    ->where(
-                        'event_id',
-                        $event->event_id
-                    )
-                    ->pluck(
-                        'personnel_id'
-                    )
-                    ->map(
-                        fn ($id) =>
-                            (int) $id
-                    )
-                    ->all();
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | Add New Assignments
-                |--------------------------------------------------------------------------
-                */
-
-                foreach (
-                    $selectedIds
-                    as $personnelId
-                ) {
-
-                    if (
-                        in_array(
-                            $personnelId,
-                            $existingIds,
-                            true
-                        )
-                    ) {
-
-                        continue;
-
-                    }
-
-
-                    DB::table(
-                        'event_assignments'
-                    )
-                    ->insert([
-
-                        'event_id' =>
-                            $event->event_id,
-
-                        'personnel_id' =>
-                            $personnelId,
-
-                        'assigned_by' =>
-                            auth()->id(),
-
-                        'created_at' =>
-                            now(),
-
-                        'updated_at' =>
-                            now(),
-
-                    ]);
-                }
+            $newIds = $selectedIds->diff($previousIds)->values()->all();
+            if ($selectedIds->isEmpty()) {
+                DB::table('event_assignments')
+                    ->where('event_id', $event->event_id)->delete();
+            } else {
+                DB::table('event_assignments')
+                    ->where('event_id', $event->event_id)
+                    ->whereNotIn('personnel_id', $selectedIds->all())->delete();
             }
-        );
 
+            foreach ($newIds as $personnelId) {
+                DB::table('event_assignments')->insert([
+                    'event_id' => $event->event_id,
+                    'personnel_id' => $personnelId,
+                    'assigned_by' => auth()->id(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+            return $newIds;
+        });
 
-        return redirect()
-            ->route(
-                'events.personnel-assignment.index',
-                $event->event_id
-            )
-            ->with(
-                'success',
-                'Attendance personnel assignments updated successfully.'
-            );
+        // Queue only NEW assignments after the DB transaction commits.
+        // Re-saving an unchanged roster queues nothing.
+        $queuedCount = 0;
+        $emailIssues = 0;
+        // Opt-in local-only mail redirection for development accounts using
+        // placeholder addresses. Never redirects production notifications.
+        $testRecipient = app()->environment('local')
+            ? trim((string) config('services.dysign_personnel_test_email', '')) : '';
+        // If the configured test recipient is invalid, fail closed: do NOT
+        // silently fall back to potentially real staff account addresses.
+
+        foreach ($newlyAssignedIds as $personnelId) {
+            $person = $eligiblePersonnel->get($personnelId);
+            $actualEmail = trim((string) $person?->user?->email);
+            $recipient = $testRecipient ?: $actualEmail;
+            $domain = strtolower((string) substr(strrchr($recipient, '@') ?: '', 1));
+            $isPlaceholder = in_array($domain, ['example.com', 'example.net', 'example.org'], true)
+                || str_ends_with($domain, '.invalid') || str_ends_with($domain, '.test');
+            if (!$person || !$recipient || !filter_var($recipient, FILTER_VALIDATE_EMAIL) || $isPlaceholder) {
+                $emailIssues++;
+                continue;
+            }
+
+            try {
+                Mail::to($recipient)->queue(new EventPersonnelAssignmentMail(
+                    recipientName: trim($person->first_name.' '.$person->last_name),
+                    eventName: (string) $event->event_name,
+                    eventDate: $event->event_date?->format('F j, Y') ?? '',
+                    startTime: $event->start_time
+                        ? Carbon::parse($event->start_time)->format('g:i A') : '',
+                    endTime: $event->end_time
+                        ? Carbon::parse($event->end_time)->format('g:i A') : '',
+                    venue: (string) ($event->location ?: 'To be announced'),
+                    departmentName: (string) ($event->department?->department_name ?: 'Department'),
+                    dutiesUrl: route('personnel-duties.index')
+                ));
+                $queuedCount++;
+            } catch (\Throwable $exception) {
+                $emailIssues++;
+                Log::warning('Unable to queue personnel assignment email', [
+                    'event_id' => $event->event_id,
+                    'personnel_id' => $personnelId,
+                    'message' => $exception->getMessage(),
+                ]);
+            }
+        }
+
+        $notice = 'Attendance personnel assignments updated successfully. '
+            .$queuedCount.' new assignment email(s) queued.';
+        if ($testRecipient !== '') {
+            $notice .= ' Local testing: emails redirected to the test inbox.';
+        }
+        $response = redirect()->route(
+            'events.personnel-assignment.index', $event->event_id
+        )->with('success', $notice);
+
+        if ($emailIssues > 0) {
+            $response->with('warning', $emailIssues.' new assignment(s) could not be queued for email. Check personnel email addresses and the application log.');
+        }
+        return $response;
     }
 
 
@@ -917,7 +909,8 @@ class EventPersonnelAssignmentController extends Controller
     */
 
     private function accessibleEvent(
-        string $eventId
+        string $eventId,
+        bool $requireUpcoming = true
     ): Event {
 
         $user =
@@ -954,8 +947,7 @@ class EventPersonnelAssignmentController extends Controller
 
 
         if (
-            $event->status
-            !== 'Upcoming'
+            $requireUpcoming && $event->status !== 'Upcoming'
         ) {
 
             abort(

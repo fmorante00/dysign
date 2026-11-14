@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Models\Event;
 use App\Models\Student;
+use App\Support\AnnouncementEmailAddress;
+use App\Support\DepartmentAccess;
 
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -31,7 +33,7 @@ class AnnouncementService
 
         if ($recipientType === 'all_students') {
 
-            return $this->studentQuery()
+            return $this->studentQuery($event)
                 ->get()
                 ->map(
                     fn ($student) =>
@@ -62,7 +64,7 @@ class AnnouncementService
             }
 
 
-            return $this->studentQuery()
+            return $this->studentQuery($event)
                 ->whereIn(
                     'student_id',
                     $studentIds
@@ -97,7 +99,7 @@ class AnnouncementService
             }
 
 
-            return $this->studentQuery()
+            return $this->studentQuery($event)
                 ->where(
                     'college',
                     $college
@@ -132,7 +134,7 @@ class AnnouncementService
             }
 
 
-            return $this->studentQuery()
+            return $this->studentQuery($event)
                 ->where(
                     'year_level',
                     $yearLevel
@@ -179,7 +181,7 @@ class AnnouncementService
             }
 
 
-            return $this->studentQuery()
+            return $this->studentQuery($event)
                 ->where(
                     'college',
                     $college
@@ -209,44 +211,16 @@ class AnnouncementService
 
         if ($recipientType === 'expected_participants') {
 
-            $students =
+            // Keep the event's official roster, including students with
+            // placeholder emails: they must still see the in-app announcement.
+            $students = DepartmentAccess::scopeStudentsForDepartment(
                 Student::query()
-                    ->join(
-                        'event_eligible_students as ees',
-                        'ees.student_id',
-                        '=',
-                        'students.student_id'
-                    )
-                    ->where(
-                        'ees.event_id',
-                        $event->event_id
-                    )
-                    ->where(
-                        'students.status',
-                        'Active'
-                    )
-                    ->whereNotNull(
-                        'students.email'
-                    )
-                    ->where(
-                        'students.email',
-                        '!=',
-                        ''
-                    )
-                    ->select(
-                        'students.*'
-                    )
-                    ->distinct()
-                    ->get()
-                    ->filter(
-                        fn ($student) =>
-                        filter_var(
-                            $student->email,
-                            FILTER_VALIDATE_EMAIL
-                        )
-                    )
-                    ->values();
-
+                    ->with('user')
+                    ->where('status', 'Active')
+                    ->whereHas('eventEligibilities', fn ($query) => $query
+                        ->where('event_id', $event->event_id)),
+                $event->department
+            )->get();
 
             if ($students->isEmpty()) {
 
@@ -360,21 +334,12 @@ class AnnouncementService
      * Base query for students eligible
      * to receive announcement emails.
      */
-    private function studentQuery()
+    private function studentQuery(Event $event)
     {
-        return Student::query()
-            ->where(
-                'status',
-                'Active'
-            )
-            ->whereNotNull(
-                'email'
-            )
-            ->where(
-                'email',
-                '!=',
-                ''
-            );
+        return DepartmentAccess::scopeStudentsForDepartment(
+            Student::query()->with('user')->where('status', 'Active'),
+            $event->department
+        );
     }
 
 
@@ -418,7 +383,8 @@ class AnnouncementService
                 $name,
 
             'email' =>
-                $student->email,
+                AnnouncementEmailAddress::preferred($student->email, $student->user?->email)
+                ?? 'unavailable@invalid',
 
         ];
     }
