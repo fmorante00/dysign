@@ -10,7 +10,7 @@
 
             <div class="relative">
                 <p class="text-xs font-bold uppercase tracking-[0.25em] text-[#E7C75B]">
-                    Module #19 • Department Staff
+                    Department Staff
                 </p>
 
                 <h1 class="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">

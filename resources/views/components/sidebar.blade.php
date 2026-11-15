@@ -113,7 +113,6 @@
         $sidebarNavigation[] = ['kind' => 'link', 'label' => 'My Assigned Events / RFID Scanning', 'route' => 'my-events.index', 'active' => ['my-events.*', 'attendance.index'], 'icon' => 'scan'];
         $sidebarNavigation[] = ['kind' => 'link', 'label' => 'Attendance Exceptions', 'route' => 'personnel.attendance-exceptions.index', 'active' => ['personnel.attendance-exceptions.*'], 'icon' => 'file-check'];
         $sidebarNavigation[] = ['kind' => 'link', 'label' => 'Discrepancy Verification', 'route' => 'personnel.attendance-discrepancies.index', 'active' => ['personnel.attendance-discrepancies.*'], 'icon' => 'alert'];
-        $sidebarNavigation[] = ['kind' => 'link', 'label' => 'Attendance Review Requests', 'route' => 'attendance-discrepancies.staff.index', 'active' => ['attendance-discrepancies.staff.*'], 'icon' => 'clipboard-check'];
         $sidebarNavigation[] = ['kind' => 'heading', 'label' => 'My Schedule'];
         $sidebarNavigation[] = ['kind' => 'link', 'label' => 'My Availability', 'route' => 'personnel-availability.index', 'active' => ['personnel-availability.index', 'personnel-availability.store', 'personnel-availability.update', 'personnel-availability.destroy'], 'icon' => 'calendar-ok'];
         $sidebarNavigation[] = ['kind' => 'link', 'label' => 'My Duties', 'route' => 'personnel-duties.index', 'active' => ['personnel-duties.index', 'personnel-duties.check-in', 'personnel-duties.check-out'], 'icon' => 'clipboard-check'];
@@ -126,7 +125,6 @@
         $sidebarNavigation[] = ['kind' => 'heading', 'label' => 'Attendance & Concerns'];
         $sidebarNavigation[] = ['kind' => 'link', 'label' => 'My Attendance History', 'route' => 'student.attendance-history.index', 'active' => ['student.attendance-history.*'], 'icon' => 'history'];
         $sidebarNavigation[] = ['kind' => 'link', 'label' => 'Attendance Discrepancies', 'route' => 'student.attendance-discrepancies.index', 'active' => ['student.attendance-discrepancies.*'], 'icon' => 'alert'];
-        $sidebarNavigation[] = ['kind' => 'link', 'label' => 'Attendance Review Requests', 'route' => 'attendance-discrepancies.student.index', 'active' => ['attendance-discrepancies.student.*'], 'icon' => 'file-text'];
         $sidebarNavigation[] = ['kind' => 'link', 'label' => 'My Excuse Requests', 'route' => 'student.excuse-requests.index', 'active' => ['student.excuse-requests.*'], 'icon' => 'file-check'];
         $sidebarNavigation[] = ['kind' => 'heading', 'label' => 'Information & Progress'];
         $sidebarNavigation[] = ['kind' => 'link', 'label' => 'My Announcements', 'route' => 'student.announcements.index', 'active' => ['student.announcements.*'], 'icon' => 'megaphone'];

@@ -146,76 +146,243 @@
         <p class="text-xs leading-5 text-slate-500">Approving a request records verification, not a new RFID tap. The original scanner attendance table is unchanged; report corrections require a separately authorized integration.</p>
     </div>
     @else
-    <div class="mx-auto max-w-7xl space-y-6">
-        <section class="rounded-3xl border-b-4 border-[#D4A017] bg-[#101064] px-7 py-9 text-white shadow-sm">
-            <p class="text-xs font-bold uppercase tracking-[.28em] text-[#F2C94C]">Module #22 · Department Staff</p>
-            <h1 class="mt-3 text-3xl font-extrabold">Attendance Discrepancy Reviews</h1>
-            <p class="mt-2 text-sm text-indigo-100">Review student-reported attendance issues for your department's events. Approved corrections keep before/after audit snapshots.</p>
-        </section>
-        @if(session('success'))<div class="rounded-xl border border-green-200 bg-green-50 p-4 text-sm font-semibold text-green-800">{{ session('success') }}</div>@endif
-        @if($errors->any())<div class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"><ul class="list-disc pl-5">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
+    @php
+        $pageRecords = $discrepancies->getCollection();
+        $pendingOnPage = $pageRecords->where('status', 'Pending')->count();
+        $verifiedOnPage = $pageRecords->filter(fn ($entry) => $entry->status === 'Pending' && $entry->verification_status === 'Confirmed')->count();
+        $studentPlaceholder = 'Student';
+    @endphp
+    <style>
+        .dy-disc-staff-hero {
+            background-image:
+                radial-gradient(circle at 96% 12%, transparent 0 90px, rgba(255,255,255,.16) 91px 93px, transparent 94px 142px, rgba(255,255,255,.12) 143px 145px, transparent 146px),
+                linear-gradient(100deg,rgba(16,16,100,.97),rgba(16,16,100,.90) 52%,rgba(16,16,100,.71)),
+                url('{{ asset('images/school.jpg') }}');
+            background-size: cover;
+            background-position: center;
+        }
+        .dy-disc-staff-details summary { list-style: none; }
+        .dy-disc-staff-details summary::-webkit-details-marker { display:none; }
+        .dy-disc-staff-details[open] .dy-disc-expand-icon { transform: rotate(180deg); }
+    </style>
 
-        <section class="grid gap-4 md:grid-cols-3">
-            <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Pending Reviews</p><div class="mt-2 text-3xl font-extrabold text-[#101064]">{{ $pendingCount }}</div></div>
-            <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Visible on This Page</p><div class="mt-2 text-3xl font-extrabold text-[#101064]">{{ $discrepancies->count() }}</div></div>
-            <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Scope</p><p class="mt-2 font-bold text-[#101064]">Your Department's Events</p></div>
+    <div class="w-full min-w-0 space-y-6 pb-9">
+        <section class="dy-disc-staff-hero relative isolate overflow-hidden rounded-[28px] border-b-4 border-[#D4A017] px-7 py-9 text-white shadow-sm sm:px-9" aria-labelledby="staff-disc-heading">
+            <p class="text-xs font-bold uppercase tracking-[.24em] text-[#F2C94C]">DySign &middot; Department Staff</p>
+            <h1 id="staff-disc-heading" class="mt-3 text-3xl font-extrabold tracking-tight">Attendance Discrepancy Reviews</h1>
+            <p class="mt-2 max-w-3xl text-sm leading-6 text-indigo-100">Review student-reported attendance issues in your department. Personnel verification supports your final decision; approved corrections preserve before and after records.</p>
+            <div class="mt-5 inline-flex max-w-full items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold text-white/90">
+                <span class="h-2 w-2 rounded-full bg-[#F2C94C]"></span>
+                Department Events Only
+            </div>
         </section>
-        <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <form method="GET" action="{{ route('staff.attendance-discrepancies.index') }}" class="grid gap-4 md:grid-cols-3">
-                <div><label class="mb-2 block text-sm font-semibold text-slate-600">Event</label><select name="event_id" class="w-full rounded-xl border border-slate-300 p-3 text-sm"><option value="">All Department Events</option>@foreach($events as $event)<option value="{{ $event->event_id }}" @selected(request('event_id') == $event->event_id)>{{ $event->event_name }}</option>@endforeach</select></div>
-                <div><label class="mb-2 block text-sm font-semibold text-slate-600">Status</label><select name="status" class="w-full rounded-xl border border-slate-300 p-3 text-sm"><option value="">All Statuses</option>@foreach(['Pending', 'Approved', 'Rejected'] as $status)<option value="{{ $status }}" @selected(request('status') === $status)>{{ $status }}</option>@endforeach</select></div>
-                <div class="flex items-end gap-3"><button class="rounded-xl bg-[#101064] px-6 py-3 text-sm font-bold text-white">Filter</button><a href="{{ route('staff.attendance-discrepancies.index') }}" class="py-3 text-sm font-semibold text-slate-500">Reset</a></div>
+
+        @if(session('success'))
+            <div role="status" class="rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-semibold text-emerald-800">{{ session('success') }}</div>
+        @endif
+        @if($errors->any())
+            <div role="alert" class="rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-800">
+                <p class="font-bold">Please review the following:</p>
+                <ul class="mt-2 list-disc space-y-1 pl-5">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
+            </div>
+        @endif
+
+        <section class="grid gap-4 sm:grid-cols-2 2xl:grid-cols-4" aria-label="Discrepancy review overview">
+            @foreach([
+                ['label' => 'Pending Reviews', 'value' => $pendingCount, 'desc' => 'Awaiting a staff decision', 'tone' => 'amber'],
+                ['label' => 'Visible Requests', 'value' => $discrepancies->count(), 'desc' => 'Shown on this page', 'tone' => 'indigo'],
+                ['label' => 'Verified & Pending', 'value' => $verifiedOnPage, 'desc' => 'Ready for evidence review on this page', 'tone' => 'emerald'],
+                ['label' => 'Department Events', 'value' => $events->count(), 'desc' => 'Events in your department', 'tone' => 'slate'],
+            ] as $metric)
+                <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <p class="text-sm font-medium text-slate-500">{{ $metric['label'] }}</p>
+                            <p class="mt-3 text-3xl font-extrabold text-[#101064]">{{ number_format($metric['value']) }}</p>
+                        </div>
+                        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl {{ match($metric['tone']) {'amber' => 'bg-amber-50 text-amber-700', 'emerald' => 'bg-emerald-50 text-emerald-700', 'slate' => 'bg-slate-100 text-slate-700', default => 'bg-indigo-50 text-[#101064]'} }}">
+                            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="m8 12 3 3 5-6"/></svg>
+                        </span>
+                    </div>
+                    <p class="mt-4 text-xs text-slate-500">{{ $metric['desc'] }}</p>
+                </div>
+            @endforeach
+        </section>
+
+        <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6" aria-label="Filter review records">
+            <div class="mb-5">
+                <p class="text-[11px] font-bold uppercase tracking-[.18em] text-[#A9780B]">Department Requests</p>
+                <h2 class="mt-1 text-lg font-extrabold text-[#101064]">Filter Discrepancy Reviews</h2>
+                <p class="mt-1 text-xs text-slate-500">Filter by event and decision without changing request records.</p>
+            </div>
+            <form method="GET" action="{{ route('staff.attendance-discrepancies.index') }}" class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] lg:items-end">
+                <div>
+                    <label for="staff-disc-event" class="mb-2 block text-xs font-bold text-slate-700">Event</label>
+                    <select id="staff-disc-event" name="event_id" class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm focus:border-[#101064] focus:ring-[#101064]">
+                        <option value="">All Department Events</option>
+                        @foreach($events as $event)
+                            <option value="{{ $event->event_id }}" @selected((string)request('event_id') === (string)$event->event_id)>{{ $event->event_name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label for="staff-disc-status" class="mb-2 block text-xs font-bold text-slate-700">Staff Decision</label>
+                    <select id="staff-disc-status" name="status" class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm focus:border-[#101064] focus:ring-[#101064]">
+                        <option value="">All Decisions</option>
+                        @foreach(['Pending','Approved','Rejected'] as $decision)
+                            <option value="{{ $decision }}" @selected(request('status') === $decision)>{{ $decision }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="flex gap-2">
+                    <button type="submit" class="min-h-11 rounded-xl bg-[#101064] px-5 py-3 text-sm font-bold text-white hover:bg-[#222280]">Apply</button>
+                    <a href="{{ route('staff.attendance-discrepancies.index') }}" class="inline-flex min-h-11 items-center rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-[#101064] hover:bg-slate-50">Reset</a>
+                </div>
             </form>
         </section>
-        <section class="space-y-4">
-            @forelse($discrepancies as $item)
-                <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <div class="flex flex-wrap items-start justify-between gap-4">
-                        <div><p class="text-xs font-bold uppercase tracking-wide text-[#D4A017]">Request #{{ $item->discrepancy_id }} · {{ $item->request_type }}</p>
-                            <h2 class="mt-1 text-lg font-extrabold text-[#101064]">{{ $item->student?->last_name }}, {{ $item->student?->first_name }} <span class="text-sm font-normal text-slate-500">{{ $item->student?->student_number }}</span></h2>
-                            <p class="mt-1 text-sm text-slate-600">{{ $item->event?->event_name }} · {{ $item->event?->event_date?->format('M d, Y') }}</p>
+
+        <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm" aria-labelledby="staff-disc-records">
+            <header class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-5 sm:px-6">
+                <div>
+                    <p class="text-[11px] font-bold uppercase tracking-[.18em] text-[#A9780B]">Verification &amp; Decision History</p>
+                    <h2 id="staff-disc-records" class="mt-1 text-lg font-extrabold text-[#101064]">Student Discrepancy Requests</h2>
+                    <p class="mt-1 text-xs text-slate-500">Pending reviews appear first. Resolved cases remain available for audit.</p>
+                </div>
+                <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-600">{{ $discrepancies->total() }} matching</span>
+            </header>
+
+            <div class="space-y-4 p-4 sm:p-6">
+                @forelse($discrepancies as $item)
+                    @php
+                        $isPending = $item->status === 'Pending';
+                        $confirmed = $item->verification_status === 'Confirmed';
+                        $hasVerifiedTimes = $item->verified_time_in && $item->verified_time_out;
+                        $canSubmitApproval = $isPending && $confirmed && ($item->request_type === 'Missing Attendance' || $hasVerifiedTimes);
+                        $willBeIncomplete = $canSubmitApproval && $item->request_type === 'Missing Attendance' && !$hasVerifiedTimes;
+                        $studentName = trim(($item->student?->first_name ?? '') . ' ' . ($item->student?->last_name ?? '')) ?: 'Unknown Student';
+                        $studentInitial = strtoupper(substr($item->student?->first_name ?? 'S', 0, 1));
+                        $badgeClass = match($item->status) { 'Approved' => 'bg-emerald-50 text-emerald-800 ring-emerald-200', 'Rejected' => 'bg-rose-50 text-rose-800 ring-rose-200', default => 'bg-amber-50 text-amber-800 ring-amber-200' };
+                    @endphp
+                    <article class="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white {{ $isPending ? 'shadow-sm' : 'bg-slate-50/40' }}">
+                        <div class="flex flex-wrap items-start justify-between gap-4 p-5 sm:p-6">
+                            <div class="flex min-w-0 items-start gap-3 sm:gap-4">
+                                <div class="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-indigo-100 bg-indigo-50 font-bold text-[#101064]">
+                                    <span>{{ $studentInitial }}</span>
+                                    @if($item->student?->photo_path)
+                                        <img src="{{ asset($item->student->photo_path) }}" alt="{{ $studentName }} profile photo" class="absolute inset-0 h-full w-full object-cover" loading="lazy" onerror="this.style.display='none'">
+                                    @endif
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="text-[11px] font-bold uppercase tracking-[.15em] text-[#A9780B]">Request #{{ $item->discrepancy_id }} &middot; {{ $item->request_type }}</p>
+                                    <h3 class="mt-1 break-words text-base font-extrabold text-[#101064]">{{ $studentName }}</h3>
+                                    <p class="mt-1 text-xs text-slate-500">{{ $item->student?->student_number ?? 'No student number' }} &middot; {{ $item->event?->event_name ?? 'Unavailable Event' }}</p>
+                                    <p class="mt-1 text-xs text-slate-500">Event {{ $item->event?->event_date?->format('M d, Y') ?? 'date unavailable' }} &middot; Submitted {{ $item->created_at?->format('M d, Y g:i A') }}</p>
+                                </div>
+                            </div>
+                            <div class="flex shrink-0 flex-wrap items-center gap-2">
+                                <span class="rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-bold text-[#101064]">Personnel: {{ $item->verification_status }}</span>
+                                <span class="rounded-full px-3 py-1.5 text-xs font-bold ring-1 {{ $badgeClass }}">{{ $item->status }}</span>
+                            </div>
                         </div>
-                        <span class="rounded-full px-3 py-1 text-xs font-bold {{ $item->status === 'Approved' ? 'bg-green-100 text-green-800' : ($item->status === 'Rejected' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800') }}">{{ $item->status }}</span>
+
+                        @if($isPending)
+                            <div class="grid gap-4 border-t border-slate-100 px-5 py-5 lg:grid-cols-2 sm:px-6">
+                                <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                                    <p class="text-xs font-bold uppercase tracking-wider text-slate-600">Student Request</p>
+                                    <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">{{ $item->reason }}</p>
+@include('components.attendance-discrepancy-evidence', ['item' => $item, 'routeName' => 'staff.attendance-discrepancies.evidence'])
+                                    <p class="mt-3 text-xs text-slate-600">Original: <strong>{{ $item->before_status ?? 'No record' }}</strong> &middot; In {{ $item->before_time_in?->format('M d, Y g:i A') ?? 'None' }} &middot; Out {{ $item->before_time_out?->format('M d, Y g:i A') ?? 'None' }}</p>
+                                    <p class="mt-2 text-xs text-slate-600">Requested: <strong>{{ $item->requested_status ?? 'No status change' }}</strong> &middot; {{ $item->requested_time_in?->format('M d, Y g:i A') ?? 'No time change' }}</p>
+                                </div>
+                                <div class="rounded-xl border border-indigo-100 bg-indigo-50/40 p-4">
+                                    <p class="text-xs font-bold uppercase tracking-wider text-[#101064]">Attendance Personnel Verification</p>
+                                    <p class="mt-2 text-sm font-bold text-[#101064]">{{ $item->verification_status }}</p>
+                                    <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">{{ $item->verification_notes ?: 'Awaiting independent evidence verification.' }}</p>
+                                    <p class="mt-2 text-xs text-slate-600">Verified In: {{ $item->verified_time_in?->format('M d, Y g:i A') ?? 'Not provided' }}</p>
+                                    <p class="mt-1 text-xs text-slate-600">Verified Out: {{ $item->verified_time_out?->format('M d, Y g:i A') ?? 'Not provided' }}</p>
+                                    @if($item->verified_at)
+                                        <p class="mt-3 text-xs text-slate-500">{{ $item->verifier?->name ?? 'Personnel' }} &middot; {{ $item->verified_at->format('M d, Y g:i A') }}</p>
+                                    @endif
+                                </div>
+                            </div>
+                            @if(!$canSubmitApproval)
+                                <div class="mx-5 mb-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-900 sm:mx-6">Approval requires assigned Attendance Personnel confirmation. Time corrections and Present/Late statuses also need independently captured Time In and Time Out. You may reject with a documented reason.</div>
+                            @endif
+                            @if($willBeIncomplete)
+                                <div class="mx-5 mb-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-xs font-semibold leading-5 text-amber-900 sm:mx-6">
+                                    No system-captured event Time In/Out exists. Approving this verified Missing Attendance claim creates an Incomplete attendance record with no invented timestamps. It does NOT grant Present or Late.
+                                </div>
+                            @endif
+                            <div class="grid gap-4 border-t border-slate-100 px-5 py-5 lg:grid-cols-2 sm:px-6">
+                                <form method="POST" action="{{ route('staff.attendance-discrepancies.review', $item->discrepancy_id) }}" class="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4" data-confirm data-confirm-title="Approve attendance correction?" data-confirm-message="{{ $willBeIncomplete ? 'No historical scan times exist. Approval will record Incomplete attendance without Time In/Out, NOT Present or Late. Proceed only if participation is independently confirmed.' : 'This may create or modify attendance using independently captured times. Confirm the verification evidence before approving.' }}" data-confirm-confirm-text="Approve Correction" data-confirm-variant="warning">
+                                    @csrf
+                                    @method('PATCH')
+                                    <input type="hidden" name="decision" value="Approved">
+                                    <h4 class="text-sm font-bold text-emerald-900">Approve &amp; Correct Attendance</h4>
+                                    <p class="mt-1 text-xs leading-5 text-emerald-800">Approval changes attendance only when all server-side checks pass.</p>
+                                    <label for="approve-note-{{ $item->discrepancy_id }}" class="mt-3 block text-xs font-bold text-emerald-900">Evidence / Approval Reason</label>
+                                    <textarea id="approve-note-{{ $item->discrepancy_id }}" name="review_notes" rows="3" required minlength="10" maxlength="2000" placeholder="Describe the records supporting this correction." class="mt-2 w-full rounded-xl border border-emerald-200 bg-white p-3 text-sm"></textarea>
+                                    <button type="submit" @disabled(!$canSubmitApproval) class="mt-3 rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-bold text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-40">Approve Correction</button>
+                                </form>
+                                <form method="POST" action="{{ route('staff.attendance-discrepancies.review', $item->discrepancy_id) }}" class="rounded-xl border border-rose-200 bg-rose-50/60 p-4" data-confirm data-confirm-title="Reject discrepancy request?" data-confirm-message="Reject this student request without modifying the official attendance record?" data-confirm-confirm-text="Reject Request" data-confirm-variant="danger">
+                                    @csrf
+                                    @method('PATCH')
+                                    <input type="hidden" name="decision" value="Rejected">
+                                    <h4 class="text-sm font-bold text-rose-900">Reject Request</h4>
+                                    <p class="mt-1 text-xs leading-5 text-rose-800">Attendance stays unchanged when you reject.</p>
+                                    <label for="reject-note-{{ $item->discrepancy_id }}" class="mt-3 block text-xs font-bold text-rose-900">Rejection Reason</label>
+                                    <textarea id="reject-note-{{ $item->discrepancy_id }}" name="review_notes" rows="3" required minlength="10" maxlength="2000" placeholder="Explain the decision clearly to the student." class="mt-2 w-full rounded-xl border border-rose-200 bg-white p-3 text-sm"></textarea>
+                                    <button type="submit" class="mt-3 rounded-xl bg-rose-700 px-5 py-2.5 text-sm font-bold text-white hover:bg-rose-800" style="display:inline-block;margin-top:12px;padding:10px 20px;background-color:#b91c1c;color:#ffffff;border-radius:12px;font-weight:700;">Reject Request</button>
+                                </form>
+                            </div>
+                        @else
+                            <details class="dy-disc-staff-details border-t border-slate-100" >
+                                <summary class="flex cursor-pointer items-center justify-between gap-2 px-5 py-4 text-sm font-semibold text-[#101064] hover:bg-slate-50 sm:px-6">
+                                    <span>View decision, verification and attendance audit</span>
+                                    <svg class="dy-disc-expand-icon h-4 w-4 shrink-0 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                                </summary>
+                                <div class="grid gap-4 border-t border-slate-100 px-5 py-5 lg:grid-cols-2 sm:px-6">
+                                    <div class="rounded-xl bg-slate-50 p-4 text-sm text-slate-700">
+                                        <p class="text-xs font-bold uppercase tracking-wider text-slate-600">Student Request</p>
+                                        <p class="mt-2 whitespace-pre-wrap">{{ $item->reason }}</p>
+@include('components.attendance-discrepancy-evidence', ['item' => $item, 'routeName' => 'staff.attendance-discrepancies.evidence'])
+                                        <p class="mt-2 text-xs">Requested: {{ $item->requested_status ?? 'No status change' }} &middot; {{ $item->requested_time_in?->format('M d, Y g:i A') ?? 'No time change' }}</p>
+                                    </div>
+                                    <div class="rounded-xl bg-indigo-50/40 p-4 text-sm text-slate-700">
+                                        <p class="text-xs font-bold uppercase tracking-wider text-[#101064]">Verification &amp; Staff Decision</p>
+                                        <p class="mt-2">Personnel: {{ $item->verification_status }} &middot; {{ $item->verifier?->name ?? 'Not verified' }}</p>
+                                        <p class="mt-1 whitespace-pre-wrap">{{ $item->verification_notes ?: 'No verification notes provided.' }}</p>
+                                        <p class="mt-2">Verified In: {{ $item->verified_time_in?->format('M d, Y g:i A') ?? 'None' }}</p>
+                                        <p>Verified Out: {{ $item->verified_time_out?->format('M d, Y g:i A') ?? 'None' }}</p>
+                                        <p class="mt-3 font-semibold">Staff: {{ $item->reviewer?->name ?? 'No reviewer recorded' }}</p>
+                                        <p class="mt-1 whitespace-pre-wrap">{{ $item->review_notes ?: 'No decision notes.' }}</p>
+                                        <p class="mt-2 text-xs text-slate-500">{{ $item->reviewed_at?->format('M d, Y g:i A') }}</p>
+                                    </div>
+                                    <div class="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700 lg:col-span-2">
+                                        <p class="text-xs font-bold uppercase tracking-wider text-slate-600">Attendance Audit Snapshot</p>
+                                        <div class="mt-3 grid gap-4 md:grid-cols-2">
+                                            <div><p class="font-bold text-[#101064]">Before</p><p class="mt-1">Status: {{ $item->before_status ?? 'No record' }}</p><p>Time In: {{ $item->before_time_in?->format('M d, Y g:i A') ?? 'None' }}</p><p>Time Out: {{ $item->before_time_out?->format('M d, Y g:i A') ?? 'None' }}</p></div>
+                                            <div><p class="font-bold text-[#101064]">After</p><p class="mt-1">Status: {{ $item->after_status ?? 'No changes' }}</p><p>Time In: {{ $item->after_time_in?->format('M d, Y g:i A') ?? 'None' }}</p><p>Time Out: {{ $item->after_time_out?->format('M d, Y g:i A') ?? 'None' }}</p></div>
+                                        </div>
+                                        @if($item->status === 'Approved' && $item->attendance_id)
+                                            <p class="mt-3 text-xs font-semibold text-emerald-800">Linked attendance record #{{ $item->attendance_id }}</p>
+                                        @endif
+                                    </div>
+                                </div>
+                            </details>
+                        @endif
+                    </article>
+                @empty
+                    <div class="flex flex-col items-center justify-center px-5 py-14 text-center">
+                        <div class="mb-4 h-1 w-12 bg-[#D4A017]"></div>
+                        <h3 class="font-bold text-[#101064]">No discrepancy requests found</h3>
+                        <p class="mt-2 text-sm text-slate-500">No student discrepancy requests match the selected event and status filters.</p>
                     </div>
-                    <div class="mt-4 grid gap-4 lg:grid-cols-2">
-                        <div class="rounded-xl bg-slate-50 p-4 text-sm text-slate-700">
-                            <p class="font-bold">Student Request</p><p class="mt-1 whitespace-pre-wrap">{{ $item->reason }}</p>
-                            <p class="mt-3 text-xs"><strong>Recorded when submitted:</strong> {{ $item->before_status ?? 'No attendance' }} · {{ $item->before_time_in?->format('M d, Y g:i A') ?? 'No time' }}</p>
-                            <p class="mt-1 text-xs"><strong>Requested:</strong> {{ $item->requested_status ?? 'Keep status' }} · {{ $item->requested_time_in?->format('M d, Y g:i A') ?? 'Keep time' }}</p>
-                        </div>
-                        <div class="rounded-xl bg-slate-50 p-4 text-sm text-slate-700">
-                            <p class="font-bold">Attendance Personnel Verification: {{ $item->verification_status }}</p>
-                            <p class="mt-2 whitespace-pre-wrap">{{ $item->verification_notes ?: 'No verification submitted. Staff must check independent evidence.' }}</p>
-                            @if($item->verified_at)<p class="mt-2 text-xs text-slate-500">{{ $item->verifier?->name }} · {{ $item->verified_at->format('M d, Y g:i A') }}</p>@endif
-                        </div>
-                    </div>
-                    @if ($item->status === 'Pending')
-                        <div class="mt-5 grid gap-4 border-t border-slate-100 pt-5 lg:grid-cols-2">
-                            <form method="POST" action="{{ route('staff.attendance-discrepancies.review', $item->discrepancy_id) }}" class="space-y-3 rounded-xl border border-green-200 bg-green-50 p-4" data-confirm data-confirm-title="Approve attendance correction?" data-confirm-message="Approval can create or modify an attendance record. Check the evidence before proceeding." data-confirm-confirm-text="Approve Correction" data-confirm-variant="warning">
-                                @csrf @method('PATCH')<input type="hidden" name="decision" value="Approved">
-                                <p class="font-bold text-green-900">Approve & Correct Attendance</p><p class="text-xs text-green-900">Check the attendance log and evidence first. Approval can create or modify a record.</p>
-                                <label class="block text-xs font-semibold text-green-900">Approval Reason / Evidence (required)</label><textarea name="review_notes" rows="3" required minlength="10" maxlength="2000" class="w-full rounded-lg border border-green-200 p-3 text-sm" placeholder="Explain the evidence supporting the correction."></textarea>
-                                <button class="rounded-lg bg-green-700 px-5 py-2.5 text-sm font-bold text-white">Approve</button>
-                            </form>
-                            <form method="POST" action="{{ route('staff.attendance-discrepancies.review', $item->discrepancy_id) }}" class="space-y-3 rounded-xl border border-red-200 bg-red-50 p-4" data-confirm data-confirm-title="Reject discrepancy request?" data-confirm-message="The request will be rejected and no attendance record will be changed." data-confirm-confirm-text="Reject Request" data-confirm-variant="danger">
-                                @csrf @method('PATCH')<input type="hidden" name="decision" value="Rejected">
-                                <p class="font-bold text-red-900">Reject Request</p><p class="text-xs text-red-900">No attendance record will be changed.</p>
-                                <label class="block text-xs font-semibold text-red-900">Reason for Rejection (required)</label><textarea name="review_notes" rows="3" required minlength="10" maxlength="2000" class="w-full rounded-lg border border-red-200 p-3 text-sm" placeholder="Explain why the request was rejected."></textarea>
-                                <button class="rounded-lg bg-red-700 px-5 py-2.5 text-sm font-bold text-white">Reject</button>
-                            </form>
-                        </div>
-                    @else
-                        <div class="mt-4 border-t border-slate-100 pt-4 text-sm text-slate-700">
-                            <p><strong>Staff Decision:</strong> {{ $item->review_notes }}</p>
-                            <p class="mt-1 text-xs text-slate-500">{{ $item->reviewer?->name }} · {{ $item->reviewed_at?->format('M d, Y g:i A') }}</p>
-                            @if ($item->status === 'Approved')<p class="mt-2 text-green-800">Attendance #{{ $item->attendance_id }} · After correction: {{ $item->after_status }} · {{ $item->after_time_in?->format('M d, Y g:i A') }}</p>@endif
-                        </div>
-                    @endif
-                </article>
-            @empty
-                <div class="rounded-2xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500">No student discrepancy requests match your filters.</div>
-            @endforelse
-            <div>{{ $discrepancies->links() }}</div>
+                @endforelse
+            </div>
+            @if($discrepancies->hasPages())
+                <div class="border-t border-slate-100 px-5 py-4 sm:px-6">{{ $discrepancies->links() }}</div>
+            @endif
         </section>
     </div>
     @endif

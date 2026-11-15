@@ -3,6 +3,11 @@
     @php
         $hasRecords = (int) $totalAttendance > 0;
         $filteredCount = $attendanceRecords->total();
+        $hasActiveFilters = $selectedStatus !== 'all' || $searchTerm !== '' || $fromDate || $toDate || $selectedSort !== 'newest' || $perPage !== 5;
+        $pageNumber = $attendanceRecords->currentPage();
+        $lastPage = $attendanceRecords->lastPage();
+        $pageWindowStart = max(1, min($pageNumber - 2, $lastPage - 4));
+        $pageWindowEnd = min($lastPage, $pageWindowStart + 4);
         $statusStyles = [
             'Checked In' => 'dyh-badge--checked-in',
             'Present' => 'dyh-badge--present',
@@ -41,10 +46,33 @@
         .dyh-page .dyh-panel-head h2 { color:#fff !important; font-size:21px; line-height:1.35; letter-spacing:-.02em; }
         .dyh-page .dyh-panel-head p { color:rgba(255,255,255,.72) !important; }
         .dyh-page .dyh-panel-eyebrow { color:#efcf68 !important; }
-        .dyh-page .dyh-filterbar { display:flex; flex-wrap:wrap; align-items:end; justify-content:space-between; gap:16px; padding:18px 26px; background:#fff; border-bottom:1px solid #eef1f6 !important; }
-        .dyh-page .dyh-filter-hint { margin:0; color:#6e7b92; font-size:12px; line-height:1.65; }
-        .dyh-page .dyh-filter-select { border:1px solid #dfe5ef !important; background:#f9fafc; border-radius:11px; color:#101064; min-height:44px; }
-        .dyh-page .dyh-filter-select:focus { outline:2px solid rgba(212,160,23,.35); outline-offset:1px; border-color:#d4a017 !important; }
+        .dyh-page .dyh-filterbar { padding:23px 26px 18px; background:#fff; border-bottom:1px solid #eef1f6 !important; }
+        .dyh-page .dyh-filter-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:18px; }
+        .dyh-page .dyh-filter-grid { display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:13px 14px; align-items:end; }
+        .dyh-page .dyh-filter-field { min-width:0; display:flex; flex-direction:column; gap:6px; grid-column:span 3; }
+        .dyh-page .dyh-filter-field--search { grid-column:span 6; }
+        .dyh-page .dyh-filter-field--date { grid-column:span 3; }
+        .dyh-page .dyh-filter-field--sort { grid-column:span 3; }
+        .dyh-page .dyh-filter-field--per { grid-column:span 2; }
+        .dyh-page .dyh-filter-field label { display:block; font-size:11px; font-weight:750; color:#52637e; }
+        .dyh-page .dyh-filter-control { display:block; width:100%; height:44px; border:1px solid #dfe5ef !important; background:#f9fafc; border-radius:11px; color:#101064; padding:0 12px; font-size:12px; line-height:1.4; font-family:inherit; font-weight:600; min-width:0; }
+        .dyh-page .dyh-filter-control::placeholder { color:#92a0b5; font-weight:400; }
+        .dyh-page .dyh-filter-control:focus { outline:2px solid rgba(212,160,23,.3); outline-offset:1px; border-color:#d4a017 !important; }
+        .dyh-page .dyh-filter-actions { display:flex; gap:9px; align-items:end; justify-content:flex-start; grid-column:span 4; }
+        .dyh-page .dyh-filter-submit { display:inline-flex; gap:8px; align-items:center; justify-content:center; min-height:44px; padding:0 19px; border-radius:11px; background:#101064; color:#fff; font-size:12px; font-weight:800; border:1px solid #101064; cursor:pointer; }
+        .dyh-page .dyh-filter-submit:hover { background:#23237b; }
+        .dyh-page .dyh-filter-reset { display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:0 15px; border-radius:11px; background:#fff; color:#52637e; border:1px solid #dfe5ef; font-size:12px; font-weight:700; text-decoration:none; }
+        .dyh-page .dyh-filter-reset:hover { background:#f6f8fc; }
+        .dyh-page .dyh-active-chip { display:inline-flex; gap:6px; align-items:center; max-width:100%; border-radius:20px; border:1px solid #e5e9f4; background:#f5f7fc; padding:5px 10px; color:#334672; font-size:11px; font-weight:650; word-break:break-word; }
+        .dyh-page .dyh-results-bar { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; padding:14px 26px; background:#fbfcff; border-bottom:1px solid #edf0f6; color:#66758e; font-size:12px; }
+        .dyh-page .dyh-pager-footer { border-top:1px solid #edf1f6 !important; display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap; padding:17px 25px; background:#fff; }
+        .dyh-page .dyh-pager { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+        .dyh-page .dyh-page-link { min-width:34px; height:36px; display:inline-flex; align-items:center; justify-content:center; gap:5px; padding:0 11px; border-radius:10px; border:1px solid #e3e7f0; background:#fff; color:#101064; text-decoration:none; font-size:12px; font-weight:750; }
+        .dyh-page .dyh-page-link:hover { background:#f0f2fb; }
+        .dyh-page .dyh-page-link--current { background:#101064; border-color:#101064; color:#fff; }
+        .dyh-page .dyh-page-link--disabled { color:#9aa6b9; background:#f8f9fc; cursor:not-allowed; }
+        @media(max-width:1100px) { .dyh-page .dyh-filter-field--search { grid-column:span 7; } .dyh-page .dyh-filter-field { grid-column:span 5; } .dyh-page .dyh-filter-field--date, .dyh-page .dyh-filter-field--sort { grid-column:span 4; } .dyh-page .dyh-filter-field--per { grid-column:span 4; } .dyh-page .dyh-filter-actions { grid-column:span 8; } }
+        @media(max-width:620px) { .dyh-page .dyh-filter-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .dyh-page .dyh-filter-field,.dyh-page .dyh-filter-field--search,.dyh-page .dyh-filter-field--sort { grid-column:span 2; } .dyh-page .dyh-filter-field--date,.dyh-page .dyh-filter-field--per { grid-column:span 1; } .dyh-page .dyh-filter-actions { grid-column:span 2; } .dyh-page .dyh-pager-footer { padding:16px; } .dyh-page .dyh-pager { width:100%; justify-content:center; } }
         .dyh-page .dyh-hero-account { border:1px solid rgba(255,255,255,.2) !important; }
         .dyh-page .dyh-mobile-card { border:1px solid #e6ebf3 !important; border-radius:16px; background:#fff; box-shadow:0 2px 12px rgba(16,16,100,.025); }
         .dyh-page .dyh-mobile-card-details { border-top:1px solid #eef1f6 !important; }
@@ -65,7 +93,7 @@
         .dyh-page .dyh-badge--other { background:#f0f2f7; border-color:#e3e7ef !important; color:#58687f; }
         .dyh-page .dyh-note { border:1px solid #f2e7ca !important; background:#fffcf4; border-radius:17px; }
         .dyh-page .dyh-pagination { border-top:1px solid #edf1f6 !important; }
-        @media(max-width:767px){ .dyh-page .dyh-panel-head { padding:23px 20px; } .dyh-page .dyh-filterbar { padding:16px 18px; } .dyh-page .dyh-summary-card { border-radius:16px !important; } }
+        @media(max-width:767px){ .dyh-page .dyh-panel-head { padding:23px 20px; } .dyh-page .dyh-filterbar { padding:18px; } .dyh-page .dyh-results-bar { padding:14px 18px; } .dyh-page .dyh-summary-card { border-radius:16px !important; } }
         @media(prefers-reduced-motion:reduce){ .dyh-page * { transition:none !important; } }
     </style>
 
@@ -172,7 +200,7 @@
         </section>
 
         {{-- Records and status filter. GET keeps browser navigation and pagination consistent. --}}
-        <section class="dyh-panel min-w-0" aria-labelledby="dy-history-records-heading">
+        <section id="attendance-records" class="dyh-panel min-w-0" aria-labelledby="dy-history-records-heading">
             <div class="dyh-panel-head">
                 <div class="dyh-panel-head-inner">
                     <div class="mb-2 flex items-center gap-2">
@@ -184,28 +212,88 @@
                 </div>
             </div>
             <div class="dyh-filterbar">
-                <p class="dyh-filter-hint">
-                    <strong class="font-bold text-[#101064]">{{ number_format($filteredCount) }}</strong>
-                    {{ $filteredCount === 1 ? 'record' : 'records' }}{{ $selectedStatus !== 'all' ? ' matching the selected status' : ' in your history' }}
-                </p>
-                <form method="GET" action="{{ route('student.attendance-history.index') }}" class="flex w-full flex-wrap items-end gap-2 sm:w-auto">
-                    <div class="min-w-[145px] flex-1 sm:min-w-[200px] sm:flex-none">
-                        <label for="attendance-status" class="mb-1.5 block text-[11px] font-bold text-slate-600">Filter by status</label>
-                        <select id="attendance-status" name="status" class="dyh-filter-select block w-full px-3 text-sm font-medium">
-                            <option value="all" @selected($selectedStatus === 'all')>All recorded statuses</option>
-                            <option value="Checked In" @selected($selectedStatus === 'Checked In')>Checked In</option>
-                            <option value="Present" @selected($selectedStatus === 'Present')>Present</option>
-                            <option value="Late" @selected($selectedStatus === 'Late')>Late</option>
-                            <option value="Incomplete" @selected($selectedStatus === 'Incomplete')>Incomplete</option>
-                            <option value="Absent" @selected($selectedStatus === 'Absent')>Absent</option>
-                            <option value="Excused" @selected($selectedStatus === 'Excused')>Excused</option>
+                <div class="dyh-filter-heading">
+                    <div>
+                        <p class="text-[10px] font-extrabold uppercase tracking-[.18em] text-[#AB8117]">Search &amp; filters</p>
+                        <h3 class="mt-1 text-base font-extrabold text-[#101064]">Find your attendance records</h3>
+                        <p class="mt-1 text-xs leading-5 text-slate-500">Search events, narrow the dates, or view a specific attendance status.</p>
+                    </div>
+                    @if($hasActiveFilters)
+                        <a href="{{ route('student.attendance-history.index') }}#attendance-records" class="dyh-filter-reset">Reset all filters</a>
+                    @endif
+                </div>
+
+                @if($errors->any())
+                    <div role="alert" class="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-semibold text-red-800">
+                        Please check your filters: {{ $errors->first() }}
+                    </div>
+                @endif
+
+                <form method="GET" action="{{ route('student.attendance-history.index') }}#attendance-records" class="dyh-filter-grid" aria-label="Filter attendance history">
+                    <div class="dyh-filter-field dyh-filter-field--search">
+                        <label for="dyh-search">Search event or venue</label>
+                        <input id="dyh-search" class="dyh-filter-control" name="q" type="search" maxlength="100" value="{{ $searchTerm }}" placeholder="Event name or location..." autocomplete="off">
+                    </div>
+                    <div class="dyh-filter-field">
+                        <label for="dyh-status">Attendance status</label>
+                        <select id="dyh-status" name="status" class="dyh-filter-control">
+                            <option value="all" @selected($selectedStatus === 'all')>All statuses</option>
+                            @foreach(['Checked In','Present','Late','Incomplete','Absent','Excused'] as $statusOption)
+                                <option value="{{ $statusOption }}" @selected($selectedStatus === $statusOption)>{{ $statusOption }}</option>
+                            @endforeach
                         </select>
                     </div>
-                    <button type="submit" class="inline-flex h-11 items-center justify-center rounded-xl bg-[#101064] px-5 text-xs font-bold text-white transition hover:bg-[#23237B] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D4A017] sm:text-sm">Apply</button>
-                    @if($selectedStatus !== 'all')
-                        <a href="{{ route('student.attendance-history.index') }}" class="inline-flex h-11 items-center justify-center rounded-xl border border-[#DBE0EA] px-4 text-xs font-bold text-slate-600 transition hover:bg-slate-50 sm:text-sm">Clear</a>
-                    @endif
+                    <div class="dyh-filter-field dyh-filter-field--date">
+                        <label for="dyh-date-from">Event date from</label>
+                        <input id="dyh-date-from" class="dyh-filter-control" type="date" name="from" value="{{ $fromDate }}">
+                    </div>
+                    <div class="dyh-filter-field dyh-filter-field--date">
+                        <label for="dyh-date-to">Event date to</label>
+                        <input id="dyh-date-to" class="dyh-filter-control" type="date" name="to" value="{{ $toDate }}">
+                    </div>
+                    <div class="dyh-filter-field dyh-filter-field--sort">
+                        <label for="dyh-sort">Sort records</label>
+                        <select id="dyh-sort" name="sort" class="dyh-filter-control">
+                            <option value="newest" @selected($selectedSort === 'newest')>Newest event first</option>
+                            <option value="oldest" @selected($selectedSort === 'oldest')>Oldest event first</option>
+                            <option value="recently_updated" @selected($selectedSort === 'recently_updated')>Recently updated</option>
+                        </select>
+                    </div>
+                    <div class="dyh-filter-field dyh-filter-field--per">
+                        <label for="dyh-per-page">Rows per page</label>
+                        <select id="dyh-per-page" name="per_page" class="dyh-filter-control">
+                            @foreach([5,10,20] as $pageSize)
+                                <option value="{{ $pageSize }}" @selected($perPage === $pageSize)>{{ $pageSize }} records</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="dyh-filter-actions">
+                        <button type="submit" class="dyh-filter-submit">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m16 16 4 4"/></svg>
+                            Search &amp; Apply
+                        </button>
+                        <a class="dyh-filter-reset" href="{{ route('student.attendance-history.index') }}#attendance-records">Clear</a>
+                    </div>
                 </form>
+                @if($hasActiveFilters)
+                    <div class="mt-4 flex flex-wrap items-center gap-2" aria-label="Active attendance filters">
+                        <span class="text-[11px] font-bold text-slate-500">Active:</span>
+                        @if($searchTerm !== '') <span class="dyh-active-chip">Search: {{ $searchTerm }}</span> @endif
+                        @if($selectedStatus !== 'all') <span class="dyh-active-chip">{{ $selectedStatus }}</span> @endif
+                        @if($fromDate) <span class="dyh-active-chip">From {{ $fromDate }}</span> @endif
+                        @if($toDate) <span class="dyh-active-chip">Until {{ $toDate }}</span> @endif
+                        @if($selectedSort !== 'newest') <span class="dyh-active-chip">{{ $selectedSort === 'oldest' ? 'Oldest first' : 'Recently updated' }}</span> @endif
+                        @if($perPage !== 5) <span class="dyh-active-chip">{{ $perPage }} per page</span> @endif
+                    </div>
+                @endif
+            </div>
+            <div class="dyh-results-bar" aria-live="polite">
+                <span>
+                    <strong class="font-extrabold text-[#101064]">{{ number_format($filteredCount) }}</strong>
+                    {{ $filteredCount === 1 ? 'matching record' : 'matching records' }}
+                    @if($hasActiveFilters) <span class="text-slate-400">· Filters applied</span> @endif
+                </span>
+                <span>Showing <strong class="text-[#101064]">{{ $attendanceRecords->firstItem() ?? 0 }}–{{ $attendanceRecords->lastItem() ?? 0 }}</strong> of {{ number_format($filteredCount) }}</span>
             </div>
 
             @if($attendanceRecords->isEmpty())
@@ -215,7 +303,7 @@
                     </div>
                     <h3 class="mt-4 text-base font-extrabold text-[#101064]">{{ $hasRecords ? 'No matching attendance records' : 'No attendance recorded yet' }}</h3>
                     <p class="mx-auto mt-2 max-w-sm text-sm leading-6 text-slate-500">
-                        {{ $hasRecords ? 'Try a different attendance status filter to view your other records.' : 'Your recorded event attendance will appear here once it is saved.' }}
+                        {{ $hasRecords ? 'Try another event keyword, date range, or attendance status.' : 'Your recorded event attendance will appear here once it is saved.' }}
                     </p>
                     @if($hasRecords)
                         <a href="{{ route('student.attendance-history.index') }}" class="mt-5 inline-flex rounded-xl bg-[#101064] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#23237B]">View all records</a>
@@ -294,9 +382,41 @@
                 </div>
             @endif
 
-            @if($attendanceRecords->hasPages())
-                <div class="dyh-pagination px-3 py-4 sm:px-6">
-                    {{ $attendanceRecords->links() }}
+            @if($filteredCount > 0)
+                <div class="dyh-pager-footer">
+                    <div>
+                        <p class="text-xs font-bold text-[#101064]">Page {{ $pageNumber }} of {{ $lastPage }}</p>
+                        <p class="mt-0.5 text-[11px] text-slate-500">{{ $attendanceRecords->firstItem() }}–{{ $attendanceRecords->lastItem() }} of {{ number_format($filteredCount) }} records</p>
+                    </div>
+                    <nav class="dyh-pager" aria-label="Attendance history pagination">
+                        @if($attendanceRecords->onFirstPage())
+                            <span class="dyh-page-link dyh-page-link--disabled" aria-disabled="true">Previous</span>
+                        @else
+                            <a class="dyh-page-link" rel="prev" href="{{ $attendanceRecords->previousPageUrl() }}">Previous</a>
+                        @endif
+
+                        @if($pageWindowStart > 1)
+                            <a class="dyh-page-link" href="{{ $attendanceRecords->url(1) }}" aria-label="Go to page 1">1</a>
+                            @if($pageWindowStart > 2) <span class="px-1 text-slate-400" aria-hidden="true">…</span> @endif
+                        @endif
+                        @for($page = $pageWindowStart; $page <= $pageWindowEnd; $page++)
+                            @if($page === $pageNumber)
+                                <span class="dyh-page-link dyh-page-link--current" aria-label="Page {{ $page }}" aria-current="page">{{ $page }}</span>
+                            @else
+                                <a class="dyh-page-link" href="{{ $attendanceRecords->url($page) }}" aria-label="Go to page {{ $page }}">{{ $page }}</a>
+                            @endif
+                        @endfor
+                        @if($pageWindowEnd < $lastPage)
+                            @if($pageWindowEnd < $lastPage - 1) <span class="px-1 text-slate-400" aria-hidden="true">…</span> @endif
+                            <a class="dyh-page-link" href="{{ $attendanceRecords->url($lastPage) }}" aria-label="Go to page {{ $lastPage }}">{{ $lastPage }}</a>
+                        @endif
+
+                        @if($attendanceRecords->hasMorePages())
+                            <a class="dyh-page-link" rel="next" href="{{ $attendanceRecords->nextPageUrl() }}">Next</a>
+                        @else
+                            <span class="dyh-page-link dyh-page-link--disabled" aria-disabled="true">Next</span>
+                        @endif
+                    </nav>
                 </div>
             @endif
         </section>

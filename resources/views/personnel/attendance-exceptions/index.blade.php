@@ -23,7 +23,7 @@
 
     <div class="w-full min-w-0 space-y-6 pb-8">
         <section class="dysign-personnel-hero rounded-[28px] border-b-4 border-[#D4A017] px-7 py-9 text-white shadow-sm sm:px-9">
-            <p class="text-xs font-bold uppercase tracking-[.28em] text-[#F2C94C]">Module #10 · Attendance Personnel</p>
+            <p class="text-xs font-bold uppercase tracking-[.28em] text-[#F2C94C]">Attendance Personnel</p>
             <h1 class="mt-3 text-3xl font-extrabold">Attendance Exceptions</h1>
             <p class="mt-2 text-sm text-indigo-100">Report a failed or missed RFID scan for an event assigned to you. A Department Staff member must verify the request.</p>
         </section>

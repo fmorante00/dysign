@@ -361,6 +361,13 @@ class DashboardController extends Controller
         |--------------------------------------------------------------------------
         */
 
+        // Calendar must only show events assigned to this personnel.
+        $calendarEvents = Event::with('department')
+            ->whereIn('event_id', $assignedEventIds)
+            ->orderBy('event_date')
+            ->orderBy('start_time')
+            ->get();
+
         return view(
             'dashboard.attendance',
             compact(
@@ -372,7 +379,8 @@ class DashboardController extends Controller
                 'todayScanned',
                 'currentEventScanned',
                 'upcomingEvents',
-                'recentAttendance'
+                'recentAttendance',
+                'calendarEvents'
             )
         );
 

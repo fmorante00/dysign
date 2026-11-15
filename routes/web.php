@@ -2022,6 +2022,12 @@ Route::middleware(['auth', 'role:Student Account'])->group(function () {
         [AttendanceDiscrepancyController::class, 'studentStore'])
         ->name('student.attendance-discrepancies.store');
 
+    Route::get('/student/attendance-discrepancies/{attendanceDiscrepancy}/evidence/{document}',
+        [AttendanceDiscrepancyController::class, 'evidence'])
+        ->whereNumber('attendanceDiscrepancy')
+        ->whereNumber('document')
+        ->name('student.attendance-discrepancies.evidence');
+
 });
 
 // Attendance Personnel
@@ -2036,6 +2042,12 @@ Route::middleware(['auth', 'role:Attendance Personnel'])->group(function () {
         ->whereNumber('attendanceDiscrepancy')
         ->name('personnel.attendance-discrepancies.verify');
 
+    Route::get('/my-attendance-discrepancies/{attendanceDiscrepancy}/evidence/{document}',
+        [AttendanceDiscrepancyController::class, 'evidence'])
+        ->whereNumber('attendanceDiscrepancy')
+        ->whereNumber('document')
+        ->name('personnel.attendance-discrepancies.evidence');
+
 });
 
 // Department Staff
@@ -2049,6 +2061,12 @@ Route::middleware(['auth', 'role:Department Staff'])->group(function () {
         [AttendanceDiscrepancyController::class, 'staffReview'])
         ->whereNumber('attendanceDiscrepancy')
         ->name('staff.attendance-discrepancies.review');
+
+    Route::get('/staff/attendance-discrepancies/{attendanceDiscrepancy}/evidence/{document}',
+        [AttendanceDiscrepancyController::class, 'evidence'])
+        ->whereNumber('attendanceDiscrepancy')
+        ->whereNumber('document')
+        ->name('staff.attendance-discrepancies.evidence');
 
 });
 
@@ -2075,6 +2093,10 @@ Route::middleware(['auth', 'role:Student Account'])->group(function () {
 */
 
 Route::middleware(['auth', 'role:Student Account'])->group(function () {
+
+    Route::get('/student/participation-progress/pdf',
+        [StudentParticipationProgressController::class, 'downloadPdf'])
+        ->name('student.participation-progress.pdf');
 
     Route::get('/student/participation-progress',
         [StudentParticipationProgressController::class, 'index'])

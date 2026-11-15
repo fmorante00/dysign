@@ -25,7 +25,7 @@
             <div class="absolute bottom-0 left-0 h-1 w-full bg-[#D4A017]"></div>
 
             <p class="text-xs font-semibold uppercase tracking-[0.30em] text-[#E7C75B]">
-                Module #15 - Department Staff
+                Department Staff
             </p>
 
             <h1 class="mt-3 text-3xl font-bold tracking-tight md:text-4xl">
