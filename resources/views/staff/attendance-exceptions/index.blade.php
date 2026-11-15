@@ -151,7 +151,7 @@
             @forelse ($exceptions as $exception)
                 <article class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
                     <div class="h-1 w-full bg-[#D4A017]"></div>
-                    <div class="space-y-5 p-5 sm:p-7">
+                    <div class="{{ $exception->status === 'Pending' ? 'space-y-5 p-5 sm:p-7' : 'space-y-3 p-4 sm:p-5' }}">
                         <div class="flex flex-wrap items-start justify-between gap-4">
                             <div class="min-w-0 flex-1">
                                 <p class="text-[11px] font-bold uppercase tracking-[.16em] text-[#BD8D18]">Exception #{{ $exception->exception_id }} &middot; {{ $exception->issue_type }}</p>
@@ -170,6 +170,14 @@
                             <span class="rounded-full border px-3 py-1.5 text-xs font-bold {{ $statusClass }}">{{ $exception->status }}</span>
                         </div>
 
+                        @if ($exception->status !== 'Pending')
+                            <details class="group overflow-hidden rounded-xl border border-slate-200 bg-[#F7F8FC]">
+                                <summary class="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-sm font-semibold text-[#101064] hover:bg-slate-100">
+                                    <span>View incident details and timestamps</span>
+                                    <span class="text-xs font-medium text-slate-500">Expand / Collapse</span>
+                                </summary>
+                                <div class="space-y-3 border-t border-slate-200 p-3">
+                        @endif
                         <div class="grid gap-3 rounded-xl bg-[#F7F8FC] p-4 text-sm sm:grid-cols-2 lg:grid-cols-3">
                             <div>
                                 <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Personnel-Observed Time In</p>
@@ -190,6 +198,10 @@
                             <p class="mt-2 whitespace-pre-wrap leading-6">{{ $exception->reason }}</p>
                         </div>
 
+                        @if ($exception->status !== 'Pending')
+                                </div>
+                            </details>
+                        @endif
                         @if ($exception->status === 'Pending')
                             <div class="grid gap-4 border-t border-slate-100 pt-5 xl:grid-cols-2">
                                 <form method="POST" action="{{ route('staff.attendance-exceptions.review', $exception->exception_id) }}" class="space-y-4 rounded-xl border border-emerald-200 bg-emerald-50/50 p-5" data-confirm data-confirm-title="Approve verified attendance?" data-confirm-message="Only approve if both the Time In and Time Out evidence have been verified." data-confirm-confirm-text="Approve Attendance" data-confirm-variant="warning">
@@ -200,7 +212,32 @@
                                         <h4 class="font-bold text-emerald-900">Approve Verified Attendance</h4>
                                         <p class="mt-2 text-xs leading-5 text-emerald-900/80">Verify genuine Time In and Time Out evidence before approving. The final status is calculated automatically, not selected manually.</p>
                                     </div>
-                                    <div class="rounded-lg border border-emerald-100 bg-white px-4 py-3 text-xs text-slate-700">
+                                    @if (\Illuminate\Support\Facades\Schema::hasColumn('attendance_exceptions', 'checked_out_at'))
+    <div class="rounded-xl border border-emerald-200 bg-white p-4 text-sm text-slate-700">
+        <p class="font-bold text-emerald-900">Automatically Recorded Attendance</p>
+
+        <p class="mt-3">
+            <strong>Time In:</strong>
+            {{ $exception->observed_at?->format('M d, Y g:i A') }}
+        </p>
+
+        <p class="mt-2">
+            <strong>Time Out:</strong>
+            {{ $exception->checked_out_at?->format('M d, Y g:i A') ?? 'Awaiting Personnel Check-Out' }}
+        </p>
+
+        @if (!$exception->checked_out_at)
+            <p class="mt-3 text-xs font-semibold text-amber-700">
+                Approval unavailable until Personnel records the actual checkout.
+            </p>
+        @else
+            <p class="mt-3 text-xs text-emerald-700">
+                Review the reported incident and recorded timestamps before approval.
+            </p>
+        @endif
+    </div>
+@else
+<div class="rounded-lg border border-emerald-100 bg-white px-4 py-3 text-xs text-slate-700">
                                         <strong>Reported Time In:</strong> {{ $exception->observed_at?->format('M d, Y g:i A') }} (PH time)
                                         <p class="mt-1 text-slate-500">Time Out must be from event end through one hour afterward, and must have already occurred.</p>
                                     </div>
@@ -212,7 +249,8 @@
                                         <label for="exception-approve-note-{{ $exception->exception_id }}" class="mb-2 block text-xs font-semibold text-emerald-900">Evidence / Review Notes *</label>
                                         <textarea id="exception-approve-note-{{ $exception->exception_id }}" name="review_notes" rows="3" minlength="10" maxlength="2000" required class="dysign-exception-field" placeholder="State who verified the two times and the supporting evidence."></textarea>
                                     </div>
-                                    <button type="submit" class="inline-flex min-h-[43px] items-center justify-center rounded-xl bg-emerald-700 px-5 text-sm font-bold text-white transition hover:bg-emerald-800">Approve Attendance</button>
+                                    @endif
+<button type="submit" @disabled(\Illuminate\Support\Facades\Schema::hasColumn("attendance_exceptions", "checked_out_at") && !$exception->checked_out_at) class="inline-flex min-h-[43px] items-center justify-center rounded-xl bg-emerald-700 px-5 text-sm font-bold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50">Approve Attendance</button>
                                 </form>
 
                                 <form method="POST" action="{{ route('staff.attendance-exceptions.review', $exception->exception_id) }}" class="space-y-4 rounded-xl border border-red-200 bg-red-50/50 p-5" data-confirm data-confirm-title="Reject attendance exception?" data-confirm-message="The report will be rejected. No manual attendance record will be created." data-confirm-confirm-text="Reject Report" data-confirm-variant="danger">
@@ -231,13 +269,42 @@
                                 </form>
                             </div>
                         @else
-                            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
-                                <p><strong class="text-[#101064]">Staff decision:</strong> {{ $exception->review_notes ?: 'No note provided.' }}</p>
-                                <p class="mt-1 text-xs text-slate-500">{{ $exception->reviewer?->name ?? 'Staff reviewer' }} &middot; {{ $exception->reviewed_at?->format('M d, Y g:i A') }}</p>
+                            <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                                <div class="min-w-0">
+                                    <p class="text-sm font-bold text-[#101064]">
+                                        {{ $exception->status === 'Approved' ? 'Attendance approved' : 'Report rejected' }}
+
+                                        @if ($exception->attendance)
+                                            <span class="ml-2 inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-800">
+                                                {{ $exception->attendance->status }}
+                                            </span>
+                                        @endif
+                                    </p>
+
+                                    <p class="mt-1 text-xs text-slate-500">
+                                        Reviewed by {{ $exception->reviewer?->name ?? 'Staff reviewer' }}
+                                        &middot;
+                                        {{ $exception->reviewed_at?->format('M d, Y g:i A') }}
+                                    </p>
+                                </div>
+
                                 @if ($exception->attendance_id)
-                                    <p class="mt-3 font-semibold text-emerald-700">Verified manual attendance: Record #{{ $exception->attendance_id }}</p>
+                                    <span class="rounded-lg border border-emerald-200 bg-white px-3 py-2 text-xs font-bold text-emerald-700">
+                                        Attendance Record #{{ $exception->attendance_id }}
+                                    </span>
                                 @endif
                             </div>
+
+                            @if ($exception->status === 'Rejected' && $exception->review_notes)
+                                <p class="rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-xs leading-5 text-red-800">
+                                    <strong>Rejection reason:</strong> {{ $exception->review_notes }}
+                                </p>
+                            @elseif ($exception->review_notes)
+                                <details class="rounded-lg border border-slate-200 bg-white px-4 py-3 text-xs text-slate-600">
+                                    <summary class="cursor-pointer font-semibold text-[#101064]">Reviewer notes</summary>
+                                    <p class="mt-2 whitespace-pre-wrap leading-5">{{ $exception->review_notes }}</p>
+                                </details>
+                            @endif
                         @endif
                     </div>
                 </article>

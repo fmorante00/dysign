@@ -1983,6 +1983,10 @@ Route::middleware(['auth', 'role:Attendance Personnel'])->group(function () {
     Route::post('/my-attendance-exceptions',
         [AttendanceExceptionController::class, 'personnelStore'])
         ->name('personnel.attendance-exceptions.store');
+    Route::patch('/my-attendance-exceptions/{attendanceException}/checkout',
+        [AttendanceExceptionController::class, 'personnelCheckOut'])
+        ->whereNumber('attendanceException')
+        ->name('personnel.attendance-exceptions.checkout');
 
 });
 
