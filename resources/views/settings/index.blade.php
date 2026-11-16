@@ -10,6 +10,21 @@
         // User already has a student() relationship, so no controller or migration change is needed.
         $isStudentAccount = $roleName === 'Student Account';
         $studentRecord = $isStudentAccount ? $user->student : null;
+        $settingsPhotoUrl = null;
+        $settingsPhotoPath = $studentRecord?->photo_path;
+
+        if (is_string($settingsPhotoPath)) {
+            $settingsPhotoFile = basename(
+                str_replace('\\', '/', $settingsPhotoPath)
+            );
+
+            if (
+                preg_match('/\A[A-Za-z0-9_-]+\.(?:jpe?g|png|webp)\z/i', $settingsPhotoFile)
+                && is_file(public_path('student_photos/' . $settingsPhotoFile))
+            ) {
+                $settingsPhotoUrl = asset('student_photos/' . $settingsPhotoFile);
+            }
+        }
         $departmentName = $isStudentAccount
             ? ($studentRecord?->college ?: 'College not available')
             : ($user->department?->department_name ?? 'Not assigned');
@@ -147,8 +162,17 @@
         {{-- At-a-glance identity strip, no synthetic security scores. --}}
         <section class="ds3-card flex flex-col gap-5 px-6 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7">
             <div class="flex min-w-0 items-center gap-4">
-                <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#101064] text-lg font-extrabold text-white ring-4 ring-[#D4A017]/15">
-                    {{ $initials ?: 'D' }}
+                <div class="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[#101064] text-lg font-extrabold text-white ring-4 ring-[#D4A017]/15">
+                    @if ($settingsPhotoUrl)
+                        <img
+                            src="{{ $settingsPhotoUrl }}"
+                            alt="{{ $displayName }} profile photo"
+                            class="h-full w-full object-cover"
+                            loading="lazy"
+                        >
+                    @else
+                        {{ $initials ?: 'D' }}
+                    @endif
                 </div>
                 <div class="min-w-0">
                     <p class="break-words text-base font-bold leading-6 text-[#101064]">{{ $displayName }}</p>

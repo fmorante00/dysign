@@ -1145,6 +1145,17 @@ class EventEligibilityController extends Controller
             return 'No new or changed eligibility. No duplicate emails were queued.';
         }
 
+        // Bulk insert() skips Eloquent observers. Send in-app notifications
+        // to precisely the newly eligible / changed students after commit.
+        try {
+            \App\Services\NotificationRouter::eligibility($event, $changes);
+        } catch (\Throwable $notificationError) {
+            \Illuminate\Support\Facades\Log::warning('Eligibility in-app notification error', [
+                'event_id' => $event->event_id,
+                'error' => $notificationError->getMessage(),
+            ]);
+        }
+
         $queued = 0;
         $skipped = 0;
         $failed = 0;

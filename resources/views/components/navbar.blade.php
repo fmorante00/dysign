@@ -83,6 +83,26 @@ Digital Identity Management System
 
 
 <!-- DYNAMIC NOTIFICATIONS -->
+<style>
+.dy-notif-overlay { position:fixed !important; inset:0 !important; z-index:2147483000 !important; pointer-events:none; }
+.dy-notif-overlay[x-cloak] { display:none !important; }
+.dy-notif-backdrop { position:absolute; inset:0; background:rgba(8,11,44,.45); pointer-events:auto; }
+.dy-notif-drawer { position:absolute; top:0; right:0; width:min(440px,100vw); height:100vh; height:100dvh; background:#fff; display:flex; flex-direction:column; overflow:hidden; pointer-events:auto; box-shadow:-20px 0 65px rgba(12,8,56,.28); border-left:1px solid #dfd7f3; animation:dy-notif-enter .23s ease-out both; }
+@keyframes dy-notif-enter { from { transform:translateX(100%); opacity:.65; } to { transform:translateX(0); opacity:1; } }
+.dy-notif-drawer .dy-notif-header { position:relative; display:flex; align-items:flex-start; justify-content:space-between; gap:14px; flex:0 0 auto; padding:27px 62px 23px 24px; background:linear-gradient(145deg,#41159b 0%,#24106b 58%,#101064 100%); border-bottom:4px solid #e2a919; color:white; }
+.dy-notif-drawer .dy-notif-header h3 { color:#fff; font-size:20px; }
+.dy-notif-drawer .dy-notif-header p { color:#e1d9f7; }
+.dy-notif-close { position:absolute; top:25px; right:24px; display:grid; place-items:center; width:32px; height:32px; border:1px solid rgba(255,255,255,.32); border-radius:9px; color:#fff; background:rgba(255,255,255,.09); font-size:23px; cursor:pointer; line-height:1; }
+.dy-notif-close:hover { background:rgba(255,255,255,.2); }
+.dy-notif-drawer .dy-notif-list { flex:1 1 auto; min-height:0; max-height:none !important; overflow-y:auto; background:#fff; }
+.dy-notif-drawer .dy-notif-list > a { border-color:#efedf7; padding-top:16px; padding-bottom:16px; }
+.dy-notif-drawer .dy-notif-list > a:hover { background:#f4f0ff; }
+.dy-notif-drawer .dy-notif-footer { flex:0 0 auto; padding:18px 24px 23px; background:#faf8ff; border-top:1px solid #e6ddf7; }
+.dy-notif-drawer .dy-notif-footer a { display:block; width:100%; background:#301080; border:0; color:white; border-radius:11px; padding:12px 16px; text-align:center; font-weight:700; box-shadow:none; }
+.dy-notif-drawer .dy-notif-footer a:hover { background:#4a1ba3; }
+@media (max-width:480px) { .dy-notif-drawer { width:100vw; border-left:0; } .dy-notif-drawer .dy-notif-header { padding-top:22px; } }
+@media (prefers-reduced-motion:reduce) { .dy-notif-drawer { animation:none; } }
+</style>
 
 @php
     $currentUser = auth()->user();
@@ -100,8 +120,18 @@ Digital Identity Management System
 
 <div
     class="relative"
-    x-data="{ notificationsOpen: false }"
-    @click.outside="notificationsOpen = false"
+    x-data="{
+        notificationsOpen: false,
+        unread: {{ (int) $unreadNotificationCount }},
+        refreshNotifications() {
+            fetch('{{ route('notifications.count') }}', {headers:{'Accept':'application/json'},credentials:'same-origin'})
+                .then(response => response.ok ? response.json() : null)
+                .then(data => {if(data && typeof data.unread === 'number') this.unread = data.unread;})
+                .catch(() => {});
+        }
+    }"
+    x-init="setInterval(() => refreshNotifications(), 45000)"
+
 >
 
     <!-- Notification Bell -->
@@ -128,26 +158,20 @@ Digital Identity Management System
         </svg>
 
         <!-- Unread Counter -->
-        @if ($unreadNotificationCount > 0)
-            <span
-                class="absolute -right-3 -top-3 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white"
-            >
-                {{ $unreadNotificationCount > 99 ? '99+' : $unreadNotificationCount }}
-            </span>
-        @endif
+        <span x-cloak x-show="unread > 0" x-text="unread > 99 ? '99+' : unread"
+              class="absolute -right-3 -top-3 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white"></span>
 
     </button>
 
-    <!-- Notification Dropdown -->
-    <div
-        x-cloak
-        x-show="notificationsOpen"
-        x-transition
-        class="absolute right-0 z-[100] mt-5 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl sm:w-96"
-    >
+    <!-- Notification Side Drawer: teleported outside the sticky navbar -->
+    <template x-teleport="body">
+        <div x-cloak x-show="notificationsOpen" @keydown.escape.window="notificationsOpen = false" class="dy-notif-overlay">
+            <div class="dy-notif-backdrop" @click="notificationsOpen = false" aria-hidden="true"></div>
+            <section class="dy-notif-drawer" role="dialog" aria-modal="true" aria-label="Notifications">
 
         <!-- Dropdown Header -->
-        <div class="flex items-center justify-between border-b border-gray-100 bg-[#101064] px-5 py-4">
+        <div class="dy-notif-header">
+            <button type="button" class="dy-notif-close" @click="notificationsOpen = false" aria-label="Close notifications">&times;</button>
 
             <div>
                 <h3 class="text-base font-bold text-white">
@@ -168,7 +192,7 @@ Digital Identity Management System
         </div>
 
         <!-- Notification List -->
-        <div class="max-h-96 overflow-y-auto">
+        <div class="dy-notif-list">
 
             @forelse ($recentNotifications as $notification)
 
@@ -212,7 +236,7 @@ Digital Identity Management System
                 @endphp
 
                 <a
-                    href="{{ $notificationUrl }}"
+                    href="{{ route('notifications.open', $notification->id) }}"
                     class="block border-b border-gray-100 px-5 py-4 transition hover:bg-gray-50 {{ $isUnread ? 'bg-indigo-50/60' : 'bg-white' }}"
                 >
 
@@ -321,7 +345,7 @@ Digital Identity Management System
         </div>
 
         <!-- Dropdown Footer -->
-        <div class="border-t border-gray-100 bg-gray-50 px-5 py-3">
+        <div class="dy-notif-footer">
 
             @if ($unreadNotificationCount > 0)
                 <form method="POST" action="{{ route('notifications.read-all') }}">
@@ -339,13 +363,16 @@ Digital Identity Management System
                 </p>
             @endif
 
-            <p class="mt-2 text-center text-[11px] text-gray-400">
-                Showing your 10 most recent notifications
-            </p>
+            <a href="{{ route('notifications.index') }}" class="mt-3 block w-full rounded-xl border border-[#101064]/20 bg-white px-4 py-2.5 text-center text-sm font-bold text-[#101064] hover:bg-indigo-50">
+                Open Full Notification Center
+            </a>
+            <p class="mt-2 text-center text-[11px] text-gray-400">Showing your 10 most recent notifications</p>
 
         </div>
 
-    </div>
+            </section>
+        </div>
+    </template>
 
 </div>
 
@@ -379,26 +406,36 @@ gap-3
 
 
 
-<!-- AVATAR -->
+<!-- AVATAR: use the imported photo for Student Accounts; keep initials as fallback. -->
+@php
+    $navStudentPhotoUrl = null;
+    if ($currentUser?->role?->role_name === 'Student Account') {
+        $navPhotoPath = $currentUser?->student?->photo_path;
+        $navPhotoFile = is_string($navPhotoPath)
+            ? basename(str_replace('\\', '/', $navPhotoPath))
+            : '';
 
-<div
-
-class="
-w-10
-h-10
-rounded-full
-bg-[#101064]
-text-white
-flex
-items-center
-justify-center
-font-semibold
-"
-
->
-
-{{ strtoupper(substr(auth()->user()->name,0,1)) }}
-
+        if (
+            $navPhotoFile !== ''
+            && preg_match('/\A[A-Za-z0-9_-]+\.(?:jpe?g|png|webp)\z/i', $navPhotoFile)
+            && is_file(public_path('student_photos/' . $navPhotoFile))
+        ) {
+            $navStudentPhotoUrl = asset('student_photos/' . $navPhotoFile);
+        }
+    }
+@endphp
+<div class="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#D4A017]/30 bg-[#101064] font-semibold text-white">
+    <span aria-hidden="true">{{ strtoupper(substr($currentUser?->name ?? 'U', 0, 1)) }}</span>
+    @if ($navStudentPhotoUrl)
+        <img
+            src="{{ $navStudentPhotoUrl }}"
+            alt="{{ $currentUser->name }} profile photo"
+            class="absolute inset-0 h-full w-full object-cover"
+            loading="eager"
+            decoding="async"
+            onerror="this.style.display='none'"
+        >
+    @endif
 </div>
 
 

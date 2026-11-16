@@ -69,6 +69,13 @@ Route::get('/', function () {
 |--------------------------------------------------------------------------
 */
 
+// DySign role-scoped analytics (read-only, CSV export).
+Route::middleware(['auth'])->group(function () {
+    Route::get('/analytics', [\App\Http\Controllers\AnalyticsController::class, 'index'])
+        ->name('analytics.index');
+    Route::get('/analytics/export/csv', [\App\Http\Controllers\AnalyticsController::class, 'exportCsv'])
+        ->name('analytics.csv');
+});
 Route::get('/dashboard', function () {
 
     $role = Auth::user()
@@ -2116,6 +2123,13 @@ Route::middleware(['auth', 'role:Department Staff'])->group(function () {
         '/staff/participation-classifications',
         [StudentParticipationClassificationController::class, 'index']
     )->name('staff.participation-classifications.index');
+    Route::get('/staff/participation-classifications/csv',
+        [StudentParticipationClassificationController::class, 'exportCsv'])
+        ->name('staff.participation-classifications.csv');
+
+    Route::get('/staff/participation-classifications/pdf',
+        [StudentParticipationClassificationController::class, 'exportPdf'])
+        ->name('staff.participation-classifications.pdf');
 
 });
 
@@ -2129,7 +2143,7 @@ Route::middleware(['auth', 'role:Department Staff'])->group(function () {
 
     Route::get(
         '/staff/reports',
-        [StaffAttendanceParticipationReportController::class, 'index']
+        fn () => redirect()->route('analytics.index')
     )->name('staff.reports.index');
 
 });
@@ -2147,6 +2161,13 @@ Route::middleware(['auth', 'role:Department Staff'])->group(function () {
         '/staff/participation-progress',
         [StaffParticipationProgressController::class, 'index']
     )->name('staff.participation-progress.index');
+    Route::get('/staff/participation-progress/csv',
+        [StaffParticipationProgressController::class, 'exportCsv'])
+        ->name('staff.participation-progress.csv');
+
+    Route::get('/staff/participation-progress/pdf',
+        [StaffParticipationProgressController::class, 'exportPdf'])
+        ->name('staff.participation-progress.pdf');
 
 });
 
@@ -2160,6 +2181,15 @@ Route::middleware(['auth', 'role:Department Staff'])->group(function () {
 */
 
 Route::middleware(['auth'])->group(function () {
+
+    Route::get('/notifications', [NotificationController::class, 'index'])
+        ->name('notifications.index');
+
+    Route::get('/notifications/count', [NotificationController::class, 'count'])
+        ->name('notifications.count');
+
+    Route::get('/notifications/{notification}/open', [NotificationController::class, 'open'])
+        ->name('notifications.open');
 
     // Mark a single notification as read.
     Route::post(

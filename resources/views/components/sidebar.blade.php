@@ -50,17 +50,19 @@
         ['kind' => 'link', 'label' => 'Dashboard', 'route' => 'dashboard', 'active' => ['dashboard'], 'icon' => 'home'],
     ];
 
+    if (!in_array($sidebarRole, ['Administrator', 'Department Staff'], true)) {
+        $sidebarNavigation[] = ['kind' => 'link', 'label' => 'Analytics', 'route' => 'analytics.index', 'active' => ['analytics.*'], 'icon' => 'chart-pie'];
+    }
+
     // Retain route and permission contract from the original four-role sidebar.
     if ($sidebarRole === 'Administrator') {
         $sidebarNavigation[] = ['kind' => 'heading', 'label' => 'Administration'];
         $sidebarNavigation[] = ['kind' => 'group', 'key' => 'admin_users', 'label' => 'User Management', 'icon' => 'users', 'items' => [
             ['label' => 'Staff Accounts', 'route' => 'personnel.index', 'active' => ['personnel.*'], 'icon' => 'user-check', 'permission' => 'manage_personnel_accounts'],
-            ['label' => 'Roles & Permissions', 'route' => 'roles.index', 'active' => ['roles.*'], 'icon' => 'shield', 'permission' => 'manage_personnel_accounts'],
         ]];
         $sidebarNavigation[] = ['kind' => 'group', 'key' => 'admin_students', 'label' => 'Student Management', 'icon' => 'graduation', 'items' => [
             ['label' => 'Student Data', 'route' => 'students.index', 'active' => ['students.index', 'students.show', 'students.import', 'students.process-import'], 'icon' => 'graduation', 'permission' => 'import_student_data'],
             ['label' => 'Account Provisioning', 'route' => 'students.accounts.index', 'active' => ['students.accounts.*'], 'icon' => 'id-card'],
-            ['label' => 'RFID Card Lifecycle', 'route' => 'rfid-cards.index', 'active' => ['rfid-cards.*'], 'icon' => 'scan'],
         ]];
         $sidebarNavigation[] = ['kind' => 'group', 'key' => 'admin_events', 'label' => 'Event Management', 'icon' => 'calendar', 'items' => [
             ['label' => 'Events', 'route' => 'events.index', 'active' => ['events.index', 'events.create', 'events.show', 'events.edit'], 'icon' => 'calendar'],
@@ -73,6 +75,7 @@
         ]];
         $sidebarNavigation[] = ['kind' => 'heading', 'label' => 'Reports & System'];
         $sidebarNavigation[] = ['kind' => 'group', 'key' => 'admin_reports', 'label' => 'Reports & Analytics', 'icon' => 'chart-bars', 'items' => [
+            ['label' => 'Analytics', 'route' => 'analytics.index', 'active' => ['analytics.*'], 'icon' => 'chart-pie'],
             ['label' => 'Attendance Reports', 'route' => 'reports.attendance', 'active' => ['reports.attendance', 'reports.attendance.export'], 'icon' => 'chart-bars'],
             ['label' => 'Participation Reports', 'route' => 'reports.participation', 'active' => ['reports.participation', 'reports.participation.export'], 'icon' => 'chart-pie'],
         ]];
@@ -98,9 +101,9 @@
         $sidebarNavigation[] = ['kind' => 'link', 'label' => 'Attendance Exceptions', 'route' => 'staff.attendance-exceptions.index', 'active' => ['staff.attendance-exceptions.*'], 'icon' => 'file-check'];
         $sidebarNavigation[] = ['kind' => 'link', 'label' => 'Discrepancy Reviews', 'route' => 'staff.attendance-discrepancies.index', 'active' => ['staff.attendance-discrepancies.*'], 'icon' => 'alert'];
         $sidebarNavigation[] = ['kind' => 'heading', 'label' => 'Participation & Reports'];
+        $sidebarNavigation[] = ['kind' => 'link', 'label' => 'Analytics', 'route' => 'analytics.index', 'active' => ['analytics.*'], 'icon' => 'chart-pie'];
         $sidebarNavigation[] = ['kind' => 'link', 'label' => 'Participation Progress', 'route' => 'staff.participation-progress.index', 'active' => ['staff.participation-progress.*'], 'icon' => 'chart'];
-        $sidebarNavigation[] = ['kind' => 'link', 'label' => 'Participation Classification', 'route' => 'staff.participation-classifications.index', 'active' => ['staff.participation-classifications.*'], 'icon' => 'award'];
-        $sidebarNavigation[] = ['kind' => 'link', 'label' => 'Attendance & Participation Reports', 'route' => 'staff.reports.index', 'active' => ['staff.reports.*'], 'icon' => 'chart-bars'];
+        $sidebarNavigation[] = ['kind' => 'link', 'label' => 'Event Attendance', 'route' => 'staff.participation-classifications.index', 'active' => ['staff.participation-classifications.*'], 'icon' => 'award'];
         $sidebarNavigation[] = ['kind' => 'heading', 'label' => 'Personnel Coordination'];
         $sidebarNavigation[] = ['kind' => 'link', 'label' => 'Personnel Availability', 'route' => 'personnel-availability.staff', 'active' => ['personnel-availability.staff'], 'icon' => 'calendar-ok'];
         $sidebarNavigation[] = ['kind' => 'link', 'label' => 'Duty Monitoring', 'route' => 'personnel-duties.staff', 'active' => ['personnel-duties.staff'], 'icon' => 'shield'];

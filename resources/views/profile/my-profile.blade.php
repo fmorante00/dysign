@@ -22,6 +22,23 @@
         $enrollmentType = data_get($student, 'enrollment_type');
         $personnelPosition = data_get($personnel, 'position')
             ?? data_get($personnel, 'designation');
+
+        // Same read-only imported photo source used by the shared Student navbar.
+        $profilePhotoUrl = null;
+        if ($roleName === 'Student Account') {
+            $profilePhotoPath = data_get($student, 'photo_path');
+            $profilePhotoFile = is_string($profilePhotoPath)
+                ? basename(str_replace('\\', '/', $profilePhotoPath))
+                : '';
+            if (
+                $profilePhotoFile !== ''
+                && preg_match('/\A[A-Za-z0-9_-]+\.(?:jpe?g|png|webp)\z/i', $profilePhotoFile)
+                && is_file(public_path('student_photos/' . $profilePhotoFile))
+            ) {
+                $profilePhotoUrl = asset('student_photos/' . $profilePhotoFile);
+            }
+        }
+
     @endphp
 
     <style>
@@ -59,6 +76,51 @@
         .dysign-profile-rings span:nth-child(3) {
             width: 205px; height: 205px; right: 52px; top: -71px;
             border-color: rgba(212,160,23,.55);
+        }
+        /* Fixed sizing independent of Tailwind's compiled arbitrary utilities. */
+        .dysign-student-profile-photo {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 116px;
+            width: 116px;
+            height: 136px;
+            min-width: 116px;
+            overflow: hidden;
+            border: 3px solid #fff;
+            border-radius: 18px;
+            background: #101064;
+            box-shadow: 0 0 0 2px rgba(212,160,23,.56), 0 10px 24px rgba(16,16,100,.14);
+        }
+        .dysign-student-profile-photo > .dysign-student-photo-initials {
+            display: flex;
+            position: absolute;
+            inset: 0;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 30px;
+            font-weight: 800;
+        }
+        .dysign-student-profile-photo > img {
+            display: block;
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            max-width: none;
+            object-fit: cover;
+            object-position: center 22%;
+            border-radius: 15px;
+        }
+        @media (max-width: 640px) {
+            .dysign-student-profile-photo {
+                flex-basis: 108px;
+                min-width: 108px;
+                width: 108px;
+                height: 126px;
+            }
         }
         .dysign-profile-info-label {
             color: #94a3b8;
@@ -99,6 +161,71 @@
             </div>
         </section>
 
+        @if ($roleName === 'Student Account')
+            {{-- Imported student photo; student official details are read-only. --}}
+            <section class="overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-sm">
+                <div class="relative overflow-hidden border-b border-slate-100 bg-[#F8FAFE] px-6 py-7 sm:px-8">
+                    <div class="absolute right-0 top-0 h-full w-[35%] opacity-[.035]" style="background-image: url('{{ asset('images/school.jpg') }}'); background-position:center; background-size:cover" aria-hidden="true"></div>
+                    <div class="relative flex flex-col items-start gap-5 sm:flex-row sm:items-center sm:gap-7">
+                        <div class="dysign-student-profile-photo" aria-label="Official student profile photo">
+                            <div class="dysign-student-photo-initials">{{ $initials ?: 'D' }}</div>
+                            @if ($profilePhotoUrl)
+                                <img src="{{ $profilePhotoUrl }}" alt="{{ $displayName }} official student photo"
+                                    loading="eager" decoding="async" onerror="this.style.display='none'">
+                            @endif
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-[11px] font-bold uppercase tracking-[.18em] text-[#AD7F08]">Official student profile</p>
+                            <h2 class="mt-1 break-words text-2xl font-extrabold tracking-tight text-[#101064] sm:text-[28px]">{{ $displayName }}</h2>
+                            @if ($studentNumber)
+                                <p class="mt-1 text-sm font-semibold text-slate-600">Student No. {{ $studentNumber }}</p>
+                            @endif
+                            <div class="mt-3 flex flex-wrap items-center gap-2">
+                                <span class="inline-flex rounded-full bg-[#101064]/[0.08] px-3 py-1 text-xs font-bold text-[#101064]">Student Account</span>
+                                @if ($accountStatus)
+                                    <span class="inline-flex rounded-full px-3 py-1 text-xs font-bold {{ strtolower($accountStatus) === 'active' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-700' }}">{{ $accountStatus }}</span>
+                                @endif
+                                <span class="inline-flex rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800">Read-only profile</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="grid lg:grid-cols-2">
+                    <div class="border-b border-slate-100 px-6 py-7 sm:px-8 lg:border-b-0 lg:border-r">
+                        <div class="mb-6 flex items-center justify-between border-b border-slate-100 pb-4">
+                            <div>
+                                <h3 class="text-lg font-bold text-[#101064]">Student Information</h3>
+                                <p class="mt-1 text-xs text-slate-500">Details from your official student record</p>
+                            </div>
+                            <span class="h-2 w-2 rounded-full bg-[#D4A017]" aria-hidden="true"></span>
+                        </div>
+                        <dl class="grid gap-x-6 gap-y-6 sm:grid-cols-2">
+                            <div><dt class="dysign-profile-info-label">Student Number</dt><dd class="dysign-profile-info-value">{{ $studentNumber ?: 'Not available' }}</dd></div>
+                            <div><dt class="dysign-profile-info-label">Year Level</dt><dd class="dysign-profile-info-value">{{ $yearLevel ? (is_numeric($yearLevel) ? 'Year '.$yearLevel : $yearLevel) : 'Not available' }}</dd></div>
+                            <div class="sm:col-span-2"><dt class="dysign-profile-info-label">Program</dt><dd class="dysign-profile-info-value">{{ is_string($programName) && trim($programName) !== '' ? $programName : 'Not available' }}</dd></div>
+                            @if (data_get($student, 'college'))
+                                <div class="sm:col-span-2"><dt class="dysign-profile-info-label">College</dt><dd class="dysign-profile-info-value">{{ data_get($student, 'college') }}</dd></div>
+                            @endif
+                            @if ($enrollmentType)
+                                <div><dt class="dysign-profile-info-label">Enrollment Type</dt><dd class="dysign-profile-info-value">{{ $enrollmentType }}</dd></div>
+                            @endif
+                        </dl>
+                    </div>
+                    <div class="px-6 py-7 sm:px-8">
+                        <div class="mb-6 border-b border-slate-100 pb-4">
+                            <h3 class="text-lg font-bold text-[#101064]">Account Information</h3>
+                            <p class="mt-1 text-xs text-slate-500">Your DySign account and access details</p>
+                        </div>
+                        <dl class="grid gap-x-6 gap-y-6 sm:grid-cols-2">
+                            <div class="sm:col-span-2"><dt class="dysign-profile-info-label">Email Address</dt><dd class="dysign-profile-info-value">{{ $user->email ?: 'Not provided' }}</dd></div>
+                            <div><dt class="dysign-profile-info-label">Account Role</dt><dd class="dysign-profile-info-value">{{ $roleName }}</dd></div>
+                            <div><dt class="dysign-profile-info-label">Account Status</dt><dd class="dysign-profile-info-value">{{ $accountStatus ?: 'Not specified' }}</dd></div>
+                            <div><dt class="dysign-profile-info-label">Account Created</dt><dd class="dysign-profile-info-value">{{ $user->created_at?->format('F d, Y') ?? 'Not available' }}</dd></div>
+                        </dl>
+                    </div>
+                </div>
+            </section>
+        @else
         {{-- User identity --}}
         <section class="overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-sm">
             <div class="flex flex-col gap-5 border-b border-slate-100 px-7 py-7 sm:flex-row sm:items-center sm:px-8">
@@ -148,32 +275,13 @@
             </div>
         </section>
 
-        @if ($roleName === 'Student Account' && ($studentNumber || $yearLevel || is_string($programName) || $enrollmentType))
-            <section class="overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-sm">
-                <div class="border-b border-slate-100 px-7 py-6 sm:px-8">
-                    <h2 class="text-xl font-bold text-[#101064]">Student Information</h2>
-                    <p class="mt-1 text-xs text-slate-500">Details from your linked student record</p>
-                </div>
-                <div class="grid gap-x-8 gap-y-8 px-7 py-7 sm:grid-cols-2 sm:px-8 lg:grid-cols-3">
-                    @if ($studentNumber)
-                        <div><p class="dysign-profile-info-label">Student Number</p><p class="dysign-profile-info-value">{{ $studentNumber }}</p></div>
-                    @endif
-                    @if ($yearLevel)
-                        <div><p class="dysign-profile-info-label">Year Level</p><p class="dysign-profile-info-value">{{ is_numeric($yearLevel) ? 'Year '.$yearLevel : $yearLevel }}</p></div>
-                    @endif
-                    @if (is_string($programName) && $programName !== '')
-                        <div><p class="dysign-profile-info-label">Program</p><p class="dysign-profile-info-value">{{ $programName }}</p></div>
-                    @endif
-                    @if ($enrollmentType)
-                        <div><p class="dysign-profile-info-label">Enrollment Type</p><p class="dysign-profile-info-value">{{ $enrollmentType }}</p></div>
-                    @endif
-                </div>
-            </section>
-        @elseif ($roleName === 'Attendance Personnel' && $personnelPosition)
+        @if ($roleName === 'Attendance Personnel' && $personnelPosition)
             <section class="rounded-[24px] border border-slate-200 bg-white px-7 py-7 shadow-sm sm:px-8">
                 <h2 class="text-xl font-bold text-[#101064]">Personnel Information</h2>
                 <div class="mt-6"><p class="dysign-profile-info-label">Position / Designation</p><p class="dysign-profile-info-value">{{ $personnelPosition }}</p></div>
             </section>
+        @endif
+
         @endif
 
         <p class="px-1 text-xs leading-6 text-slate-500">
