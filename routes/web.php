@@ -292,6 +292,14 @@ Route::middleware([
     )->name('students.accounts.invitations');
 
     Route::post(
+        '/student-accounts/{id}/email-invitation',
+        [
+            \App\Http\Controllers\StudentAccountProvisioningController::class,
+            'emailInvitation'
+        ]
+    )->middleware('throttle:10,1')->name('students.accounts.email-invitation');
+
+    Route::post(
         '/student-accounts/{id}/reissue-invitation',
         [
             \App\Http\Controllers\StudentAccountProvisioningController::class,

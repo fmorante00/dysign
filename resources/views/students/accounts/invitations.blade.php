@@ -3,13 +3,16 @@
         <div class="rounded-2xl bg-[#101064] px-6 py-7 text-white">
             <p class="text-xs font-semibold uppercase tracking-widest text-[#e7c75b]">Student Account Management</p>
             <h1 class="mt-2 text-2xl font-extrabold">Pending Invitation Links</h1>
-            <p class="mt-2 text-sm text-white/80">Restricted to Administrators. These one-time setup links are sensitive. Verify the student's identity and share the link privately. Never publish or include a link in a screenshot.</p>
+            <p class="mt-2 text-sm text-white/80">Restricted to Administrators. These one-time setup links are sensitive. Send invitation emails to verified student addresses. Manual setup links are emergency backups only; never publish or include tokens in screenshots.</p>
         </div>
         <div>
             <a class="text-sm font-bold text-[#101064] underline" href="{{ route('students.accounts.index') }}">Back to Student Account Management</a>
         </div>
         @if(session('success'))
             <p class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{{ session('success') }}</p>
+        @endif
+        @if(session('error'))
+            <p class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{{ session('error') }}</p>
         @endif
         <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
             <table class="min-w-full divide-y divide-slate-100 text-left text-sm">
@@ -38,14 +41,16 @@
                                     <span class="font-semibold text-amber-700">No valid link (expired or missing)</span>
                                 @endif
                             </td>
-                            <td class="px-5 py-4">
+                            <td class="px-5 py-4 space-y-2">
+                                <form method="POST" action="{{ route('students.accounts.email-invitation', $user->user_id) }}" onsubmit="return confirm('Send or resend the setup invitation to this student email?')">
+                                    @csrf
+                                    <button type="submit" class="rounded-xl bg-[#101064] px-4 py-2 text-xs font-bold text-white hover:bg-[#26268d]">Send Invitation Email</button>
+                                </form>
                                 @unless($invitation)
                                     <form method="POST" action="{{ route('students.accounts.reissue-invitation', $user->user_id) }}">
                                         @csrf
-                                        <button type="submit" class="rounded-xl bg-[#101064] px-4 py-2 text-xs font-bold text-white hover:bg-[#26268d]">Generate New Link</button>
+                                        <button type="submit" class="rounded-xl border border-slate-300 px-3 py-2 text-xs font-bold text-[#101064] hover:bg-slate-50">Generate Backup Link</button>
                                     </form>
-                                @else
-                                    <span class="text-xs text-slate-500">Ready to share privately</span>
                                 @endunless
                             </td>
                         </tr>
@@ -55,6 +60,6 @@
                 </tbody>
             </table>
         </div>
-        <p class="text-xs text-slate-500">Used links cannot be reused. New links are generated only when none is valid. The page does not send emails. Keep setup links confidential.</p>
+        <p class="text-xs text-slate-500">Used links cannot be reused. New links are generated only when none is valid. Use Send Invitation Email first. Manual setup links are emergency backup only; keep tokens confidential.</p>
     </div>
 </x-admin-layout>

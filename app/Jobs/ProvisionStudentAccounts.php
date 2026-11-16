@@ -38,29 +38,14 @@ class ProvisionStudentAccounts implements ShouldQueue
     public function handle(): array
     {
         /*
-         * The account, invitation, and queued email must be written to the
-         * same database transaction. This job currently supports the
-         * database queue on DySign's default database connection.
-         *
-         * Stop safely if the queue is reconfigured; an outbox / recovery
-         * workflow is required before using an external queue connection.
+         * Create the student login and invitation atomically. Attempt to
+         * send the invitation by email after the transaction commits.
+         * A failed email is retryable by an Administrator without duplicating
+         * the student account or replacing a still-valid invitation.
          */
-        // Without a background worker (e.g. InfinityFree), create accounts in
-        // the admin request and let the admin privately share setup links.
-        // On worker-enabled hosting, preserve the original database email queue.
-        $queueEmails = config('queue.default') === 'database';
-        $queueDatabase = config('queue.connections.database.connection');
-        $defaultDatabase = config('database.default');
-
-        if (
-            $queueEmails &&
-            $queueDatabase !== null &&
-            $queueDatabase !== $defaultDatabase
-        ) {
-            throw new \RuntimeException(
-                'The invitation email queue must use the default database connection.'
-            );
-        }
+        // Account creation is transactional. Invitations are emailed only
+        // after each account transaction commits; no queue worker is needed.
+        // Mail failures are reported separately and never roll back an account.
 
         /*
         |--------------------------------------------------------------------------
@@ -81,8 +66,8 @@ class ProvisionStudentAccounts implements ShouldQueue
         $created = 0;
         $skipped = 0;
         $failed = 0;
-        $invitationsQueued = 0;
-        $manualInvitations = 0;
+        $emailsAccepted = 0;
+        $emailsFailed = 0;
 
         /*
         |--------------------------------------------------------------------------
@@ -110,7 +95,7 @@ class ProvisionStudentAccounts implements ShouldQueue
                 */
 
                 $result = DB::transaction(
-                    function () use ($studentId, $role, $queueEmails) {
+                    function () use ($studentId, $role) {
 
                         $student = Student::whereKey($studentId)
                             ->lockForUpdate()
@@ -267,17 +252,9 @@ class ProvisionStudentAccounts implements ShouldQueue
                          * in the transaction, even if the queue configuration
                          * is later set to dispatch jobs after commit.
                          */
-                        if ($queueEmails) {
-                            Mail::to($email)->queue(
-                                (new AccountInvitationMail($invitation))
-                                    ->onConnection('database')
-                                    ->beforeCommit()
-                            );
-                        }
-                        // With a sync queue, the invitation stays in the DB.
-                        // An authorized administrator shares its setup URL.
-
-                        return true;
+                        // Keep the invitation in the committed transaction.
+                        // Delivery takes place after the commit, below.
+                        return $invitation;
 
                     },
                     3
@@ -294,12 +271,23 @@ class ProvisionStudentAccounts implements ShouldQueue
                     continue;
                 }
 
-                // The account and secure setup invitation were committed.
+                // The account exists even if the email provider fails.
                 $created++;
-                if ($queueEmails) {
-                    $invitationsQueued++;
-                } else {
-                    $manualInvitations++;
+
+                try {
+                    // Log/array mailers do not deliver real student emails.
+                    if (in_array(config('mail.default'), ['log', 'array'], true)) {
+                        throw new \RuntimeException('The configured mailer does not deliver emails. Configure SMTP or another email provider.');
+                    }
+
+                    Mail::to($result->user->email)->send(new AccountInvitationMail($result));
+                    $emailsAccepted++;
+                } catch (\Throwable $mailException) {
+                    $emailsFailed++;
+                    Log::error('Student invitation email could not be sent.', [
+                        'student_id' => $studentId,
+                        'error' => $mailException->getMessage(),
+                    ]);
                 }
 
             } catch (\Throwable $exception) {
@@ -329,8 +317,8 @@ class ProvisionStudentAccounts implements ShouldQueue
                 'created' => $created,
                 'skipped' => $skipped,
                 'failed' => $failed,
-                'invitations_queued' => $invitationsQueued,
-                'manual_invitations' => $manualInvitations,
+                'emails_accepted' => $emailsAccepted,
+                'emails_failed' => $emailsFailed,
             ]
         );
 
@@ -338,8 +326,8 @@ class ProvisionStudentAccounts implements ShouldQueue
             'created' => $created,
             'skipped' => $skipped,
             'failed' => $failed,
-            'invitations_queued' => $invitationsQueued,
-            'manual_invitations' => $manualInvitations,
+            'emails_accepted' => $emailsAccepted,
+            'emails_failed' => $emailsFailed,
         ];
     }
 }

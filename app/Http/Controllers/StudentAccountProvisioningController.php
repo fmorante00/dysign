@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\ProvisionStudentAccounts;
+use App\Mail\AccountInvitationMail;
 use App\Models\AccountInvitation;
 use App\Models\Student;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class StudentAccountProvisioningController extends Controller
@@ -82,7 +84,7 @@ class StudentAccountProvisioningController extends Controller
         // Free shared hosting cannot run a permanent queue worker.
         // Process a bounded number of eligible accounts during this request.
         // Rechecking eligibility on every submission prevents duplicate users.
-        $selectedIds = $eligibleStudentIds->take(10)->values()->all();
+        $selectedIds = $eligibleStudentIds->take(3)->values()->all();
 
         try {
             $result = (new ProvisionStudentAccounts($selectedIds))->handle();
@@ -101,14 +103,11 @@ class StudentAccountProvisioningController extends Controller
             $result['skipped'] . ' skipped; ' .
             $result['failed'] . ' failed. ';
 
-        if ($result['manual_invitations'] > 0) {
-            $message .= $result['manual_invitations'] .
-                ' secure setup link(s) are ready on the admin-only Pending Invitation Links page. ' .
-                'No invitation email was sent automatically. ';
-        }
-        if ($result['invitations_queued'] > 0) {
-            $message .= $result['invitations_queued'] .
-                ' invitation email(s) were queued, not necessarily delivered. ';
+        $message .= $result['emails_accepted'] .
+            ' invitation email(s) handed to the configured mail transport. ';
+        if ($result['emails_failed'] > 0) {
+            $message .= $result['emails_failed'] .
+                ' invitation email attempt(s) failed. Accounts were kept; use Pending Invitation Links to retry sending. ';
         }
         if ($remaining > 0) {
             $message .= 'More eligible students remain; run provisioning again after reviewing these results.';
@@ -116,7 +115,7 @@ class StudentAccountProvisioningController extends Controller
 
         return redirect()
             ->route('students.accounts.index')
-            ->with($result['failed'] > 0 ? 'warning' : 'success', $message);
+            ->with(($result['failed'] > 0 || $result['emails_failed'] > 0) ? 'warning' : 'success', $message);
     }
 
     /*
@@ -359,6 +358,76 @@ class StudentAccountProvisioningController extends Controller
             ->with('success', 'A new private setup link was generated for the pending student account.');
     }
 
+    /**
+     * Deliver or re-send a first-time student invitation to the registered
+     * student email. Never reset a completed or deactivated account.
+     * A valid invitation is reused rather than replaced.
+     */
+    public function emailInvitation(int $id)
+    {
+        $this->authorizeAdministrator();
+
+        $invitation = DB::transaction(function () use ($id) {
+            $user = User::query()->whereKey($id)->lockForUpdate()->firstOrFail();
+            abort_unless(
+                $user->role?->role_name === 'Student Account' &&
+                $user->student?->status === 'Active' &&
+                $user->status === 'Inactive' &&
+                $user->must_change_password &&
+                $user->deactivated_at === null,
+                422,
+                'Only pending, non-deactivated student accounts may be emailed.'
+            );
+
+            $email = Str::lower(trim((string) $user->email));
+            $studentEmail = Str::lower(trim((string) $user->student->email));
+            abort_unless(
+                $email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL) &&
+                hash_equals($studentEmail, $email),
+                422,
+                'The student and account email addresses must match before an invitation can be sent.'
+            );
+
+            $existing = AccountInvitation::query()
+                ->where('user_id', $user->getKey())
+                ->whereNull('used_at')
+                ->where('expires_at', '>', now())
+                ->orderByDesc('invitation_id')
+                ->first();
+            if ($existing) {
+                return $existing;
+            }
+
+            AccountInvitation::query()
+                ->where('user_id', $user->getKey())
+                ->whereNull('used_at')
+                ->update(['used_at' => now()]);
+
+            return AccountInvitation::create([
+                'user_id' => $user->getKey(),
+                'token' => Str::random(64),
+                'expires_at' => now()->addDay(),
+                'used_at' => null,
+            ]);
+        }, 3);
+
+        try {
+            if (in_array(config('mail.default'), ['log', 'array'], true)) {
+                throw new \RuntimeException('The configured mailer does not deliver emails. Configure an external mail provider.');
+            }
+
+            Mail::to($invitation->user->email)->send(new AccountInvitationMail($invitation));
+            return redirect()->route('students.accounts.invitations')
+                ->with('success', 'Invitation handed to the email provider. Inbox delivery is not yet confirmed.');
+        } catch (\Throwable $exception) {
+            Log::error('Student invitation resend failed.', [
+                'user_id' => $id,
+                'error' => $exception->getMessage(),
+            ]);
+            return redirect()->route('students.accounts.invitations')
+                ->with('error', 'Invitation email could not be sent. The student account and existing invitation were preserved. Check server mail logs and retry.');
+        }
+    }
     public function deactivate(int $id)
     {
         $this->authorizeAdministrator();
