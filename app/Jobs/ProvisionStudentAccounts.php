@@ -35,7 +35,7 @@ class ProvisionStudentAccounts implements ShouldQueue
     /**
      * Execute automated student account provisioning.
      */
-    public function handle(): void
+    public function handle(): array
     {
         /*
          * The account, invitation, and queued email must be written to the
@@ -45,15 +45,20 @@ class ProvisionStudentAccounts implements ShouldQueue
          * Stop safely if the queue is reconfigured; an outbox / recovery
          * workflow is required before using an external queue connection.
          */
+        // Without a background worker (e.g. InfinityFree), create accounts in
+        // the admin request and let the admin privately share setup links.
+        // On worker-enabled hosting, preserve the original database email queue.
+        $queueEmails = config('queue.default') === 'database';
         $queueDatabase = config('queue.connections.database.connection');
         $defaultDatabase = config('database.default');
 
         if (
-            config('queue.default') !== 'database' ||
-            ($queueDatabase !== null && $queueDatabase !== $defaultDatabase)
+            $queueEmails &&
+            $queueDatabase !== null &&
+            $queueDatabase !== $defaultDatabase
         ) {
             throw new \RuntimeException(
-                'Student account provisioning requires the database queue on the default database connection.'
+                'The invitation email queue must use the default database connection.'
             );
         }
 
@@ -77,6 +82,7 @@ class ProvisionStudentAccounts implements ShouldQueue
         $skipped = 0;
         $failed = 0;
         $invitationsQueued = 0;
+        $manualInvitations = 0;
 
         /*
         |--------------------------------------------------------------------------
@@ -104,7 +110,7 @@ class ProvisionStudentAccounts implements ShouldQueue
                 */
 
                 $result = DB::transaction(
-                    function () use ($studentId, $role) {
+                    function () use ($studentId, $role, $queueEmails) {
 
                         $student = Student::whereKey($studentId)
                             ->lockForUpdate()
@@ -261,11 +267,15 @@ class ProvisionStudentAccounts implements ShouldQueue
                          * in the transaction, even if the queue configuration
                          * is later set to dispatch jobs after commit.
                          */
-                        Mail::to($email)->queue(
-                            (new AccountInvitationMail($invitation))
-                                ->onConnection('database')
-                                ->beforeCommit()
-                        );
+                        if ($queueEmails) {
+                            Mail::to($email)->queue(
+                                (new AccountInvitationMail($invitation))
+                                    ->onConnection('database')
+                                    ->beforeCommit()
+                            );
+                        }
+                        // With a sync queue, the invitation stays in the DB.
+                        // An authorized administrator shares its setup URL.
 
                         return true;
 
@@ -284,9 +294,13 @@ class ProvisionStudentAccounts implements ShouldQueue
                     continue;
                 }
 
-                // Both the account and invitation email job were committed.
+                // The account and secure setup invitation were committed.
                 $created++;
-                $invitationsQueued++;
+                if ($queueEmails) {
+                    $invitationsQueued++;
+                } else {
+                    $manualInvitations++;
+                }
 
             } catch (\Throwable $exception) {
 
@@ -316,7 +330,16 @@ class ProvisionStudentAccounts implements ShouldQueue
                 'skipped' => $skipped,
                 'failed' => $failed,
                 'invitations_queued' => $invitationsQueued,
+                'manual_invitations' => $manualInvitations,
             ]
         );
+
+        return [
+            'created' => $created,
+            'skipped' => $skipped,
+            'failed' => $failed,
+            'invitations_queued' => $invitationsQueued,
+            'manual_invitations' => $manualInvitations,
+        ];
     }
 }

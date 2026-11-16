@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\ProvisionStudentAccounts;
+use App\Models\AccountInvitation;
 use App\Models\Student;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class StudentAccountProvisioningController extends Controller
@@ -77,34 +79,44 @@ class StudentAccountProvisioningController extends Controller
                 );
         }
 
-        /*
-         * Divide students into manageable batches.
-         *
-         * Each batch is processed by a Laravel queue worker.
-         */
-        $batches = $eligibleStudentIds->chunk(50);
+        // Free shared hosting cannot run a permanent queue worker.
+        // Process a bounded number of eligible accounts during this request.
+        // Rechecking eligibility on every submission prevents duplicate users.
+        $selectedIds = $eligibleStudentIds->take(10)->values()->all();
 
-        /*
-         * Dispatch background jobs.
-         */
-        foreach ($batches as $batch) {
-            ProvisionStudentAccounts::dispatch(
-                $batch->values()->all()
-            );
+        try {
+            $result = (new ProvisionStudentAccounts($selectedIds))->handle();
+        } catch (\Throwable $exception) {
+            Log::error('Student provisioning request failed.', [
+                'error' => $exception->getMessage(),
+            ]);
+
+            return redirect()
+                ->route('students.accounts.index')
+                ->with('error', 'Unable to process student accounts. Check the Laravel log; no batch-wide success was assumed.');
         }
 
-        /*
-         * Return immediately without waiting for
-         * account creation or invitation processing.
-         */
+        $remaining = max(0, $eligibleStudentIds->count() - count($selectedIds));
+        $message = $result['created'] . ' student account(s) created; ' .
+            $result['skipped'] . ' skipped; ' .
+            $result['failed'] . ' failed. ';
+
+        if ($result['manual_invitations'] > 0) {
+            $message .= $result['manual_invitations'] .
+                ' secure setup link(s) are ready on the admin-only Pending Invitation Links page. ' .
+                'No invitation email was sent automatically. ';
+        }
+        if ($result['invitations_queued'] > 0) {
+            $message .= $result['invitations_queued'] .
+                ' invitation email(s) were queued, not necessarily delivered. ';
+        }
+        if ($remaining > 0) {
+            $message .= 'More eligible students remain; run provisioning again after reviewing these results.';
+        }
+
         return redirect()
             ->route('students.accounts.index')
-            ->with(
-                'success',
-                $eligibleStudentIds->count() .
-                ' eligible student records have been queued for account provisioning. ' .
-                'Accounts and invitations will be processed in the background.'
-            );
+            ->with($result['failed'] > 0 ? 'warning' : 'success', $message);
     }
 
     /*
@@ -260,6 +272,93 @@ class StudentAccountProvisioningController extends Controller
     /**
      * Deactivate an existing Student Account.
      */
+    /**
+     * Administrator-only review and recovery of pending student setup links.
+     * Tokens must never be exposed on public routes or general student lists.
+     */
+    public function invitations()
+    {
+        $this->authorizeAdministrator();
+
+        $pendingUsers = User::query()
+            ->with(['role', 'student'])
+            ->where('must_change_password', true)
+            ->where('status', 'Inactive')
+            ->whereNull('deactivated_at')
+            ->whereHas('role', function ($query) {
+                $query->where('role_name', 'Student Account');
+            })
+            ->whereHas('student', function ($query) {
+                $query->where('status', 'Active');
+            })
+            ->orderBy('name')
+            ->get();
+
+        $invitationLinks = AccountInvitation::query()
+            ->whereIn('user_id', $pendingUsers->pluck('user_id')->all())
+            ->whereNull('used_at')
+            ->where('expires_at', '>', now())
+            ->orderByDesc('invitation_id')
+            ->get()
+            ->unique('user_id')
+            ->keyBy('user_id');
+
+        return response()
+            ->view('students.accounts.invitations', compact('pendingUsers', 'invitationLinks'))
+            ->header('Cache-Control', 'private, no-store, max-age=0')
+            ->header('Referrer-Policy', 'no-referrer');
+    }
+
+    /**
+     * Reissue an expired or missing first-time setup link. Never reactivate
+     * a deliberately deactivated account or overwrite a completed password.
+     */
+    public function reissueInvitation(int $id)
+    {
+        $this->authorizeAdministrator();
+
+        DB::transaction(function () use ($id) {
+            $user = User::query()
+                ->whereKey($id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            abort_unless(
+                $user->role?->role_name === 'Student Account' &&
+                $user->student?->status === 'Active' &&
+                $user->status === 'Inactive' &&
+                $user->must_change_password &&
+                $user->deactivated_at === null,
+                422,
+                'Only pending, non-deactivated student accounts may receive a setup link.'
+            );
+
+            $validInvitationExists = AccountInvitation::query()
+                ->where('user_id', $user->getKey())
+                ->whereNull('used_at')
+                ->where('expires_at', '>', now())
+                ->exists();
+
+            abort_if($validInvitationExists, 422, 'This student already has a valid setup link.');
+
+            AccountInvitation::query()
+                ->where('user_id', $user->getKey())
+                ->whereNull('used_at')
+                ->update(['used_at' => now()]);
+
+            AccountInvitation::create([
+                'user_id' => $user->getKey(),
+                'token' => Str::random(64),
+                'expires_at' => now()->addDay(),
+                'used_at' => null,
+            ]);
+        }, 3);
+
+        return redirect()
+            ->route('students.accounts.invitations')
+            ->with('success', 'A new private setup link was generated for the pending student account.');
+    }
+
     public function deactivate(int $id)
     {
         $this->authorizeAdministrator();

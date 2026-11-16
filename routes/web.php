@@ -282,6 +282,23 @@ Route::middleware([
     |--------------------------------------------------------------------------
     */
 
+    // Admin-only manual invitation recovery on hosts without queue workers.
+    Route::get(
+        '/student-accounts/invitations',
+        [
+            \App\Http\Controllers\StudentAccountProvisioningController::class,
+            'invitations'
+        ]
+    )->name('students.accounts.invitations');
+
+    Route::post(
+        '/student-accounts/{id}/reissue-invitation',
+        [
+            \App\Http\Controllers\StudentAccountProvisioningController::class,
+            'reissueInvitation'
+        ]
+    )->middleware('throttle:10,1')->name('students.accounts.reissue-invitation');
+
     Route::post(
         '/student-accounts/provision',
         [
