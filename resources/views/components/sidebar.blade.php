@@ -136,8 +136,6 @@
 
     // Account Settings is an existing authenticated route from the teammate update.
     if (\Illuminate\Support\Facades\Route::has('settings.index')) {
-        $sidebarNavigation[] = ['kind' => 'heading', 'label' => 'Account'];
-        $sidebarNavigation[] = ['kind' => 'link', 'label' => 'Settings', 'route' => 'settings.index', 'active' => ['settings.*'], 'icon' => 'settings'];
     }
 
     $sidebarHasPermission = static fn(array $item): bool => !isset($item['permission'])
