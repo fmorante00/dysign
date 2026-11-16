@@ -43,11 +43,6 @@
 </style>
 
     <div class="dy-provision-page min-w-0 space-y-7 pb-8">
-        <div class="flex justify-end">
-            <a href="{{ route('students.accounts.invitations') }}" class="inline-flex items-center rounded-xl border border-[#D4A017] px-4 py-2 text-xs font-bold text-[#101064] hover:bg-[#fff8e6]">
-                View Pending Invitation Links (Administrator Only)
-            </a>
-        </div>
 
         {{-- PAGE HEADER --}}
         <section class="dy-provision-hero relative overflow-hidden rounded-[28px] px-7 py-8 text-white sm:px-8 lg:px-10 lg:py-10">
@@ -61,7 +56,7 @@
                     <p class="text-[11px] font-bold uppercase tracking-[.30em] text-[#E7C75B]">Student Account Management</p>
                     <h1 class="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">Automated Account Provisioning</h1>
                     <p class="mt-3 max-w-2xl text-sm leading-6 text-white/80">
-                        Assess eligibility, create student login accounts, and email secure setup invitations to registered student addresses.
+                        Confirm Bulk Provision once: DySign creates eligible student accounts, generates secure setup links, and automatically attempts to email each student. Failed emails can be retried without creating duplicate accounts.
                     </p>
                     <div class="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-white/80">
                         <span class="inline-flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-[#E7C75B]"></span>{{ number_format($summary['total_students']) }} student records</span>
