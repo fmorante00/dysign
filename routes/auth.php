@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Auth\EmailVerificationPromptController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordController;
+use App\Http\Controllers\Auth\PasswordChangeOtpController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
@@ -51,6 +52,16 @@ Route::middleware('auth')->group(function () {
         ->name('password.confirm');
 
     Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
+
+    // Two-stage password-change verification. Existing password update remains
+    // unchanged until OTP validation is enforced in PasswordController.
+    Route::post('password/change-otp/send', [PasswordChangeOtpController::class, 'send'])
+        ->middleware('throttle:3,10')
+        ->name('password.change-otp.send');
+
+    Route::post('password/change-otp/verify', [PasswordChangeOtpController::class, 'verify'])
+        ->middleware('throttle:10,1')
+        ->name('password.change-otp.verify');
 
     Route::put('password', [PasswordController::class, 'update'])->name('password.update');
 

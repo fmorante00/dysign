@@ -167,6 +167,58 @@
         #dysign-sidebar nav { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.20) transparent; }
         #dysign-sidebar nav::-webkit-scrollbar { width: 5px; }
         #dysign-sidebar nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,.20); border-radius: 9999px; }
+        /* Fixed pixel sizes: prevents oversized SVGs when Tailwind sizing utilities
+           are unavailable or overridden in the InfinityFree production build. */
+        #dysign-sidebar nav svg {
+            display: block;
+            width: 20px !important;
+            height: 20px !important;
+            min-width: 20px;
+            max-width: 20px;
+            min-height: 20px;
+            max-height: 20px;
+            flex: 0 0 20px;
+        }
+        #dysign-sidebar nav svg.ds-sidebar-sub-icon {
+            width: 17px !important;
+            height: 17px !important;
+            min-width: 17px;
+            max-width: 17px;
+            min-height: 17px;
+            max-height: 17px;
+            flex: 0 0 17px;
+        }
+        #dysign-sidebar nav svg.ds-sidebar-chevron {
+            width: 16px !important;
+            height: 16px !important;
+            min-width: 16px;
+            max-width: 16px;
+            min-height: 16px;
+            max-height: 16px;
+            flex: 0 0 16px;
+        }
+        /* Production-safe gold accents. Avoid relying on Tailwind's arbitrary
+           color utilities, which may not be present in InfinityFree CSS. */
+        #dysign-sidebar .ds-sidebar-brand-accent {
+            color: #F2C44A !important;
+        }
+        #dysign-sidebar .ds-sidebar-section-label {
+            color: rgba(242, 196, 74, 0.8) !important;
+        }
+        #dysign-sidebar nav .ds-sidebar-primary {
+            border-left: 3px solid transparent;
+        }
+        #dysign-sidebar nav .ds-sidebar-primary[aria-current="page"],
+        #dysign-sidebar nav .ds-sidebar-primary[data-ds-active="true"] {
+            color: #F2C44A !important;
+            border-left-color: #D4A017 !important;
+        }
+        #dysign-sidebar nav .ds-sidebar-primary[aria-current="page"] svg:not(.ds-sidebar-chevron),
+        #dysign-sidebar nav .ds-sidebar-primary[data-ds-active="true"] svg:not(.ds-sidebar-chevron),
+        #dysign-sidebar nav .ds-sidebar-sub-link[aria-current="page"],
+        #dysign-sidebar nav .ds-sidebar-sub-link[aria-current="page"] svg {
+            color: #F2C44A !important;
+        }
     </style>
     <div class="flex h-full min-h-0 flex-col bg-gradient-to-b from-[#101064] via-[#11155b] to-[#0b1448]">
         {{-- Branding: keeps the same 18rem sidebar width as the current app shell. --}}
@@ -178,7 +230,7 @@
                     <img src="{{ asset('images/logo.png') }}" class="h-10 w-10 object-contain" alt="DySign Logo">
                 </div>
                 <div class="min-w-0">
-                    <p class="text-[21px] font-extrabold tracking-tight text-white">Dy<span class="text-[#F2C44A]">Sign</span></p>
+                    <p class="text-[21px] font-extrabold tracking-tight text-white">Dy<span class="ds-sidebar-brand-accent text-[#F2C44A]">Sign</span></p>
                     <p class="text-[10px] font-medium tracking-wide text-white/65">Digital Identity System</p>
                 </div>
             </div>
@@ -189,7 +241,7 @@
              aria-label="Main navigation">
             @foreach ($sidebarNavigation as $entry)
                 @if ($entry['kind'] === 'heading')
-                    <p class="mb-1 mt-6 px-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[#F2C44A]/80 first:mt-0">
+                    <p class="ds-sidebar-section-label mb-1 mt-6 px-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[#F2C44A]/80 first:mt-0">
                         {{ $entry['label'] }}
                     </p>
                 @elseif ($entry['kind'] === 'group')
@@ -203,14 +255,15 @@
                                 @click="expanded['{{ $entry['key'] }}'] = !expanded['{{ $entry['key'] }}']"
                                 :aria-expanded="expanded['{{ $entry['key'] }}'] ? 'true' : 'false'"
                                 aria-controls="{{ $sidebarGroupId }}"
-                                class="group flex min-h-[43px] w-full items-center gap-3 rounded-xl border-l-[3px] px-3 py-2.5 text-left text-[13px] font-semibold leading-snug transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F2C44A] {{ $sidebarGroupActive ? 'border-[#D4A017] bg-white/10 text-[#F2C44A]' : 'border-transparent text-white/85 hover:bg-white/10 hover:text-white' }}">
+                                data-ds-active="{{ $sidebarGroupActive ? 'true' : 'false' }}"
+                                class="ds-sidebar-primary group flex min-h-[43px] w-full items-center gap-3 rounded-xl border-l-[3px] px-3 py-2.5 text-left text-[13px] font-semibold leading-snug transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F2C44A] {{ $sidebarGroupActive ? 'border-[#D4A017] bg-white/10 text-[#F2C44A]' : 'border-transparent text-white/85 hover:bg-white/10 hover:text-white' }}">
                             <svg class="h-5 w-5 shrink-0 {{ $sidebarGroupActive ? 'text-[#F2C44A]' : 'text-white/70 group-hover:text-[#F2C44A]' }}"
                                  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
                                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <path d="{{ $sidebarIcons[$entry['icon']] ?? $sidebarIcons['list'] }}" />
                             </svg>
                             <span class="min-w-0 flex-1">{{ $entry['label'] }}</span>
-                            <svg class="h-4 w-4 shrink-0 text-white/50 transition-transform duration-200"
+                            <svg class="ds-sidebar-chevron h-4 w-4 shrink-0 text-white/50 transition-transform duration-200"
                                  :class="expanded['{{ $entry['key'] }}'] ? 'rotate-180' : ''"
                                  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -227,9 +280,9 @@
                                     @endphp
                                     @if ($sidebarReady)
                                         <a href="{{ route($item['route']) }}"
-                                           class="group flex min-h-[37px] items-center gap-2.5 rounded-lg px-2.5 py-2 text-[12px] font-medium leading-snug transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#F2C44A] {{ $sidebarActive ? 'bg-white/15 text-[#F2C44A]' : 'text-white/70 hover:bg-white/10 hover:text-white' }}"
+                                           class="ds-sidebar-sub-link group flex min-h-[37px] items-center gap-2.5 rounded-lg px-2.5 py-2 text-[12px] font-medium leading-snug transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#F2C44A] {{ $sidebarActive ? 'bg-white/15 text-[#F2C44A]' : 'text-white/70 hover:bg-white/10 hover:text-white' }}"
                                            @if ($sidebarActive) aria-current="page" @endif>
-                                            <svg class="h-[17px] w-[17px] shrink-0 {{ $sidebarActive ? 'text-[#F2C44A]' : 'text-white/55 group-hover:text-[#F2C44A]' }}"
+                                            <svg class="ds-sidebar-sub-icon h-[17px] w-[17px] shrink-0 {{ $sidebarActive ? 'text-[#F2C44A]' : 'text-white/55 group-hover:text-[#F2C44A]' }}"
                                                  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
                                                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                                 <path d="{{ $sidebarIcons[$item['icon']] ?? $sidebarIcons['list'] }}" />
@@ -239,7 +292,7 @@
                                     @else
                                         <div class="flex min-h-[37px] cursor-not-allowed items-center gap-2.5 rounded-lg px-2.5 py-2 text-[12px] leading-snug text-white/35"
                                              title="This DySign module is not installed yet" aria-disabled="true">
-                                            <svg class="h-[17px] w-[17px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                            <svg class="ds-sidebar-sub-icon h-[17px] w-[17px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                                 <path d="{{ $sidebarIcons[$item['icon']] ?? $sidebarIcons['list'] }}" />
                                             </svg>
                                             <span class="min-w-0 flex-1">{{ $item['label'] }}</span>
@@ -257,7 +310,7 @@
                     @endphp
                     @if ($sidebarReady)
                         <a href="{{ route($entry['route']) }}"
-                           class="group flex min-h-[43px] w-full items-center gap-3 rounded-xl border-l-[3px] px-3 py-2.5 text-[13px] font-semibold leading-snug transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F2C44A] {{ $sidebarActive ? 'border-[#D4A017] bg-white/15 text-[#F2C44A]' : 'border-transparent text-white/85 hover:bg-white/10 hover:text-white' }}"
+                           class="ds-sidebar-primary group flex min-h-[43px] w-full items-center gap-3 rounded-xl border-l-[3px] px-3 py-2.5 text-[13px] font-semibold leading-snug transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F2C44A] {{ $sidebarActive ? 'border-[#D4A017] bg-white/15 text-[#F2C44A]' : 'border-transparent text-white/85 hover:bg-white/10 hover:text-white' }}"
                            @if ($sidebarActive) aria-current="page" @endif>
                             <svg class="h-5 w-5 shrink-0 {{ $sidebarActive ? 'text-[#F2C44A]' : 'text-white/70 group-hover:text-[#F2C44A]' }}"
                                  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"

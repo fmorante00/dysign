@@ -103,7 +103,10 @@
     <div
         x-data="{
             tab: {{ \Illuminate\Support\Js::from(
-                $errors->updatePassword->any() || session('status') === 'password-updated'
+                $errors->updatePassword->any()
+                || $errors->passwordOtpRequest->any()
+                || $errors->passwordOtpVerify->any()
+                || in_array(session('status'), ['password-otp-sent', 'password-otp-verified', 'password-updated'], true)
                     ? 'security'
                     : (session('status') === 'verification-link-sent' ? 'account' : '')
             ) }} || (
@@ -287,89 +290,183 @@
                     @endif
                 </section>
 
-                {{-- SECURITY: backend password validation stays unchanged; UI has useful guidance. --}}
+                {{-- SECURITY: current password -> email OTP -> new password. Server-side OTP enforcement is in the controllers. --}}
+                @php
+                    $otpController = \App\Http\Controllers\Auth\PasswordChangeOtpController::class;
+                    $otpChallenge = session($otpController::CHALLENGE_SESSION_KEY);
+                    $otpVerification = session($otpController::VERIFIED_SESSION_KEY);
+                    $otpPasswordFingerprint = hash('sha256', (string) $user->getAuthPassword());
+                    $otpMatchesUser = static function ($record) use ($user, $otpPasswordFingerprint): bool {
+                        return is_array($record)
+                            && ($record['user_id'] ?? null) === (string) $user->getAuthIdentifier()
+                            && ($record['email'] ?? null) === (string) $user->email
+                            && ($record['password_fingerprint'] ?? null) === $otpPasswordFingerprint
+                            && (int) ($record['expires_at'] ?? 0) > time();
+                    };
+                    $otpIsVerified = $otpMatchesUser($otpVerification);
+                    $otpIsPending = ! $otpIsVerified && $otpMatchesUser($otpChallenge);
+                    $otpStage = $otpIsVerified ? 3 : ($otpIsPending ? 2 : 1);
+                @endphp
                 <section x-show="tab === 'security'" x-cloak id="ds3-panel-security" role="tabpanel" aria-labelledby="ds3-tab-security" class="ds3-card overflow-hidden">
                     <header class="border-b border-slate-100 px-6 py-7 sm:px-8">
                         <p class="ds3-eyebrow">02 / Sign-in security</p>
                         <h2 class="mt-2 text-xl font-bold tracking-tight text-[#101064] sm:text-2xl">Password &amp; Security</h2>
-                        <p class="mt-2 text-sm leading-6 text-slate-500">Change your password and review the security of your current session.</p>
+                        <p class="mt-2 text-sm leading-6 text-slate-500">To protect your DySign account, confirm your current password and verify a code sent to your registered email before setting a new password.</p>
                     </header>
 
                     @if(session('status') === 'password-updated')
-                        <div role="status" class="mx-6 mt-6 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800 sm:mx-8">
-                            <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m5 12 4 4L19 6"/></svg>
-                            Password changed successfully.
+                        <div role="status" class="mx-6 mt-6 flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800 sm:mx-8">
+                            <svg class="mt-0.5 h-5 w-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m5 12 4 4L19 6"/></svg>
+                            Your password was changed successfully. A new verification will be required next time.
                         </div>
                     @endif
-                    <div class="mx-6 mt-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-6 text-amber-900 sm:mx-8">
-                        Changing your password should require the current password. The server must verify it; the strength meter below is only guidance.
-                    </div>
-                    <form method="POST" action="{{ route('password.update') }}" class="space-y-5 px-6 py-7 sm:px-8 sm:py-8">
-                        @csrf
-                        @method('PUT')
-                        <div>
-                            <label class="ds3-label" for="ds3-current-password">Current password</label>
-                            <div class="relative">
-                                <input class="ds3-field pr-16" id="ds3-current-password" name="current_password"
-                                       x-bind:type="showCurrent ? 'text' : 'password'" autocomplete="current-password"
-                                       x-on:keyup="capsLock = $event.getModifierState('CapsLock')" required>
-                                <button type="button" class="absolute bottom-0 right-3 top-2 mt-2 text-xs font-bold text-[#101064] hover:underline"
-                                        x-on:click="showCurrent = !showCurrent" x-text="showCurrent ? 'Hide' : 'Show'"
-                                        x-bind:aria-label="showCurrent ? 'Hide current password' : 'Show current password'"></button>
-                            </div>
-                            @foreach($errors->updatePassword->get('current_password') as $message)
-                                <p class="ds3-error" role="alert">{{ $message }}</p>
-                            @endforeach
+
+                    @if($errors->updatePassword->has('otp'))
+                        <div role="alert" class="mx-6 mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 sm:mx-8">
+                            {{ $errors->updatePassword->first('otp') }}
                         </div>
-                        <div class="grid gap-5 md:grid-cols-2">
+                    @endif
+                    @if($errors->passwordOtpVerify->has('otp') && ! $otpIsPending)
+                        <div role="alert" class="mx-6 mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 sm:mx-8">
+                            {{ $errors->passwordOtpVerify->first('otp') }}
+                        </div>
+                    @endif
+
+                    <div class="grid gap-2 px-6 pt-6 sm:grid-cols-3 sm:px-8" aria-label="Password change progress">
+                        @foreach ([1 => 'Confirm password', 2 => 'Verify email', 3 => 'New password'] as $number => $caption)
+                            <div class="flex items-center gap-3 rounded-xl border px-3 py-3 {{ $otpStage === $number ? 'border-[#D4A017] bg-amber-50' : ($otpStage > $number ? 'border-emerald-200 bg-emerald-50' : 'border-slate-200 bg-slate-50') }}">
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-extrabold {{ $otpStage === $number ? 'bg-[#101064] text-white' : ($otpStage > $number ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-600') }}">{{ $otpStage > $number ? '✓' : $number }}</span>
+                                <span class="text-xs font-bold {{ $otpStage === $number ? 'text-[#101064]' : 'text-slate-600' }}">{{ $caption }}</span>
+                            </div>
+                        @endforeach
+                    </div>
+
+                    @if($otpStage === 1)
+                        {{-- Step 1: current password must be validated by Laravel before any code is sent. --}}
+                        <form method="POST" action="{{ route('password.change-otp.send') }}" class="space-y-5 px-6 py-7 sm:px-8 sm:py-8">
+                            @csrf
                             <div>
-                                <label class="ds3-label" for="ds3-new-password">New password</label>
+                                <h3 class="text-base font-extrabold text-[#101064]">Confirm it's you</h3>
+                                <p class="mt-1 text-sm leading-6 text-slate-500">Enter your existing password. We'll send a one-time code to your registered email address.</p>
+                            </div>
+                            <div>
+                                <label class="ds3-label" for="ds3-current-password">Current password</label>
                                 <div class="relative">
-                                    <input class="ds3-field pr-16" id="ds3-new-password" name="password"
-                                           x-bind:type="showNew ? 'text' : 'password'" x-model="newPassword"
-                                           x-on:keyup="capsLock = $event.getModifierState('CapsLock')"
-                                           autocomplete="new-password" required>
+                                    <input class="ds3-field pr-16" id="ds3-current-password" name="current_password"
+                                           x-bind:type="showCurrent ? 'text' : 'password'" autocomplete="current-password"
+                                           x-on:keyup="capsLock = $event.getModifierState('CapsLock')" required>
                                     <button type="button" class="absolute bottom-0 right-3 top-2 mt-2 text-xs font-bold text-[#101064] hover:underline"
-                                            x-on:click="showNew = !showNew" x-text="showNew ? 'Hide' : 'Show'"
-                                            x-bind:aria-label="showNew ? 'Hide new password' : 'Show new password'"></button>
+                                            x-on:click="showCurrent = !showCurrent" x-text="showCurrent ? 'Hide' : 'Show'"
+                                            x-bind:aria-label="showCurrent ? 'Hide current password' : 'Show current password'"></button>
                                 </div>
-                                @foreach($errors->updatePassword->get('password') as $message)
+                                @foreach($errors->passwordOtpRequest->get('current_password') as $message)
                                     <p class="ds3-error" role="alert">{{ $message }}</p>
                                 @endforeach
                             </div>
+                            <p class="text-xs font-semibold text-amber-700" x-show="capsLock" x-cloak>Caps Lock is on.</p>
+                            <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs leading-6 text-slate-600">
+                                The verification code will be sent to <strong class="break-all text-[#101064]">{{ $user->email }}</strong>. Your registered email is read-only in Settings.
+                            </div>
+                            <div class="ds3-rule flex justify-end pt-6">
+                                <button type="submit" class="ds3-primary">Verify Password &amp; Send Code</button>
+                            </div>
+                        </form>
+                    @elseif($otpStage === 2)
+                        {{-- Step 2: verify 6-digit code; do not send new password to this endpoint. --}}
+                        <div class="mx-6 mt-6 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900 sm:mx-8" role="status">
+                            @if(session('status') === 'password-otp-sent')
+                                Verification email sent.
+                            @endif
+                            Enter the 6-digit code sent to <strong class="break-all">{{ $user->email }}</strong>. It expires 5 minutes after it was sent.
+                        </div>
+                        <form method="POST" action="{{ route('password.change-otp.verify') }}" class="space-y-5 px-6 py-7 sm:px-8 sm:py-8">
+                            @csrf
                             <div>
-                                <label class="ds3-label" for="ds3-confirm-password">Confirm new password</label>
-                                <div class="relative">
-                                    <input class="ds3-field pr-16" id="ds3-confirm-password" name="password_confirmation"
-                                           x-bind:type="showConfirm ? 'text' : 'password'" x-model="confirmPassword"
-                                           x-on:keyup="capsLock = $event.getModifierState('CapsLock')"
-                                           autocomplete="new-password" required>
-                                    <button type="button" class="absolute bottom-0 right-3 top-2 mt-2 text-xs font-bold text-[#101064] hover:underline"
-                                            x-on:click="showConfirm = !showConfirm" x-text="showConfirm ? 'Hide' : 'Show'"
-                                            x-bind:aria-label="showConfirm ? 'Hide confirmed password' : 'Show confirmed password'"></button>
+                                <label class="ds3-label" for="ds3-verification-code">Email verification code</label>
+                                <input class="ds3-field max-w-xs text-center text-xl font-bold tracking-[0.22em]" id="ds3-verification-code" name="otp" type="text"
+                                       inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="one-time-code" placeholder="000000" required autofocus>
+                                @foreach($errors->passwordOtpVerify->get('otp') as $message)
+                                    <p class="ds3-error" role="alert">{{ $message }}</p>
+                                @endforeach
+                                <p class="ds3-help">Maximum 5 incorrect attempts per code. Never share verification codes.</p>
+                            </div>
+                            <div class="ds3-rule flex justify-end pt-6">
+                                <button type="submit" class="ds3-primary">Verify Email Code</button>
+                            </div>
+                        </form>
+                        <details class="ds3-rule px-6 py-5 sm:px-8">
+                            <summary class="cursor-pointer text-xs font-bold text-[#101064]">Didn't receive a code? Request another</summary>
+                            <form method="POST" action="{{ route('password.change-otp.send') }}" class="mt-4 flex flex-col gap-3 sm:max-w-sm">
+                                @csrf
+                                <label class="ds3-label" for="ds3-resend-current-password">Re-enter your current password</label>
+                                <input class="ds3-field" type="password" name="current_password" id="ds3-resend-current-password" autocomplete="current-password" required>
+                                @foreach($errors->passwordOtpRequest->get('current_password') as $message)
+                                    <p class="ds3-error" role="alert">{{ $message }}</p>
+                                @endforeach
+                                <button type="submit" class="ds3-secondary">Send a New Code</button>
+                                <p class="ds3-help">For security, a new code replaces the previous one. Sending is rate-limited.</p>
+                            </form>
+                        </details>
+                    @else
+                        {{-- Step 3: OTP session is authenticated; PasswordController checks again server-side. --}}
+                        <div role="status" class="mx-6 mt-6 flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800 sm:mx-8">
+                            <svg class="mt-0.5 h-5 w-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m5 12 4 4L19 6"/></svg>
+                            Email verified. Set your new password now. This authorization expires in 5 minutes and can only be used once.
+                        </div>
+                        <form method="POST" action="{{ route('password.update') }}" class="space-y-5 px-6 py-7 sm:px-8 sm:py-8">
+                            @csrf
+                            @method('PUT')
+                            <div class="grid gap-5 md:grid-cols-2">
+                                <div>
+                                    <label class="ds3-label" for="ds3-new-password">New password</label>
+                                    <div class="relative">
+                                        <input class="ds3-field pr-16" id="ds3-new-password" name="password"
+                                               x-bind:type="showNew ? 'text' : 'password'" x-model="newPassword"
+                                               x-on:keyup="capsLock = $event.getModifierState('CapsLock')"
+                                               autocomplete="new-password" required>
+                                        <button type="button" class="absolute bottom-0 right-3 top-2 mt-2 text-xs font-bold text-[#101064] hover:underline"
+                                                x-on:click="showNew = !showNew" x-text="showNew ? 'Hide' : 'Show'"
+                                                x-bind:aria-label="showNew ? 'Hide new password' : 'Show new password'"></button>
+                                    </div>
+                                    @foreach($errors->updatePassword->get('password') as $message)
+                                        <p class="ds3-error" role="alert">{{ $message }}</p>
+                                    @endforeach
                                 </div>
-                                <p class="ds3-error" x-show="confirmPassword.length > 0 && newPassword !== confirmPassword" x-cloak role="alert">Passwords do not match.</p>
+                                <div>
+                                    <label class="ds3-label" for="ds3-confirm-password">Confirm new password</label>
+                                    <div class="relative">
+                                        <input class="ds3-field pr-16" id="ds3-confirm-password" name="password_confirmation"
+                                               x-bind:type="showConfirm ? 'text' : 'password'" x-model="confirmPassword"
+                                               x-on:keyup="capsLock = $event.getModifierState('CapsLock')"
+                                               autocomplete="new-password" required>
+                                        <button type="button" class="absolute bottom-0 right-3 top-2 mt-2 text-xs font-bold text-[#101064] hover:underline"
+                                                x-on:click="showConfirm = !showConfirm" x-text="showConfirm ? 'Hide' : 'Show'"
+                                                x-bind:aria-label="showConfirm ? 'Hide confirmed password' : 'Show confirmed password'"></button>
+                                    </div>
+                                    <p class="ds3-error" x-show="confirmPassword.length > 0 && newPassword !== confirmPassword" x-cloak role="alert">Passwords do not match.</p>
+                                </div>
                             </div>
-                        </div>
-                        <p class="text-xs font-semibold text-amber-700" x-show="capsLock" x-cloak>Caps Lock is on.</p>
-                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                            <div class="flex items-center justify-between gap-3">
-                                <p class="text-xs font-bold text-[#101064]">Password strength guide</p>
-                                <p class="text-xs font-semibold text-slate-600" x-text="passwordLabel"></p>
+                            <p class="text-xs font-semibold text-amber-700" x-show="capsLock" x-cloak>Caps Lock is on.</p>
+                            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                                <div class="flex items-center justify-between gap-3">
+                                    <p class="text-xs font-bold text-[#101064]">Password strength guide</p>
+                                    <p class="text-xs font-semibold text-slate-600" x-text="passwordLabel"></p>
+                                </div>
+                                <div class="mt-3 grid grid-cols-4 gap-1.5" aria-hidden="true">
+                                    <template x-for="i in 4" :key="i">
+                                        <div class="h-1.5 rounded-full" x-bind:class="passwordScore >= i ? (passwordScore >= 3 ? 'bg-emerald-500' : 'bg-amber-500') : 'bg-slate-200'"></div>
+                                    </template>
+                                </div>
+                                <p class="ds3-help">For stronger passwords, use 12+ characters with uppercase, lowercase, numbers and symbols. Final password rules are enforced by Laravel.</p>
                             </div>
-                            <div class="mt-3 grid grid-cols-4 gap-1.5" aria-hidden="true">
-                                <template x-for="i in 4" :key="i">
-                                    <div class="h-1.5 rounded-full" x-bind:class="passwordScore >= i ? (passwordScore >= 3 ? 'bg-emerald-500' : 'bg-amber-500') : 'bg-slate-200'"></div>
-                                </template>
+                            <div class="ds3-rule flex flex-wrap justify-end gap-3 pt-6">
+                                <button type="submit" class="ds3-primary" x-bind:disabled="newPassword.length > 0 && confirmPassword.length > 0 && newPassword !== confirmPassword">
+                                    Update Password Securely
+                                </button>
                             </div>
-                            <p class="ds3-help">For stronger passwords, use 12+ characters with uppercase, lowercase, numbers and symbols. This guide does not replace server-side validation.</p>
-                        </div>
-                        <div class="ds3-rule flex flex-wrap items-center justify-end gap-3 pt-6">
-                            <button type="submit" class="ds3-primary" x-bind:disabled="newPassword.length > 0 && confirmPassword.length > 0 && newPassword !== confirmPassword">
-                                Update Password
-                            </button>
-                        </div>
-                    </form>
+                        </form>
+                    @endif
+
                     <div class="ds3-rule flex flex-wrap items-center justify-between gap-4 bg-slate-50 px-6 py-6 sm:px-8">
                         <div>
                             <h3 class="text-sm font-bold text-[#101064]">Current session</h3>
