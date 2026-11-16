@@ -16,6 +16,56 @@
         background-position: center;
     }
 
+
+/* Department Staff Excuse Request Review — local UI styling, no Vite rebuild needed. */
+.exr-filter-card, .exr-list-card {background:#fff;border:1px solid #dde4ef;border-radius:17px;box-shadow:0 3px 12px rgba(17,27,66,.035)}
+.exr-filter-card {padding:22px 22px 18px}
+.exr-overline {font-size:10px;letter-spacing:.20em;font-weight:800;color:#b77e04;text-transform:uppercase}
+.exr-heading {color:#101064;font-size:20px;line-height:1.25;font-weight:800;margin-top:6px}
+.exr-subtle {font-size:12px;color:#64748b;line-height:1.55}
+.exr-quick {display:flex;flex-wrap:wrap;gap:8px}
+.exr-quick button {background:#fff;border:1px solid #d9e1ef;border-radius:10px;padding:9px 15px;font-size:12px;color:#28365e;font-weight:700;cursor:pointer}
+.exr-quick button[aria-pressed="true"] {background:#101064;color:#fff;border-color:#101064}
+.exr-grid {display:grid;grid-template-columns:minmax(200px,1.5fr) minmax(150px,1fr) minmax(140px,1fr) minmax(145px,1fr);gap:14px;margin-top:20px}
+.exr-field {min-width:0;display:flex;flex-direction:column;gap:6px}
+.exr-field label {font-size:11px;color:#415477;font-weight:750}
+.exr-field input,.exr-field select {width:100%;box-sizing:border-box;height:41px;border:1px solid #cdd8ea;background:#fff;color:#111b4d;border-radius:10px;padding:0 11px;font-size:12px;outline:none;min-width:0}
+.exr-field input:focus,.exr-field select:focus {border-color:#d4a017;box-shadow:0 0 0 3px rgba(212,160,23,.15)}
+.exr-toolbar {border-top:1px solid #edf0f6;margin-top:17px;padding-top:15px;display:flex;align-items:center;gap:11px;justify-content:space-between;flex-wrap:wrap}
+.exr-btn {font-size:12px;font-weight:750;border-radius:10px;min-height:38px;padding:9px 15px;border:1px solid #d5deeb;background:#fff;color:#101064;cursor:pointer}
+.exr-btn.primary {background:#101064;color:#fff;border-color:#101064}
+.exr-btn.gold {background:#e5ae19;color:#101064;border-color:#d49e13}
+.exr-btn:disabled {opacity:.42;cursor:not-allowed}
+.exr-item-head {display:flex;justify-content:space-between;align-items:flex-start;gap:18px;padding:19px 21px}
+.exr-person {font-size:17px;font-weight:850;color:#101064;margin-top:6px}
+.exr-meta {font-size:12px;color:#64748b;line-height:1.6;margin-top:4px}
+.exr-badges {display:flex;flex-wrap:wrap;gap:7px;align-items:center}
+.exr-pill {display:inline-flex;align-items:center;border-radius:30px;padding:5px 10px;font-size:11px;font-weight:800}
+.exr-pill.pending {color:#935900;background:#fff4d8}
+.exr-pill.approved {color:#08734b;background:#e6faee}
+.exr-pill.rejected {color:#b32136;background:#ffedf0}
+.exr-pill.neutral {color:#273b69;background:#edf1fa}
+.exr-item-summary {display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:12px;padding:13px 21px;background:#f7f9fc;border-top:1px solid #edf0f7}
+.exr-info-label {display:block;color:#7082a3;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em}
+.exr-info-value {display:block;font-size:12px;line-height:1.45;color:#101a4e;font-weight:700;margin-top:4px;overflow-wrap:anywhere}
+.exr-details {border-top:1px solid #e7edf6}
+.exr-details summary {list-style:none;cursor:pointer;padding:13px 21px;display:flex;justify-content:space-between;color:#101064;font-size:12px;font-weight:800}
+.exr-details summary::-webkit-details-marker {display:none}
+.exr-details summary:after {content:'+';font-size:18px;color:#a97500;line-height:1}
+.exr-details[open] summary:after {content:'−'}
+.exr-detail-body {padding:4px 21px 21px;color:#475569;font-size:12px;line-height:1.6;display:grid;gap:13px}
+.exr-section-title {font-size:10px;font-weight:850;color:#71809e;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px}
+.exr-review-note {padding:12px 13px;border-radius:10px;background:#f4f7fd;border:1px solid #e4eaf5;white-space:pre-wrap;overflow-wrap:anywhere}
+.exr-file {display:inline-flex;max-width:100%;align-items:center;gap:7px;background:#f8fafc;color:#101064;text-decoration:none;border:1px solid #dbe3ef;border-radius:9px;padding:8px 11px;font-size:12px;font-weight:650;overflow-wrap:anywhere}
+.exr-file:hover {border-color:#d4a017;background:#fffbeb}
+.exr-footer {border-top:1px solid #e5eaf3;padding:14px 18px;display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+.exr-pages {display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.exr-pages button {border:1px solid #dae2f0;border-radius:8px;min-width:34px;height:34px;padding:0 9px;background:#fff;color:#101064;font-size:12px;font-weight:750;cursor:pointer}
+.exr-pages button[aria-current="page"] {background:#101064;color:#fff}
+.exr-pages button:disabled {opacity:.4;cursor:default}
+@media (max-width:1100px) {.exr-grid {grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:640px) {.exr-filter-card {padding:16px}.exr-grid {grid-template-columns:minmax(0,1fr);gap:11px}.exr-item-head {padding:16px;flex-direction:column}.exr-item-summary {grid-template-columns:1fr;gap:10px;padding:13px 16px}.exr-details summary,.exr-detail-body {padding-left:16px;padding-right:16px}.exr-toolbar {align-items:stretch}.exr-quick button {padding:8px 11px}}
+
 </style>
 
 
@@ -367,159 +417,60 @@
     {{-- ====================================================== --}}
     {{-- FILTERS --}}
     {{-- ====================================================== --}}
-
-    <section>
-
-        <div
-            class="
-                flex
-                flex-col
-                gap-4
-                md:flex-row
-                md:items-end
-                md:justify-between
-            "
-        >
-
+    <section class="exr-filter-card" aria-label="Excuse request filters">
+        <div class="flex flex-col gap-4 lg:flex-row lg:justify-between lg:items-end">
             <div>
-
-                <p
-                    class="
-                        text-xs
-                        font-semibold
-                        uppercase
-                        tracking-[0.28em]
-                        text-[#D4A017]
-                    "
-                >
-                    Student Requests
-                </p>
-
-
-                <h2
-                    class="
-                        mt-2
-                        text-xl
-                        font-bold
-                        text-[#101064]
-                    "
-                >
-                    Review Queue
-                </h2>
-
-
-                <p
-                    class="
-                        mt-1
-                        text-sm
-                        text-gray-500
-                    "
-                >
-                    Pending requests are shown first.
-                </p>
-
+                <p class="exr-overline">Review & Decision History</p>
+                <h2 class="exr-heading">Excuse Request Queue</h2>
+                <p class="exr-subtle mt-1">Search your department's requests, then expand a card to review its documents and decision.</p>
             </div>
-
-
-            <div
-                class="
-                    flex
-                    flex-wrap
-                    gap-2
-                "
-            >
-
-                <button
-                    type="button"
-                    data-filter="All"
-                    class="
-                        filter-button
-                        rounded-lg
-                        bg-[#101064]
-                        px-4
-                        py-2
-                        text-xs
-                        font-semibold
-                        text-white
-                        transition
-                    "
-                >
-                    All
-                </button>
-
-
-                <button
-                    type="button"
-                    data-filter="Pending"
-                    class="
-                        filter-button
-                        rounded-lg
-                        border
-                        border-gray-200
-                        bg-white
-                        px-4
-                        py-2
-                        text-xs
-                        font-semibold
-                        text-gray-600
-                        transition
-                        hover:border-[#D4A017]
-                    "
-                >
-                    Pending
-                </button>
-
-
-                <button
-                    type="button"
-                    data-filter="Approved"
-                    class="
-                        filter-button
-                        rounded-lg
-                        border
-                        border-gray-200
-                        bg-white
-                        px-4
-                        py-2
-                        text-xs
-                        font-semibold
-                        text-gray-600
-                        transition
-                        hover:border-[#D4A017]
-                    "
-                >
-                    Approved
-                </button>
-
-
-                <button
-                    type="button"
-                    data-filter="Rejected"
-                    class="
-                        filter-button
-                        rounded-lg
-                        border
-                        border-gray-200
-                        bg-white
-                        px-4
-                        py-2
-                        text-xs
-                        font-semibold
-                        text-gray-600
-                        transition
-                        hover:border-[#D4A017]
-                    "
-                >
-                    Rejected
-                </button>
-
+            <div class="exr-quick" role="group" aria-label="Filter by decision status">
+                <button type="button" class="filter-button" data-filter="All" aria-pressed="true">All</button>
+                <button type="button" class="filter-button" data-filter="Pending" aria-pressed="false">Pending</button>
+                <button type="button" class="filter-button" data-filter="Approved" aria-pressed="false">Approved</button>
+                <button type="button" class="filter-button" data-filter="Rejected" aria-pressed="false">Rejected</button>
             </div>
-
         </div>
-
+        <form id="excuseFilterForm" autocomplete="off">
+            <div class="exr-grid">
+                <div class="exr-field">
+                    <label for="excuseSearch">Search student or event</label>
+                    <input id="excuseSearch" type="search" placeholder="Name, student number, event, program…" />
+                </div>
+                <div class="exr-field">
+                    <label for="excuseEventFilter">Event</label>
+                    <select id="excuseEventFilter"><option value="">All department events</option></select>
+                </div>
+                <div class="exr-field">
+                    <label for="excuseTimingFilter">Request timing</label>
+                    <select id="excuseTimingFilter"><option value="">All timings</option><option value="Pre-Event">Pre-Event</option><option value="Post-Event">Post-Event</option></select>
+                </div>
+                <div class="exr-field">
+                    <label for="excuseSort">Sort requests</label>
+                    <select id="excuseSort"><option value="priority">Pending first (newest)</option><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="student">Student A–Z</option><option value="event">Event A–Z</option></select>
+                </div>
+                <div class="exr-field">
+                    <label for="excuseDateFrom">Submitted from</label>
+                    <input id="excuseDateFrom" type="date" />
+                </div>
+                <div class="exr-field">
+                    <label for="excuseDateTo">Submitted to</label>
+                    <input id="excuseDateTo" type="date" />
+                </div>
+                <div class="exr-field">
+                    <label for="excusePageSize">Requests per page</label>
+                    <select id="excusePageSize"><option value="5">5 requests</option><option value="10">10 requests</option><option value="20">20 requests</option></select>
+                </div>
+                <div class="exr-field" style="justify-content:flex-end">
+                    <button id="excuseApplyButton" class="exr-btn primary" type="submit">Apply Filters</button>
+                </div>
+            </div>
+            <div class="exr-toolbar">
+                <p id="excuseMatchCount" class="exr-subtle" role="status" aria-live="polite">Loading department requests…</p>
+                <button class="exr-btn" id="excuseReset" type="button">Reset filters</button>
+            </div>
+        </form>
     </section>
-
-
 
     {{-- ====================================================== --}}
     {{-- LOADING --}}
@@ -600,7 +551,10 @@
         "
     ></div>
 
-
+    <nav id="excusePagination" class="exr-list-card exr-footer hidden" aria-label="Excuse request pages">
+        <p id="excusePageInfo" class="exr-subtle"></p>
+        <div id="excusePageButtons" class="exr-pages"></div>
+    </nav>
 
     {{-- ====================================================== --}}
     {{-- REVIEW MODAL --}}
@@ -898,6 +852,21 @@ document.addEventListener(
         let currentFilter =
             'All';
 
+        let currentPage = 1;
+        const filterFields = {
+            search: document.getElementById('excuseSearch'),
+            event: document.getElementById('excuseEventFilter'),
+            timing: document.getElementById('excuseTimingFilter'),
+            sort: document.getElementById('excuseSort'),
+            from: document.getElementById('excuseDateFrom'),
+            to: document.getElementById('excuseDateTo'),
+            perPage: document.getElementById('excusePageSize')
+        };
+        const pageNav = document.getElementById('excusePagination');
+        const pageInfo = document.getElementById('excusePageInfo');
+        const pageButtons = document.getElementById('excusePageButtons');
+        const matchCount = document.getElementById('excuseMatchCount');
+
 
         const requestList =
             document.getElementById(
@@ -1026,7 +995,7 @@ document.addEventListener(
 
         async function loadRequests() {
 
-            hideAlerts();
+            // Keep successful review feedback visible after refreshing the queue.
 
 
             loadingState
@@ -1094,7 +1063,7 @@ document.addEventListener(
 
 
                 updateSummary();
-
+                populateEventFilter();
                 renderRequests();
 
             }
@@ -1185,621 +1154,190 @@ document.addEventListener(
 
         /*
         |--------------------------------------------------------------------------
-        | FILTERS
+        | SEARCH, FILTERS, PAGINATION
         |--------------------------------------------------------------------------
         */
+        function requestStudentName(request) {
+            const student = request.student ?? {};
+            return [student.first_name, student.middle_name, student.last_name]
+                .filter(Boolean).join(' ') || 'Student';
+        }
 
-        document
-            .querySelectorAll(
-                '.filter-button'
-            )
-            .forEach(
-                button => {
+        function requestDate(request) {
+            const d = new Date(request.submitted_at ?? 0);
+            return Number.isFinite(d.getTime()) ? d : new Date(0);
+        }
 
-                    button.addEventListener(
-                        'click',
-                        function () {
+        function populateEventFilter() {
+            const existing = filterFields.event.value;
+            const unique = new Map();
+            allRequests.forEach(request => {
+                const event = request.event ?? {};
+                const key = String(event.event_id ?? request.event_id ?? '');
+                if (key && !unique.has(key)) unique.set(key, event.event_name ?? 'Untitled event');
+            });
+            filterFields.event.innerHTML = '<option value="">All department events</option>';
+            [...unique.entries()].sort((a,b) => a[1].localeCompare(b[1])).forEach(([id,name]) => {
+                const option = document.createElement('option');
+                option.value = id;
+                option.textContent = name;
+                filterFields.event.append(option);
+            });
+            if ([...unique.keys()].includes(existing)) filterFields.event.value = existing;
+        }
 
-                            currentFilter =
-                                button.dataset.filter;
+        function setStatus(status) {
+            currentFilter = status;
+            currentPage = 1;
+            document.querySelectorAll('.filter-button').forEach(button => {
+                button.setAttribute('aria-pressed', String(button.dataset.filter === status));
+            });
+            renderRequests();
+        }
 
+        document.querySelectorAll('.filter-button').forEach(button => {
+            button.addEventListener('click', () => setStatus(button.dataset.filter));
+        });
 
-                            document
-                                .querySelectorAll(
-                                    '.filter-button'
-                                )
-                                .forEach(
-                                    item => {
+        document.getElementById('excuseFilterForm').addEventListener('submit', event => {
+            event.preventDefault();
+            currentPage = 1;
+            renderRequests();
+        });
+        document.getElementById('excuseReset').addEventListener('click', () => {
+            document.getElementById('excuseFilterForm').reset();
+            setStatus('All');
+        });
 
-                                        item.classList.remove(
-                                            'bg-[#101064]',
-                                            'text-white'
-                                        );
-
-
-                                        item.classList.add(
-                                            'border',
-                                            'border-gray-200',
-                                            'bg-white',
-                                            'text-gray-600'
-                                        );
-
-                                    }
-                                );
-
-
-                            button.classList.remove(
-                                'border',
-                                'border-gray-200',
-                                'bg-white',
-                                'text-gray-600'
-                            );
-
-
-                            button.classList.add(
-                                'bg-[#101064]',
-                                'text-white'
-                            );
-
-
-                            renderRequests();
-
-                        }
-                    );
-
+        function filteredRequests() {
+            const query = filterFields.search.value.trim().toLocaleLowerCase();
+            const event = filterFields.event.value;
+            const timing = filterFields.timing.value;
+            const from = filterFields.from.value;
+            const to = filterFields.to.value;
+            const rows = allRequests.filter(request => {
+                if (currentFilter !== 'All' && request.status !== currentFilter) return false;
+                if (event && String(request.event?.event_id ?? request.event_id ?? '') !== event) return false;
+                if (timing && request.request_timing !== timing) return false;
+                const day = (request.submitted_at ?? '').slice(0, 10);
+                if (from && day < from) return false;
+                if (to && day > to) return false;
+                if (query) {
+                    const student = request.student ?? {};
+                    const searchable = [requestStudentName(request), student.student_number,
+                        student.program_code, student.program_name, request.event?.event_name]
+                        .filter(Boolean).join(' ').toLocaleLowerCase();
+                    if (!searchable.includes(query)) return false;
                 }
-            );
-
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | RENDER REQUESTS
-        |--------------------------------------------------------------------------
-        */
+                return true;
+            });
+            const sort = filterFields.sort.value;
+            rows.sort((a,b) => {
+                if (sort === 'student') return requestStudentName(a).localeCompare(requestStudentName(b));
+                if (sort === 'event') return String(a.event?.event_name ?? '').localeCompare(String(b.event?.event_name ?? ''));
+                if (sort === 'oldest') return requestDate(a) - requestDate(b);
+                if (sort === 'priority') {
+                    const aPending = a.status === 'Pending' ? 0 : 1;
+                    const bPending = b.status === 'Pending' ? 0 : 1;
+                    if (aPending !== bPending) return aPending - bPending;
+                }
+                return requestDate(b) - requestDate(a);
+            });
+            return rows;
+        }
 
         function renderRequests() {
-
-            const filtered =
-                currentFilter === 'All'
-                    ? allRequests
-                    : allRequests.filter(
-                        request =>
-                            request.status
-                            === currentFilter
-                    );
-
-
-            requestList.innerHTML =
-                '';
-
-
-            if (
-                filtered.length === 0
-            ) {
-
-                requestList
-                    .classList
-                    .add(
-                        'hidden'
-                    );
-
-
-                emptyState
-                    .classList
-                    .remove(
-                        'hidden'
-                    );
-
-
+            const filtered = filteredRequests();
+            const total = filtered.length;
+            const perPage = Number(filterFields.perPage.value) || 5;
+            const totalPages = Math.max(1, Math.ceil(total/perPage));
+            currentPage = Math.max(1, Math.min(currentPage,totalPages));
+            const from = (currentPage - 1)*perPage;
+            matchCount.textContent = `${total} matching of ${allRequests.length} department requests`;
+            requestList.innerHTML = '';
+            if (!total) {
+                requestList.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                pageNav.classList.add('hidden');
                 return;
             }
-
-
-            emptyState
-                .classList
-                .add(
-                    'hidden'
-                );
-
-
-            requestList.innerHTML =
-                filtered
-                    .map(
-                        renderRequest
-                    )
-                    .join('');
-
-
-            requestList
-                .classList
-                .remove(
-                    'hidden'
-                );
-
+            emptyState.classList.add('hidden');
+            requestList.innerHTML = filtered.slice(from,from+perPage).map(renderRequest).join('');
+            requestList.classList.remove('hidden');
+            pageNav.classList.remove('hidden');
+            pageInfo.textContent = `Showing ${from + 1}–${Math.min(from+perPage,total)} of ${total} requests`;
+            pageButtons.innerHTML = '';
+            function addButton(label, target, disabled, active=false) {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.textContent = label;
+                button.disabled = disabled;
+                if(active) button.setAttribute('aria-current','page');
+                button.addEventListener('click', () => {
+                    currentPage = target;
+                    renderRequests();
+                    document.getElementById('excuseFilterForm').scrollIntoView({behavior:'smooth',block:'start'});
+                });
+                pageButtons.append(button);
+            }
+            addButton('Previous', currentPage-1, currentPage === 1);
+            for(let p=1;p<=totalPages;p++) {
+                if (totalPages <= 7 || Math.abs(p-currentPage) <= 1 || p===1 || p===totalPages) {
+                    addButton(String(p),p,false,p===currentPage);
+                } else if (p===2 || p===totalPages-1) {
+                    const span=document.createElement('span');span.textContent='…';span.style.padding='0 3px';
+                    pageButtons.append(span);
+                }
+            }
+            addButton('Next', currentPage+1, currentPage===totalPages);
         }
 
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | RENDER SINGLE REQUEST
-        |--------------------------------------------------------------------------
-        */
-
-        function renderRequest(
-            request
-        ) {
-
-            const student =
-                request.student
-                ?? {};
-
-
-            const studentName =
-                [
-                    student.first_name,
-                    student.middle_name,
-                    student.last_name
-                ]
-                .filter(Boolean)
-                .join(' ');
-
-
-            const status =
-                request.status
-                ?? 'Pending';
-
-
-            let statusClass =
-                'bg-blue-50 text-blue-700';
-
-
-            if (
-                status === 'Approved'
-            ) {
-
-                statusClass =
-                    'bg-green-50 text-green-700';
-
-            }
-
-
-            if (
-                status === 'Rejected'
-            ) {
-
-                statusClass =
-                    'bg-red-50 text-red-700';
-
-            }
-
-
-            const submitted =
-                request.submitted_at
-                    ? new Date(
-                        request.submitted_at
-                    )
-                    .toLocaleString()
-                    : '—';
-
-
-            const documents =
-                Array.isArray(
-                    request.documents
-                )
-                    ? request.documents
-                    : [];
-
-
-            const documentHtml =
-                documents.length > 0
-                    ? documents
-                        .map(
-                            document => {
-
-                                const url =
-                                    `/api/staff/excuse-requests/${request.excuse_request_id}/documents/${document.excuse_request_document_id}`;
-
-
-                                return `
-                                    <a
-                                        href="${url}"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        class="
-                                            inline-flex
-                                            items-center
-                                            gap-2
-                                            rounded-lg
-                                            border
-                                            border-gray-200
-                                            bg-gray-50
-                                            px-3
-                                            py-2
-                                            text-xs
-                                            font-medium
-                                            text-[#101064]
-                                            transition
-                                            hover:border-[#D4A017]
-                                            hover:bg-[#FFF8E1]
-                                        "
-                                    >
-                                        📎
-                                        ${escapeHtml(document.file_name)}
-                                    </a>
-                                `;
-
-                            }
-                        )
-                        .join('')
-                    : `
-                        <span
-                            class="
-                                text-xs
-                                italic
-                                text-gray-400
-                            "
-                        >
-                            No supporting document
-                        </span>
-                    `;
-
-
-            const reviewButton =
-                status === 'Pending'
-                    ? `
-                        <button
-                            type="button"
-                            onclick="openReviewModal(${request.excuse_request_id})"
-                            class="
-                                rounded-lg
-                                bg-[#101064]
-                                px-4
-                                py-2.5
-                                text-xs
-                                font-semibold
-                                text-white
-                                transition
-                                hover:bg-[#D4A017]
-                                hover:text-[#101064]
-                            "
-                        >
-                            Review Request
-                        </button>
-                    `
-                    : '';
-
-
-            const reviewDetails =
-                status !== 'Pending'
-                    ? `
-                        <div
-                            class="
-                                mt-5
-                                rounded-xl
-                                bg-gray-50
-                                px-4
-                                py-4
-                            "
-                        >
-
-                            <p
-                                class="
-                                    text-xs
-                                    font-bold
-                                    uppercase
-                                    tracking-wider
-                                    text-gray-400
-                                "
-                            >
-                                Review Result
-                            </p>
-
-
-                            <p
-                                class="
-                                    mt-2
-                                    text-sm
-                                    text-gray-600
-                                "
-                            >
-                                ${
-                                    request.review_remarks
-                                        ? escapeHtml(
-                                            request.review_remarks
-                                        )
-                                        : 'No review remarks provided.'
-                                }
-                            </p>
-
-                        </div>
-                    `
-                    : '';
-
-
+        function renderRequest(request) {
+            const student = request.student ?? {};
+            const status = ['Pending','Approved','Rejected'].includes(request.status) ? request.status : 'Pending';
+            const timing = request.request_timing ?? '—';
+            const submitted = request.submitted_at ? requestDate(request).toLocaleString() : '—';
+            const documents = Array.isArray(request.documents) ? request.documents : [];
+            const documentHtml = documents.length
+                ? documents.map(document => {
+                    const rid = Number(request.excuse_request_id);
+                    const did = Number(document.excuse_request_document_id);
+                    if (!Number.isSafeInteger(rid) || !Number.isSafeInteger(did)) return '';
+                    const url = `/api/staff/excuse-requests/${rid}/documents/${did}`;
+                    return `<a class="exr-file" href="${url}" target="_blank" rel="noopener noreferrer">📎 ${escapeHtml(document.file_name ?? 'Document')}</a>`;
+                }).join('')
+                : '<span class="exr-subtle">No supporting documents attached.</span>';
+            const isPending = status==='Pending';
+            const safeId = Number(request.excuse_request_id);
+            const canReview = isPending && Number.isSafeInteger(safeId) && safeId > 0;
             return `
-                <article
-                    class="
-                        overflow-hidden
-                        rounded-2xl
-                        border
-                        border-gray-200
-                        bg-white
-                        shadow-sm
-                    "
-                >
-
-                    <div
-                        class="
-                            flex
-                            flex-col
-                            gap-5
-                            px-6
-                            py-6
-                            lg:flex-row
-                            lg:items-start
-                            lg:justify-between
-                        "
-                    >
-
-                        <div class="min-w-0 flex-1">
-
-                            <div
-                                class="
-                                    flex
-                                    flex-wrap
-                                    items-center
-                                    gap-2
-                                "
-                            >
-
-                                <span
-                                    class="
-                                        rounded-full
-                                        px-3
-                                        py-1
-                                        text-xs
-                                        font-semibold
-                                        ${statusClass}
-                                    "
-                                >
-                                    ${escapeHtml(status)}
-                                </span>
-
-
-                                <span
-                                    class="
-                                        rounded-full
-                                        bg-[#F1F2FA]
-                                        px-3
-                                        py-1
-                                        text-xs
-                                        font-semibold
-                                        text-[#101064]
-                                    "
-                                >
-                                    ${escapeHtml(
-                                        request.request_timing
-                                    )}
-                                </span>
-
+                <article class="exr-list-card">
+                    <div class="exr-item-head">
+                        <div class="min-w-0">
+                            <div class="exr-badges">
+                                <span class="exr-pill ${status.toLowerCase()}">${escapeHtml(status)}</span>
+                                <span class="exr-pill neutral">${escapeHtml(timing)}</span>
                             </div>
-
-
-                            <h3
-                                class="
-                                    mt-4
-                                    text-xl
-                                    font-bold
-                                    text-[#101064]
-                                "
-                            >
-                                ${escapeHtml(
-                                    studentName
-                                    || 'Student'
-                                )}
-                            </h3>
-
-
-                            <p
-                                class="
-                                    mt-1
-                                    text-sm
-                                    text-gray-500
-                                "
-                            >
-                                ${escapeHtml(
-                                    student.student_number
-                                    ?? ''
-                                )}
-                            </p>
-
-
-                            <div
-                                class="
-                                    mt-5
-                                    grid
-                                    grid-cols-1
-                                    gap-4
-                                    sm:grid-cols-2
-                                    lg:grid-cols-3
-                                "
-                            >
-
-                                <div>
-
-                                    <p
-                                        class="
-                                            text-xs
-                                            font-semibold
-                                            uppercase
-                                            tracking-wider
-                                            text-gray-400
-                                        "
-                                    >
-                                        Event
-                                    </p>
-
-                                    <p
-                                        class="
-                                            mt-1
-                                            text-sm
-                                            font-semibold
-                                            text-gray-700
-                                        "
-                                    >
-                                        ${escapeHtml(
-                                            request.event?.event_name
-                                            ?? '—'
-                                        )}
-                                    </p>
-
-                                </div>
-
-
-                                <div>
-
-                                    <p
-                                        class="
-                                            text-xs
-                                            font-semibold
-                                            uppercase
-                                            tracking-wider
-                                            text-gray-400
-                                        "
-                                    >
-                                        Program
-                                    </p>
-
-                                    <p
-                                        class="
-                                            mt-1
-                                            text-sm
-                                            font-semibold
-                                            text-gray-700
-                                        "
-                                    >
-                                        ${escapeHtml(
-                                            student.program_code
-                                            ?? student.program_name
-                                            ?? '—'
-                                        )}
-                                    </p>
-
-                                </div>
-
-
-                                <div>
-
-                                    <p
-                                        class="
-                                            text-xs
-                                            font-semibold
-                                            uppercase
-                                            tracking-wider
-                                            text-gray-400
-                                        "
-                                    >
-                                        Submitted
-                                    </p>
-
-                                    <p
-                                        class="
-                                            mt-1
-                                            text-sm
-                                            font-semibold
-                                            text-gray-700
-                                        "
-                                    >
-                                        ${escapeHtml(submitted)}
-                                    </p>
-
-                                </div>
-
-                            </div>
-
-
-                            <div class="mt-6">
-
-                                <p
-                                    class="
-                                        text-xs
-                                        font-bold
-                                        uppercase
-                                        tracking-wider
-                                        text-gray-400
-                                    "
-                                >
-                                    Reason
-                                </p>
-
-
-                                <p
-                                    class="
-                                        mt-2
-                                        whitespace-pre-line
-                                        text-sm
-                                        leading-6
-                                        text-gray-600
-                                    "
-                                >
-                                    ${escapeHtml(request.reason)}
-                                </p>
-
-                            </div>
-
-
-                            <div class="mt-5">
-
-                                <p
-                                    class="
-                                        mb-2
-                                        text-xs
-                                        font-bold
-                                        uppercase
-                                        tracking-wider
-                                        text-gray-400
-                                    "
-                                >
-                                    Supporting Documents
-                                </p>
-
-
-                                <div
-                                    class="
-                                        flex
-                                        flex-wrap
-                                        gap-2
-                                    "
-                                >
-                                    ${documentHtml}
-                                </div>
-
-                            </div>
-
-
-                            ${reviewDetails}
-
+                            <h3 class="exr-person">${escapeHtml(requestStudentName(request))}</h3>
+                            <div class="exr-meta">${escapeHtml(student.student_number ?? 'No student number')} · ${escapeHtml(submitted)}</div>
                         </div>
-
-
-                        <div
-                            class="
-                                shrink-0
-                            "
-                        >
-                            ${reviewButton}
-                        </div>
-
+                        ${canReview ? `<button type="button" class="exr-btn gold" onclick="openReviewModal(${safeId})">Review Request</button>` : ''}
                     </div>
-
-                </article>
-            `;
-
+                    <div class="exr-item-summary">
+                        <div><span class="exr-info-label">Event</span><span class="exr-info-value">${escapeHtml(request.event?.event_name ?? '—')}</span></div>
+                        <div><span class="exr-info-label">Program</span><span class="exr-info-value">${escapeHtml(student.program_code ?? student.program_name ?? '—')}</span></div>
+                        <div><span class="exr-info-label">Documents</span><span class="exr-info-value">${documents.length} attached</span></div>
+                    </div>
+                    <details class="exr-details">
+                        <summary>View reason, supporting documents & review details</summary>
+                        <div class="exr-detail-body">
+                            <div><div class="exr-section-title">Student's reason</div><div style="white-space:pre-wrap;overflow-wrap:anywhere">${escapeHtml(request.reason ?? 'No reason provided.')}</div></div>
+                            <div><div class="exr-section-title">Supporting documents</div><div style="display:flex;gap:8px;flex-wrap:wrap">${documentHtml}</div></div>
+                            <div><div class="exr-section-title">Review decision</div><div class="exr-review-note">${isPending ? 'Awaiting Department Staff decision.' : escapeHtml(request.review_remarks || 'No review remarks provided.')}</div></div>
+                        </div>
+                    </details>
+                </article>`;
         }
-
-
 
         /*
         |--------------------------------------------------------------------------

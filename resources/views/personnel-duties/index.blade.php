@@ -15,8 +15,22 @@
         background-position: center;
     }
 </style>
+<style>
+    /* My Duties V3 additions only. Keep DySign's original navy/gold cards and layout. */
+    #dy-personnel-duties .dy-v3-filter-panel { background:#fff; border:1px solid #e5e7eb; border-radius:16px; box-shadow:0 1px 3px rgba(16,16,100,.045); }
+    #dy-personnel-duties .dy-v3-filter-label { display:block; margin-bottom:6px; color:#63738d; font-size:11px; font-weight:700; }
+    #dy-personnel-duties .dy-v3-input { width:100%; min-width:0; border:1px solid #cdd6e6; border-radius:10px; background:#fff; padding:10px 12px; color:#101064; font-size:13px; min-height:42px; }
+    #dy-personnel-duties .dy-v3-input:focus { outline:2px solid #e6bf52; outline-offset:1px; border-color:#b18a24; }
+    #dy-personnel-duties .dy-v3-advanced { border:1px solid #e5eaf2 !important; background:#f8faff !important; }
+    #dy-personnel-duties .dy-v3-count { color:#64748b; font-weight:600; }
+    #dy-personnel-duties .dy-v3-pagebtn { display:inline-flex; justify-content:center; align-items:center; min-height:36px; padding:7px 12px; border-radius:9px; border:1px solid #d7dce7; background:#fff; color:#101064; font-size:12px; font-weight:750; }
+    #dy-personnel-duties .dy-v3-pagebtn[aria-current="page"] { background:#101064; color:#fff; border-color:#101064; }
+    #dy-personnel-duties .dy-v3-pagebtn:disabled { opacity:.45; cursor:default; }
+    #dy-personnel-duties [data-duty-item][hidden] { display:none !important; }
+</style>
 
-<div class="w-full min-w-0 space-y-7">
+
+<div class="w-full min-w-0 space-y-7" id="dy-personnel-duties">
 
     {{-- HERO --}}
     <section
@@ -239,7 +253,69 @@
         </div>
 
 
-        <div class="space-y-5">
+
+        {{-- Compact filters: original DySign duty cards below are unchanged. --}}
+        @if($duties->isNotEmpty())
+        <div class="dy-v3-filter-panel mb-5 p-5 md:p-6">
+            <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <p class="text-[10px] font-bold uppercase tracking-[.2em] text-[#bd8b15]">Find a duty</p>
+                    <h3 class="mt-1 text-base font-bold text-[#101064]">Search and filter records</h3>
+                </div>
+                <span class="rounded-full bg-[#f4f5fa] px-3 py-1.5 text-xs font-semibold text-[#101064]">{{ $summary['total'] }} assigned duties</span>
+            </div>
+            <div class="grid gap-3 md:grid-cols-4">
+                <div class="md:col-span-2">
+                    <label class="dy-v3-filter-label" for="dy-duty-search">Search event or location</label>
+                    <input id="dy-duty-search" class="dy-v3-input" type="search" placeholder="Search your assigned events..." autocomplete="off">
+                </div>
+                <div>
+                    <label class="dy-v3-filter-label" for="dy-duty-status">Duty status</label>
+                    <select id="dy-duty-status" class="dy-v3-input">
+                        <option value="">All duty statuses</option>
+                        <option>Assigned</option><option>On Duty</option><option>Completed</option><option>Missed</option><option>Incomplete</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="dy-v3-filter-label" for="dy-duty-sort">Sort records</label>
+                    <select id="dy-duty-sort" class="dy-v3-input">
+                        <option value="priority">On Duty first</option>
+                        <option value="newest">Newest event first</option>
+                        <option value="oldest">Oldest event first</option>
+                        <option value="name">Event name A–Z</option>
+                    </select>
+                </div>
+            </div>
+            <details class="dy-v3-advanced mt-4 rounded-xl px-4 py-3">
+                <summary class="cursor-pointer text-xs font-bold text-[#101064]">Advanced filters — event status and date range</summary>
+                <div class="mt-4 grid gap-3 md:grid-cols-3">
+                    <div>
+                        <label class="dy-v3-filter-label" for="dy-duty-event-status">Event status</label>
+                        <select id="dy-duty-event-status" class="dy-v3-input">
+                            <option value="">All event statuses</option>
+                            @foreach($duties->pluck('event_status')->filter()->unique()->sort()->values() as $eventStatus)
+                                <option value="{{ $eventStatus }}">{{ $eventStatus }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div><label class="dy-v3-filter-label" for="dy-duty-from">From date</label><input type="date" id="dy-duty-from" class="dy-v3-input"></div>
+                    <div><label class="dy-v3-filter-label" for="dy-duty-to">To date</label><input type="date" id="dy-duty-to" class="dy-v3-input"></div>
+                </div>
+            </details>
+            <div class="mt-4 flex flex-wrap items-end justify-between gap-3">
+                <div class="flex flex-wrap items-end gap-3">
+                    <div>
+                        <label class="dy-v3-filter-label" for="dy-duty-page-size">Show per page</label>
+                        <select id="dy-duty-page-size" class="dy-v3-input" style="width:auto;min-width:130px"><option value="5">5 duties</option><option value="10">10 duties</option><option value="20">20 duties</option></select>
+                    </div>
+                    <button type="button" id="dy-duty-reset" class="rounded-lg border border-[#d1d8e5] bg-white px-4 py-2.5 text-xs font-bold text-[#101064] hover:bg-[#f6f8fc]" style="min-height:42px">Reset</button>
+                </div>
+                <p id="dy-duty-count" class="dy-v3-count text-xs" aria-live="polite" role="status"></p>
+            </div>
+        </div>
+        @endif
+
+        <div class="space-y-5" id="dy-duty-list">
 
             @forelse($duties as $duty)
 
@@ -273,6 +349,12 @@
                         bg-white
                         shadow-sm
                     "
+                    data-duty-item
+                    data-search="{{ mb_strtolower(($duty->event_name ?? '').' '.($duty->location ?? '').' '.($duty->event_status ?? '')) }}"
+                    data-duty-status="{{ $duty->duty_status ?? 'Assigned' }}"
+                    data-event-status="{{ $duty->event_status }}"
+                    data-date="{{ \Carbon\Carbon::parse($duty->event_date)->format('Y-m-d') }}"
+                    data-event-name="{{ mb_strtolower($duty->event_name ?? '') }}"
                 >
 
                     {{-- CARD HEADER --}}
@@ -727,8 +809,90 @@
             @endforelse
 
         </div>
+        @if($duties->isNotEmpty())
+            <div id="dy-duty-empty" class="dy-v3-filter-panel mt-4 hidden px-6 py-10 text-center">
+                <p class="text-base font-bold text-[#101064]">No matching duties</p>
+                <p class="mt-2 text-sm text-gray-500">Try another search or reset the filters.</p>
+                <button type="button" id="dy-duty-empty-reset" class="mt-4 rounded-lg bg-[#101064] px-5 py-2.5 text-xs font-bold text-white">Reset filters</button>
+            </div>
+            <div id="dy-duty-pagination-wrap" class="mt-5 flex flex-wrap items-center justify-between gap-3">
+                <p id="dy-duty-page-label" class="text-xs font-medium text-gray-500"></p>
+                <nav id="dy-duty-pages" class="flex flex-wrap gap-2" aria-label="Duty pages"></nav>
+            </div>
+        @endif
     </section>
 
 </div>
 
+<script>
+(function () {
+    const root = document.getElementById('dy-personnel-duties');
+    if (!root || !root.querySelector('#dy-duty-search')) return;
+    const get = id => root.querySelector('#' + id);
+    const list = get('dy-duty-list');
+    const cards = Array.from(list.querySelectorAll('[data-duty-item]'));
+    const search = get('dy-duty-search');
+    const status = get('dy-duty-status');
+    const eventStatus = get('dy-duty-event-status');
+    const from = get('dy-duty-from');
+    const to = get('dy-duty-to');
+    const sort = get('dy-duty-sort');
+    const perPage = get('dy-duty-page-size');
+    const nav = get('dy-duty-pages');
+    const empty = get('dy-duty-empty');
+    const countLabel = get('dy-duty-count');
+    const pageLabel = get('dy-duty-page-label');
+    const pageWrap = get('dy-duty-pagination-wrap');
+    let page = 1;
+    const ranks = {'On Duty':0,'Assigned':1,'Incomplete':2,'Missed':3,'Completed':4};
+    function render() {
+        const term = search.value.trim().toLocaleLowerCase();
+        const matching = cards.filter(card => {
+            const d = card.dataset;
+            return (!term || d.search.includes(term)) &&
+                (!status.value || d.dutyStatus === status.value) &&
+                (!eventStatus.value || d.eventStatus === eventStatus.value) &&
+                (!from.value || d.date >= from.value) &&
+                (!to.value || d.date <= to.value);
+        });
+        matching.sort((a,b) => {
+            const x=a.dataset, y=b.dataset;
+            if (sort.value === 'name') return x.eventName.localeCompare(y.eventName) || y.date.localeCompare(x.date);
+            if (sort.value === 'oldest') return x.date.localeCompare(y.date) || x.eventName.localeCompare(y.eventName);
+            if (sort.value === 'newest') return y.date.localeCompare(x.date) || x.eventName.localeCompare(y.eventName);
+            return (ranks[x.dutyStatus] ?? 5)-(ranks[y.dutyStatus] ?? 5) || y.date.localeCompare(x.date);
+        });
+        const size = Number(perPage.value) || 5;
+        const totalPages = Math.max(1, Math.ceil(matching.length / size));
+        page = Math.max(1,Math.min(page,totalPages));
+        const start=(page-1)*size;
+        const current=new Set(matching.slice(start,start+size));
+        cards.forEach(card => { card.hidden = !current.has(card); });
+        matching.forEach(card => list.appendChild(card));
+        countLabel.textContent = matching.length + ' matching of ' + cards.length + ' duties';
+        pageLabel.textContent = matching.length ? 'Showing ' + (start+1) + '–' + Math.min(start+size,matching.length) + ' of ' + matching.length : 'No records to show';
+        empty.classList.toggle('hidden',matching.length !== 0);
+        pageWrap.classList.toggle('hidden',matching.length === 0);
+        nav.replaceChildren();
+        function button(label, target, disabled, active) {
+            const el=document.createElement('button');
+            el.type='button';el.className='dy-v3-pagebtn';el.textContent=label;el.disabled=disabled;
+            if (active) el.setAttribute('aria-current','page');
+            el.addEventListener('click',() => { page=target;render(); });
+            nav.appendChild(el);
+        }
+        if (matching.length > size) {
+            button('Previous',page-1,page===1,false);
+            const pStart=Math.max(1,Math.min(page-2,totalPages-4));
+            for(let p=pStart;p<=Math.min(totalPages,pStart+4);p++) button(String(p),p,false,p===page);
+            button('Next',page+1,page===totalPages,false);
+        }
+    }
+    function reset(){search.value='';status.value='';eventStatus.value='';from.value='';to.value='';sort.value='priority';perPage.value='5';page=1;render();}
+    [search,status,eventStatus,from,to,sort,perPage].forEach(el => el.addEventListener(el===search?'input':'change',()=>{page=1;render();}));
+    get('dy-duty-reset').addEventListener('click',reset);
+    get('dy-duty-empty-reset').addEventListener('click',reset);
+    render();
+})();
+</script>
 </x-admin-layout>

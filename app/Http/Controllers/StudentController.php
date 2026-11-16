@@ -104,6 +104,18 @@ class StudentController extends Controller
             );
 
 
+            // A single in-app result notice; bulk imports must not spam one
+            // notification per imported student row.
+            try {
+                \App\Services\NotificationRouter::studentImport(
+                    (int)$import->created, (int)$import->updated, (int)$import->failed
+                );
+            } catch (\Throwable $notificationError) {
+                \Illuminate\Support\Facades\Log::warning('Student import notification failed', [
+                    'error' => $notificationError->getMessage(),
+                ]);
+            }
+
             return redirect()
                 ->route('students.index')
                 ->with('success', [

@@ -768,10 +768,14 @@ class EventController extends Controller
         |--------------------------------------------------------------------------
         */
 
+        $removedAssignmentIds = [];
+        $addedAssignmentIds = [];
         DB::transaction(
             function () use (
                 $event,
-                $submittedIds
+                $submittedIds,
+                &$removedAssignmentIds,
+                &$addedAssignmentIds
             ) {
 
                 $currentIds = EventAssignment::where(
@@ -793,6 +797,8 @@ class EventController extends Controller
                         $submittedIds
                     );
 
+
+                $removedAssignmentIds = $removeIds->all();
 
                 if ($removeIds->isNotEmpty()) {
 
@@ -818,6 +824,7 @@ class EventController extends Controller
                     );
 
 
+                $addedAssignmentIds = $addIds->all();
                 foreach ($addIds as $personnelId) {
 
                     EventAssignment::create([
@@ -836,6 +843,29 @@ class EventController extends Controller
             }
         );
 
+
+        if (!empty($removedAssignmentIds)) {
+            try {
+                \App\Services\NotificationRouter::assignment(
+                    (int) $event->event_id, $removedAssignmentIds, 'unassigned', false
+                );
+            } catch (\Throwable $notificationError) {
+                \Illuminate\Support\Facades\Log::warning('Event unassignment notification failed', [
+                    'event_id' => $event->event_id,
+                    'error' => $notificationError->getMessage(),
+                ]);
+            }
+        }
+
+        if (!empty($removedAssignmentIds) || !empty($addedAssignmentIds)) {
+            try {
+                \App\Services\NotificationRouter::rosterSummary((int)$event->event_id);
+            } catch (\Throwable $notificationError) {
+                \Illuminate\Support\Facades\Log::warning('Roster summary notification failed', [
+                    'event_id' => $event->event_id, 'error' => $notificationError->getMessage(),
+                ]);
+            }
+        }
 
         return redirect()
             ->route(

@@ -570,7 +570,8 @@ class EventPersonnelAssignmentController extends Controller
 
         // Lock the event row while comparing assignments to prevent duplicate
         // notifications from concurrent saves of the same roster.
-        $newlyAssignedIds = DB::transaction(function () use ($event, $selectedIds) {
+        $removedPersonnelIds = [];
+        $newlyAssignedIds = DB::transaction(function () use ($event, $selectedIds, &$removedPersonnelIds) {
             DB::table('events')->where('event_id', $event->event_id)
                 ->lockForUpdate()->first();
 
@@ -579,6 +580,7 @@ class EventPersonnelAssignmentController extends Controller
                 ->pluck('personnel_id')->map(fn ($id) => (int) $id)->all();
 
             $newIds = $selectedIds->diff($previousIds)->values()->all();
+            $removedPersonnelIds = array_values(array_diff($previousIds, $selectedIds->all()));
             if ($selectedIds->isEmpty()) {
                 DB::table('event_assignments')
                     ->where('event_id', $event->event_id)->delete();
@@ -599,6 +601,43 @@ class EventPersonnelAssignmentController extends Controller
             }
             return $newIds;
         });
+
+        // Bulk DB::table inserts skip model observers. Notify assigned
+        // personnel in-app only when the roster actually changed.
+        if (count($removedPersonnelIds) > 0) {
+            try {
+                \App\Services\NotificationRouter::assignment(
+                    (int) $event->event_id, $removedPersonnelIds, 'unassigned', false
+                );
+            } catch (\Throwable $notificationError) {
+                \Illuminate\Support\Facades\Log::warning('Unassignment in-app notification error', [
+                    'event_id' => $event->event_id,
+                    'error' => $notificationError->getMessage(),
+                ]);
+            }
+        }
+        if (count($newlyAssignedIds) > 0) {
+            try {
+                \App\Services\NotificationRouter::assignment(
+                    (int) $event->event_id, $newlyAssignedIds, 'assigned', false
+                );
+            } catch (\Throwable $notificationError) {
+                \Illuminate\Support\Facades\Log::warning('Personnel in-app notification error', [
+                    'event_id' => $event->event_id,
+                    'error' => $notificationError->getMessage(),
+                ]);
+            }
+        }
+
+        if (!empty($removedPersonnelIds) || !empty($newlyAssignedIds)) {
+            try {
+                \App\Services\NotificationRouter::rosterSummary((int)$event->event_id);
+            } catch (\Throwable $notificationError) {
+                \Illuminate\Support\Facades\Log::warning('Roster summary notification error', [
+                    'event_id' => $event->event_id, 'error' => $notificationError->getMessage(),
+                ]);
+            }
+        }
 
         // Queue only NEW assignments after the DB transaction commits.
         // Re-saving an unchanged roster queues nothing.
